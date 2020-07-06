@@ -122,7 +122,7 @@ const key2_secret2_map = new Map();
 
 key2_secret2_map.set(
   crypto.createHash('sha256').update('test').digest('hex'),
-  crypto.scryptSync('1234', crypto.createHash('sha256').update('test1234').digest(), 32, { N: 16384, r: 16, p: 1, maxmem: 128 * 16384 * 16 * 2}),
+  crypto.scryptSync('1234', crypto.createHash('sha256').update('test1234').digest(), 32, { N: 2 ** 15, r: 8, p: 1, maxmem: 128 * (2 ** 16) * 8 * 1}),
 );
 
 const auth_middleware = async (request, response) => {

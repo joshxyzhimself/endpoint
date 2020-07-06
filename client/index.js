@@ -26,7 +26,7 @@ const auth = (username, password) => {
   const password_uint8 = utf8.encode(password.normalize('NFKC'));
   const key = sha256.hash(username_uint8);
   const key_hex = hex.encode(key, true);
-  const secret = scrypt.deriveKey(password_uint8, sha256.hash(merge(username_uint8, password_uint8)), 16384, 16, 1, 32);
+  const secret = scrypt.deriveKey(password_uint8, sha256.hash(merge(username_uint8, password_uint8)), 2 ** 15, 8, 1, 32);
   const secret_hex = hex.encode(secret, true);
   sessionStorage.setItem('key_hex', key_hex);
   sessionStorage.setItem('secret_hex', secret_hex);
