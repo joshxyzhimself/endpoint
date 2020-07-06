@@ -45,6 +45,14 @@ npx rollup -c ./client/rollup.config.js
 node ./server/index.demo.js 
 ```
 
+```
+http://localhost:8080/
+http://localhost:8080/asd
+http://localhost:8080/favicon.ico
+http://localhost:8080/images/capoo.jpeg
+http://localhost:8080/auth-test
+```
+
 ## EndpointServer
 
 #### Usage
