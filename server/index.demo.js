@@ -1,0 +1,176 @@
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const process = require('process');
+const EndpointServer = require('./index');
+
+const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
+
+const endpoint = new EndpointServer();
+
+// Cache-Control: no-store
+// default, for sensitive data
+
+// Cache-Control: no-cache
+// ideal for html
+
+// Cache-Control: private, max-age=3600, s-maxage=3600
+// ideal for static files
+
+// http://localhost:8080/favicon.ico
+// http://localhost:8080/images/capoo.jpeg
+endpoint.static('/', path.join(process.cwd(), '/static'), 'no-cache');
+endpoint.static('/images', path.join(process.cwd(), '/static/images'), 'private, max-age=3600, s-maxage=3600');
+
+// http://localhost:8080/
+endpoint.get('/', (request, response) => {
+  response.headers['Content-Type'] = 'text/html; charset=utf-8';
+  response.headers['Cache-Control'] = 'no-cache';
+  response.body = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>Home page</p>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
+endpoint.get('*', (request, response) => {
+  response.headers['Content-Type'] = 'text/html; charset=utf-8';
+  response.headers['Cache-Control'] = 'no-cache';
+  response.body = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>Catch-all page</p>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
+endpoint.get('/test', (request, response) => {
+  response.body = { ...request.url.query };
+  return response;
+});
+
+endpoint.get('/auth-test', (request, response) => {
+  response.headers['Content-Type'] = 'text/html; charset=utf-8';
+  response.headers['Cache-Control'] = 'no-cache';
+  response.body = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>Auth Test page</p>
+        <hr />
+        <button onclick="window.auth()">Auth</button>
+        <hr />
+        <button onclick="window.test1()">Auth Get</button>
+        <hr />
+        <button onclick="window.test2()">Auth Post</button>
+        <hr />
+        <button onclick="window.deauth()">De-auth</button>
+        <script>
+          window.auth = () => {
+            EndpointClient.auth('test', '1234');
+          };
+          window.deauth = () => {
+            EndpointClient.deauth();
+          };
+          window.test1 = () => {
+            EndpointClient.request({ url: 'http://localhost:8080/auth-get?foo=bar', method: 'GET' })
+              .then(console.log)
+              .catch(console.error);
+          };
+          window.test2 = () => {
+            EndpointClient.request({ url: 'http://localhost:8080/auth-post?foo=bar', method: 'POST', body: { foo: 'bar' } })
+              .then(console.log)
+              .catch(console.error);
+          };
+          ${client_script}
+        </script>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
+const ResponseError = (response, code, message) => {
+  response.body = { error: { code, message } };
+  return response;
+};
+
+const key2_secret2_map = new Map();
+
+key2_secret2_map.set(
+  crypto.createHash('sha256').update('test').digest('hex'),
+  crypto.scryptSync('1234', crypto.createHash('sha256').update('test1234').digest(), 32, { N: 16384, r: 16, p: 1, maxmem: 128 * 16384 * 16 * 2}),
+);
+
+const auth_middleware = async (request, response) => {
+  if (request.headers['x-key'] === undefined) {
+    return ResponseError(response, 401, 'NOT AUTHORIZED. MISSING X-KEY.');
+  }
+  if (request.headers['x-timestamp'] === undefined) {
+    return ResponseError(response, 401, 'NOT AUTHORIZED. MISSING X-TIMESTAMP');
+  }
+  if (request.headers['x-signature'] === undefined) {
+    return ResponseError(response, 401, 'NOT AUTHORIZED. MISSING X-SIGNATURE');
+  }
+  const key = request.headers['x-key'];
+  if (key2_secret2_map.has(key) === false) {
+    return ResponseError(response, 401, 'NOT AUTHORIZED. INVALID X-KEY');
+  }
+  const secret = key2_secret2_map.get(key);
+  const timestamp = request.headers['x-timestamp'];
+  const timestamp2 = Number(timestamp);
+  if (Number.isInteger(timestamp2) === false || Date.now() - timestamp2 >= 1000) {
+    return ResponseError(response, 401, 'NOT AUTHORIZED. INVALID X-TIMESTAMP');
+  }
+  const signature = Buffer.from(request.headers['x-signature'], 'hex');
+  const signature_recalc = crypto.createHmac('sha256', secret)
+    .update(timestamp)
+    .update(request.method)
+    .update(request.url.pathname)
+    .update(request.url.search || '')
+    .update(request.body_buffer || '')
+    .digest();
+
+  if (crypto.timingSafeEqual(signature, signature_recalc) === false) {
+    return ResponseError(response, 401, 'NOT AUTHORIZED. INVALID X-SIGNATURE');
+  }
+  return undefined;
+};
+
+endpoint.post('/auth-get', auth_middleware);
+endpoint.post('/auth-post', auth_middleware);
+
+endpoint.get('/auth-get', (request, response) => {
+  response.body = { foo: 'bar' };
+  return response;
+});
+
+endpoint.post('/auth-post', (request, response) => {
+  response.body = { foo: 'bar' };
+  return response;
+});
+
+endpoint.http(8080, () => console.log('Listening at port 8080.'));
