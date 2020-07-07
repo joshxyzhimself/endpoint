@@ -13,89 +13,6 @@ const Busboy = require('busboy');
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
-const complete = (request2, response, response2) => {
-  response2.headers['Content-Length'] = response2.body.byteLength;
-  if (request2.method === 'HEAD') {
-    delete response2.body;
-  }
-
-  if (response2.headers['Cache-Control'] === undefined) {
-    response2.headers['Cache-Control'] = 'no-store';
-  } else if (response2.headers['Cache-Control'] !== 'no-store') {
-    response2.headers['ETag'] = crypto.createHash('sha256').update(response2.body).digest('hex');
-    if (request2.headers['if-none-match'] !== undefined) {
-      if (request2.headers['if-none-match'] === response2.headers['ETag']) {
-        response2.status = 304;
-        delete response2.body;
-      }
-    }
-  }
-
-  response.writeHead(response2.status, response2.headers).end(response2.body);
-};
-
-const prepare = (request2, response, response2) => {
-
-  if (Buffer.isBuffer(response2.body) === false) {
-    if (typeof response2.body === 'object') { // application/json; charset=utf-8
-      response2.body = JSON.stringify(response2.body);
-    }
-    if (typeof response2.body === 'string') { // 'text/html; charset=utf-8'
-      response2.body = Buffer.from(response2.body);
-    }
-  }
-
-  if (request2.headers['accept-encoding'] !== undefined) {
-    if (request2.headers['accept-encoding'].includes('br') === true) {
-      response2.headers['Content-Encoding'] = 'br';
-      zlib.brotliCompress(response2.body, (err, compressedBody) => {
-        response2.body = compressedBody;
-        complete(request2, response, response2);
-      });
-      return;
-    }
-    if (request2.headers['accept-encoding'].includes('gzip') === true) {
-      response2.headers['Content-Encoding'] = 'gzip';
-      zlib.gzip(response2.body, (err, compressedBody) => {
-        response2.body = compressedBody;
-        complete(request2, response, response2);
-      });
-      return;
-    }
-  }
-
-  complete(request2, response, response2);
-};
-
-const error = (request2, response, response2, statusCode, errorCode, errorMessage) => {
-  response2.status = statusCode;
-  response2.body = { error: { status: statusCode, code: errorCode, message: errorMessage, timestamp: new Date().toISOString() } };
-  return prepare(request2, response, response2);
-};
-
-const handle = async (request2, response, response2, handlers) => {
-  try {
-    let response3;
-    for (let i = 0, l = handlers.length; i < l; i += 1) {
-      const handler = handlers[i];
-      response3 = await handler(request2, response2);
-      if (response3 === response2) {
-        break;
-      }
-      if (response3 !== undefined) {
-        console.error({ response3 });
-        throw new Error('Invalid handler return type, expecting "response" object or "undefined".');
-      }
-    }
-    if (response3 === undefined) {
-      throw new Error('Invalid handler return type, at least one handler must return the "response" object.');
-    }
-    return prepare(request2, response, response2);
-  } catch (e) {
-    return error(request2, response, response2, 500, 500, `INTERNAL SERVER ERROR. ${e.message}`);
-  }
-};
-
 function EndpointServer(options) {
 
   const endpoint = this;
@@ -157,13 +74,102 @@ function EndpointServer(options) {
     routes_map.set(method, route_map);
   });
 
+  let useCompression = false;
   let sessionMaxAge = 0;
 
   if (typeof options === 'object' && options !== null) {
+    if (typeof options.useCompression === 'boolean') {
+      useCompression = options.useCompression;
+    }
     if (Number.isInteger(options.sessionMaxAge) === true && options.sessionMaxAge > 0) {
       sessionMaxAge = options.sessionMaxAge;
     }
   }
+
+  const complete = (request2, response, response2) => {
+    response2.headers['Content-Length'] = response2.body.byteLength;
+    if (request2.method === 'HEAD') {
+      delete response2.body;
+    }
+
+    if (response2.headers['Cache-Control'] === undefined) {
+      response2.headers['Cache-Control'] = 'no-store';
+    } else if (response2.headers['Cache-Control'] !== 'no-store') {
+      response2.headers['ETag'] = crypto.createHash('sha256').update(response2.body).digest('hex');
+      if (request2.headers['if-none-match'] !== undefined) {
+        if (request2.headers['if-none-match'] === response2.headers['ETag']) {
+          response2.status = 304;
+          delete response2.body;
+        }
+      }
+    }
+
+    response.writeHead(response2.status, response2.headers).end(response2.body);
+  };
+
+  const prepare = (request2, response, response2) => {
+
+    if (Buffer.isBuffer(response2.body) === false) {
+      if (typeof response2.body === 'object') { // application/json; charset=utf-8
+        response2.body = JSON.stringify(response2.body);
+      }
+      if (typeof response2.body === 'string') { // 'text/html; charset=utf-8'
+        response2.body = Buffer.from(response2.body);
+      }
+    }
+
+    if (useCompression === true) {
+      if (request2.headers['accept-encoding'] !== undefined) {
+        if (request2.headers['accept-encoding'].includes('br') === true) {
+          response2.headers['Content-Encoding'] = 'br';
+          zlib.brotliCompress(response2.body, (err, compressedBody) => {
+            response2.body = compressedBody;
+            complete(request2, response, response2);
+          });
+          return;
+        }
+        if (request2.headers['accept-encoding'].includes('gzip') === true) {
+          response2.headers['Content-Encoding'] = 'gzip';
+          zlib.gzip(response2.body, (err, compressedBody) => {
+            response2.body = compressedBody;
+            complete(request2, response, response2);
+          });
+          return;
+        }
+      }
+    }
+
+    complete(request2, response, response2);
+  };
+
+  const error = (request2, response, response2, statusCode, errorCode, errorMessage) => {
+    response2.status = statusCode;
+    response2.body = { error: { status: statusCode, code: errorCode, message: errorMessage, timestamp: new Date().toISOString() } };
+    return prepare(request2, response, response2);
+  };
+
+  const handle = async (request2, response, response2, handlers) => {
+    try {
+      let response3;
+      for (let i = 0, l = handlers.length; i < l; i += 1) {
+        const handler = handlers[i];
+        response3 = await handler(request2, response2);
+        if (response3 === response2) {
+          break;
+        }
+        if (response3 !== undefined) {
+          console.error({ response3 });
+          throw new Error('Invalid handler return type, expecting "response" object or "undefined".');
+        }
+      }
+      if (response3 === undefined) {
+        throw new Error('Invalid handler return type, at least one handler must return the "response" object.');
+      }
+      return prepare(request2, response, response2);
+    } catch (e) {
+      return error(request2, response, response2, 500, 500, `INTERNAL SERVER ERROR. ${e.message}`);
+    }
+  };
 
   const requestListener = async (request, response) => {
 
