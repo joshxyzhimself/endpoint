@@ -8,9 +8,8 @@ const crypto = require('crypto');
 const { extname, dirname, basename, join } = require('path');
 
 const mime = require('mime-types');
-
+const cookie = require('cookie');
 const Busboy = require('busboy');
-
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
@@ -97,7 +96,7 @@ const handle = async (request2, response, response2, handlers) => {
   }
 };
 
-function EndpointServer() {
+function EndpointServer(options) {
 
   const endpoint = this;
 
@@ -158,6 +157,14 @@ function EndpointServer() {
     routes_map.set(method, route_map);
   });
 
+  let sessionMaxAge = 0;
+
+  if (typeof options === 'object' && options !== null) {
+    if (Number.isInteger(options.sessionMaxAge) === true && options.sessionMaxAge > 0) {
+      sessionMaxAge = options.sessionMaxAge;
+    }
+  }
+
   const requestListener = async (request, response) => {
 
     const request2 = {
@@ -174,6 +181,28 @@ function EndpointServer() {
 
     if (methods.includes(request2.method) === false) {
       return error(request2, response, response2, 405, 405, 'METHOD NOT ALLOWED');
+    }
+
+
+    if (request2.headers.cookie === undefined) {
+      request2.sid = crypto.randomBytes(32).toString('hex');
+      if (sessionMaxAge > 0) {
+        response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.sessionMaxAge}; SameSite=Strict;`;
+      } else {
+        response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; SameSite=Strict;`;
+      }
+    } else {
+      const cookies = cookie.parse(request2.headers.cookie);
+      if (cookies.sid === undefined) {
+        request2.sid = crypto.randomBytes(32).toString('hex');
+        if (sessionMaxAge > 0) {
+          response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.sessionMaxAge}; SameSite=Strict;`;
+        } else {
+          response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; SameSite=Strict;`;
+        }
+      } else {
+        request2.sid = cookies.sid;
+      }
     }
 
     if (request2.method === 'HEAD' || request2.method === 'GET') {

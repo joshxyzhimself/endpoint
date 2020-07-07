@@ -5,6 +5,38 @@
 ```js
 const EndpointClient = require('endpoint/client');
 
+await EndpointClient.request({
+
+  // Required string, one of HEAD, GET, POST, PUT, DELETE
+  method: String,
+
+  // Required string
+  url: String,
+
+  // Optional object, will append as url query
+  query: Object?,
+
+  // Optional object, will send as "application/json"
+  json: Object?,
+
+  // Optional array of files, compatible with "json"
+  // Will send as multipart/form-data"
+  files: Array?,
+
+  // Optional object, not compatible with "json" or "files"
+  // Will send as "application/x-www-form-urlencoded"
+  urlencoded: Object?,
+});
+```
+
+
+## EndpointClient2
+
+#### Usage
+
+```js
+const EndpointClient = require('endpoint/client2');
+
 // sets key_hex and secret_hex in SessionStorage
 EndpointClient.auth(username: String, password: String);
 
@@ -38,7 +70,7 @@ await EndpointClient.request({
 #### Testing
 
 ```
-npx rollup -c ./client/rollup.config.js
+npx rollup -c ./client2/rollup.config.js
 ```
 
 ```
