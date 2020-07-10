@@ -1,13 +1,16 @@
 
-const fs = require('fs');
+// const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const process = require('process');
 const EndpointServer = require('./index');
 
-const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
+// const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
 
-const endpoint = new EndpointServer();
+const endpoint = new EndpointServer({
+  useCompression: false,
+  sessionMaxAge: 0,
+});
 
 // Cache-Control: no-store
 // default, for sensitive data
@@ -105,12 +108,23 @@ endpoint.get('/auth-test', (request, response) => {
               .then(console.log)
               .catch(console.error);
           };
-          ${client_script}
         </script>
       </body>
     </html>
   `;
   return response;
+});
+
+endpoint.get('/error-test-404', (request, response, HTTPError) => {
+  throw new HTTPError(404, 'Error test message.');
+});
+
+endpoint.get('/error-test-405', (request, response, HTTPError) => {
+  throw new HTTPError(405, 'Error test message.');
+});
+
+endpoint.get('/error-test-500', (request, response, HTTPError) => {
+  return 123; // invalid return value
 });
 
 const ResponseError = (response, code, message) => {

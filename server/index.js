@@ -10,8 +10,122 @@ const { extname, dirname, basename, join } = require('path');
 const mime = require('mime-types');
 const cookie = require('cookie');
 const Busboy = require('busboy');
+const statuses = require('statuses');
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
+
+class HTTPError extends Error {
+  constructor (code, ...params) {
+    super(params);
+
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, HTTPError);
+    }
+
+    this.code = code;
+    this.status = statuses.message[code] || 'Unknown';
+  }
+  headers () {
+    return { 'Content-Type': 'application/json' };
+  }
+  body () {
+    return {
+      error: {
+        code: this.code,
+        status: this.status,
+        message: this.message,
+        timestamp: new Date().toISOString(),
+      }
+    };
+  }
+}
+
+const complete = (request2, response, response2) => {
+  response2.headers['Content-Length'] = response2.body.byteLength;
+  if (request2.method === 'HEAD') {
+    delete response2.body;
+  }
+
+  if (response2.headers['Cache-Control'] === undefined) {
+    response2.headers['Cache-Control'] = 'no-store';
+  } else if (response2.headers['Cache-Control'] !== 'no-store') {
+    response2.headers['ETag'] = crypto.createHash('sha256').update(response2.body).digest('hex');
+    if (request2.headers['if-none-match'] !== undefined) {
+      if (request2.headers['if-none-match'] === response2.headers['ETag']) {
+        response2.code = 304;
+        delete response2.body;
+      }
+    }
+  }
+
+  response.writeHead(response2.code, response2.headers).end(response2.body);
+};
+
+const prepare = (request2, response, response2, options, error) => {
+
+  if (error instanceof HTTPError) {
+    response2.code = error.code;
+    response2.headers = error.headers();
+    response2.body = error.body();
+  }
+
+  if (Buffer.isBuffer(response2.body) === false) {
+    if (typeof response2.body === 'object') { // application/json; charset=utf-8
+      response2.body = JSON.stringify(response2.body);
+    }
+    if (typeof response2.body === 'string') { // 'text/html; charset=utf-8'
+      response2.body = Buffer.from(response2.body);
+    }
+  }
+
+  if (options.useCompression === true) {
+    if (request2.headers['accept-encoding'] !== undefined) {
+      if (request2.headers['accept-encoding'].includes('br') === true) {
+        response2.headers['Content-Encoding'] = 'br';
+        zlib.brotliCompress(response2.body, (err, compressedBody) => {
+          response2.body = compressedBody;
+          complete(request2, response, response2);
+        });
+        return;
+      }
+      if (request2.headers['accept-encoding'].includes('gzip') === true) {
+        response2.headers['Content-Encoding'] = 'gzip';
+        zlib.gzip(response2.body, (err, compressedBody) => {
+          response2.body = compressedBody;
+          complete(request2, response, response2);
+        });
+        return;
+      }
+    }
+  }
+
+  complete(request2, response, response2);
+};
+
+const handle = async (request2, response, response2, handlers, options) => {
+  try {
+    let response3;
+    for (let i = 0, l = handlers.length; i < l; i += 1) {
+      const handler = handlers[i];
+      response3 = await handler(request2, response2, HTTPError);
+      if (response3 === response2) {
+        break;
+      }
+      if (response3 !== undefined) {
+        throw new Error('Invalid handler return type, expecting "response" object or "undefined", or a thrown "HTTPError" error.');
+      }
+    }
+    if (response3 === undefined) {
+      throw new Error('Invalid handler return type, at least one handler must return the "response" object or throw an "HTTPError" error.');
+    }
+    return prepare(request2, response, response2, options);
+  } catch (e) {
+    if (e instanceof HTTPError) {
+      return prepare(request2, response, response2, options, e);
+    }
+    return prepare(request2, response, response2, options, new HTTPError(500, e.message));
+  }
+};
 
 function EndpointServer(options) {
 
@@ -74,102 +188,15 @@ function EndpointServer(options) {
     routes_map.set(method, route_map);
   });
 
-  let useCompression = false;
-  let sessionMaxAge = 0;
-
-  if (typeof options === 'object' && options !== null) {
-    if (typeof options.useCompression === 'boolean') {
-      useCompression = options.useCompression;
-    }
-    if (Number.isInteger(options.sessionMaxAge) === true && options.sessionMaxAge > 0) {
-      sessionMaxAge = options.sessionMaxAge;
-    }
+  if (typeof options !== 'object' || options === null) {
+    throw new Error('new EndpointServer(options), "options" must be a plain object.');
   }
-
-  const complete = (request2, response, response2) => {
-    response2.headers['Content-Length'] = response2.body.byteLength;
-    if (request2.method === 'HEAD') {
-      delete response2.body;
-    }
-
-    if (response2.headers['Cache-Control'] === undefined) {
-      response2.headers['Cache-Control'] = 'no-store';
-    } else if (response2.headers['Cache-Control'] !== 'no-store') {
-      response2.headers['ETag'] = crypto.createHash('sha256').update(response2.body).digest('hex');
-      if (request2.headers['if-none-match'] !== undefined) {
-        if (request2.headers['if-none-match'] === response2.headers['ETag']) {
-          response2.status = 304;
-          delete response2.body;
-        }
-      }
-    }
-
-    response.writeHead(response2.status, response2.headers).end(response2.body);
-  };
-
-  const prepare = (request2, response, response2) => {
-
-    if (Buffer.isBuffer(response2.body) === false) {
-      if (typeof response2.body === 'object') { // application/json; charset=utf-8
-        response2.body = JSON.stringify(response2.body);
-      }
-      if (typeof response2.body === 'string') { // 'text/html; charset=utf-8'
-        response2.body = Buffer.from(response2.body);
-      }
-    }
-
-    if (useCompression === true) {
-      if (request2.headers['accept-encoding'] !== undefined) {
-        if (request2.headers['accept-encoding'].includes('br') === true) {
-          response2.headers['Content-Encoding'] = 'br';
-          zlib.brotliCompress(response2.body, (err, compressedBody) => {
-            response2.body = compressedBody;
-            complete(request2, response, response2);
-          });
-          return;
-        }
-        if (request2.headers['accept-encoding'].includes('gzip') === true) {
-          response2.headers['Content-Encoding'] = 'gzip';
-          zlib.gzip(response2.body, (err, compressedBody) => {
-            response2.body = compressedBody;
-            complete(request2, response, response2);
-          });
-          return;
-        }
-      }
-    }
-
-    complete(request2, response, response2);
-  };
-
-  const error = (request2, response, response2, statusCode, errorCode, errorMessage) => {
-    response2.status = statusCode;
-    response2.body = { error: { status: statusCode, code: errorCode, message: errorMessage, timestamp: new Date().toISOString() } };
-    return prepare(request2, response, response2);
-  };
-
-  const handle = async (request2, response, response2, handlers) => {
-    try {
-      let response3;
-      for (let i = 0, l = handlers.length; i < l; i += 1) {
-        const handler = handlers[i];
-        response3 = await handler(request2, response2);
-        if (response3 === response2) {
-          break;
-        }
-        if (response3 !== undefined) {
-          console.error({ response3 });
-          throw new Error('Invalid handler return type, expecting "response" object or "undefined".');
-        }
-      }
-      if (response3 === undefined) {
-        throw new Error('Invalid handler return type, at least one handler must return the "response" object.');
-      }
-      return prepare(request2, response, response2);
-    } catch (e) {
-      return error(request2, response, response2, 500, 500, `INTERNAL SERVER ERROR. ${e.message}`);
-    }
-  };
+  if (typeof options.useCompression !== 'boolean') {
+    throw new Error('new EndpointServer(options), "options.useCompression" must be a boolean.');
+  }
+  if (Number.isInteger(options.sessionMaxAge) === false || options.sessionMaxAge < 0) {
+    throw new Error('new EndpointServer(options), "options.sessionMaxAge" must be an integer >= 0.');
+  }
 
   const requestListener = async (request, response) => {
 
@@ -180,19 +207,19 @@ function EndpointServer(options) {
       url: url.parse(request.url, true),
     };
     const response2 = {
-      status: 200,
+      code: 200,
       headers: { 'Content-Type': 'application/json' },
       body: {},
     };
 
     if (methods.includes(request2.method) === false) {
-      return error(request2, response, response2, 405, 405, 'METHOD NOT ALLOWED');
+      return prepare(request2, response, response2, options, new HTTPError(405));
     }
 
 
     if (request2.headers.cookie === undefined) {
       request2.sid = crypto.randomBytes(32).toString('hex');
-      if (sessionMaxAge > 0) {
+      if (options.sessionMaxAge > 0) {
         response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.sessionMaxAge}; SameSite=Strict;`;
       } else {
         response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; SameSite=Strict;`;
@@ -201,7 +228,7 @@ function EndpointServer(options) {
       const cookies = cookie.parse(request2.headers.cookie);
       if (cookies.sid === undefined) {
         request2.sid = crypto.randomBytes(32).toString('hex');
-        if (sessionMaxAge > 0) {
+        if (options.sessionMaxAge > 0) {
           response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.sessionMaxAge}; SameSite=Strict;`;
         } else {
           response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; SameSite=Strict;`;
@@ -216,7 +243,7 @@ function EndpointServer(options) {
       if (ext !== '') {
         const dir = dirname(request2.url.pathname);
         if (static_map.has(dir) === false) {
-          return error(request2, response, response2, 404, 404, 'NOT FOUND');
+          return prepare(request2, response, response2, options, new HTTPError(404));
         }
         const dir2 = static_map.get(dir);
 
@@ -226,12 +253,12 @@ function EndpointServer(options) {
         try {
           await fs.promises.access(file_path);
         } catch (e) {
-          return error(request2, response, response2, 404, 404, 'NOT FOUND');
+          return prepare(request2, response, response2, options, new HTTPError(404));
         }
 
         const file_content_type = mime.contentType(file_basename);
         if (file_content_type === false) {
-          return error(request2, response, response2, 400, 400, 'BAD REQUEST');
+          return prepare(request2, response, response2, options, new HTTPError(400));
         }
 
         const file_content_buffer = await fs.promises.readFile(file_path);
@@ -240,7 +267,7 @@ function EndpointServer(options) {
         }
         response2.headers['Content-Type'] = file_content_type;
         response2.body = file_content_buffer;
-        return prepare(request2, response, response2);
+        return prepare(request2, response, response2, options);
       }
     }
 
@@ -268,9 +295,9 @@ function EndpointServer(options) {
               request2.body = JSON.parse(buffer.toString());
               request2.body_buffer = buffer;
             } catch (e) {
-              return error(request2, response, response2, 400, 400, `BAD REQUEST. ${e.message}`);
+              return prepare(request2, response, response2, options, new HTTPError(400));
             }
-            return handle(request2, response, response2, handlers);
+            return handle(request2, response, response2, handlers, options);
           });
           return;
         } else {
@@ -305,17 +332,17 @@ function EndpointServer(options) {
               request2.body[fieldname] = val;
             });
             busboy.on('finish', async () => {
-              return handle(request2, response, response2, handlers);
+              return handle(request2, response, response2, handlers, options);
             });
             return request.pipe(busboy);
           }
         }
       }
 
-      return handle(request2, response, response2, handlers);
+      return handle(request2, response, response2, handlers, options);
     }
 
-    return error(request2, response, response2, 404, 404, 'NOT FOUND');
+    return prepare(request2, response, response2, options, new HTTPError(404));
   };
 
   this.http = (port, callback) => {

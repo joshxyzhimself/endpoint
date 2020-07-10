@@ -90,9 +90,9 @@ http://localhost:8080/auth-test
 #### Usage
 
 ```js
-const EndpointServer = require('endpoint/client');
+const EndpointServer = require('endpoint/server');
 
-const endpoint = new EndpointServer();
+const endpoint = new EndpointServer({});
 
 endpoint.http(8080, () => console.log('Listening at port 8080.'));
 ```
