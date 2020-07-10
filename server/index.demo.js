@@ -1,11 +1,11 @@
 
-// const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const process = require('process');
 const EndpointServer = require('./index');
 
-// const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
+const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
 
 const endpoint = new EndpointServer({
   useCompression: false,
@@ -70,6 +70,62 @@ endpoint.get('/test', (request, response) => {
   return response;
 });
 
+endpoint.get('/client-test', (request, response) => {
+  response.headers['Content-Type'] = 'text/html; charset=utf-8';
+  response.headers['Cache-Control'] = 'no-cache';
+  response.body = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>Client Test</p>
+        <hr />
+        <button onclick="window.test404()">Test 404</button>
+        <hr />
+        <button onclick="window.test405()">Test 405</button>
+        <hr />
+        <button onclick="window.test500()">Test 500</button>
+        <hr />
+        <script>
+          window.test404 = () => {
+            EndpointClient.request({ url: '/error-test-404', method: 'GET' })
+              .then((response) => {
+                console.log('THEN', response);
+              })
+              .catch((response) => {
+                console.error('CATCH', response);
+              });
+          };
+          window.test405 = () => {
+            EndpointClient.request({ url: '/error-test-405', method: 'GET' })
+              .then((response) => {
+                console.log('THEN', response);
+              })
+              .catch((response) => {
+                console.error('CATCH', response);
+              });
+          };
+          window.test500 = () => {
+            EndpointClient.request({ url: '/error-test-500', method: 'GET' })
+              .then((response) => {
+                console.log('THEN', response);
+              })
+              .catch((response) => {
+                console.error('CATCH', response);
+              });
+          };
+          ${client_script}
+        </script>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
 endpoint.get('/auth-test', (request, response) => {
   response.headers['Content-Type'] = 'text/html; charset=utf-8';
   response.headers['Cache-Control'] = 'no-cache';
@@ -108,6 +164,7 @@ endpoint.get('/auth-test', (request, response) => {
               .then(console.log)
               .catch(console.error);
           };
+          ${client_script}
         </script>
       </body>
     </html>
@@ -123,7 +180,7 @@ endpoint.get('/error-test-405', (request, response, HTTPError) => {
   throw new HTTPError(405, 'Error test message.');
 });
 
-endpoint.get('/error-test-500', (request, response, HTTPError) => {
+endpoint.get('/error-test-500', () => {
   return 123; // invalid return value
 });
 
