@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const process = require('process');
-const EndpointServer = require('./index');
+const { EndpointServer, HTTPError } = require('./index');
 
 const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
 
@@ -172,11 +172,11 @@ endpoint.get('/auth-test', (request, response) => {
   return response;
 });
 
-endpoint.get('/error-test-404', (request, response, HTTPError) => {
+endpoint.get('/error-test-404', () => {
   throw new HTTPError(404, 'Error test message.');
 });
 
-endpoint.get('/error-test-405', (request, response, HTTPError) => {
+endpoint.get('/error-test-405', () => {
   throw new HTTPError(405, 'Error test message.');
 });
 

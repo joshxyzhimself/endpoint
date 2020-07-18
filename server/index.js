@@ -107,7 +107,7 @@ const handle = async (request2, response, response2, handlers, options) => {
     let response3;
     for (let i = 0, l = handlers.length; i < l; i += 1) {
       const handler = handlers[i];
-      response3 = await handler(request2, response2, HTTPError);
+      response3 = await handler(request2, response2);
       if (response3 === response2) {
         break;
       }
@@ -360,4 +360,4 @@ function EndpointServer(options) {
   };
 }
 
-module.exports = EndpointServer;
+module.exports = { EndpointServer, HTTPError };
