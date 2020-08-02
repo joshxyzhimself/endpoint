@@ -3,6 +3,8 @@ const qs = require('query-string');
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
+const controller_map = new Map();
+
 const request = async (options) => {
   const url = qs.stringifyUrl({ url: options.url, query: options.query });
 
@@ -14,6 +16,19 @@ const request = async (options) => {
     method: options.method,
     headers: {},
   };
+
+  if (options.id !== undefined) {
+    if (typeof options.id !== 'string' || options.id === '') {
+      throw new Error('fetch(options), "options.id" must be a non-empty string.');
+    }
+    if (controller_map.has(options.id) === true) {
+      const existing_controller = controller_map.get(options.id);
+      existing_controller.abort();
+    }
+    const new_controller = new AbortController();
+    init.signal = new_controller.signal;
+    controller_map.set(options.id, new_controller);
+  }
 
   if (Array.isArray(options.files) === true) {
     const form = new FormData();
@@ -43,8 +58,14 @@ const request = async (options) => {
       case 'application/json': {
         try {
           const response_json = await response.json();
+          if (options.id !== undefined) {
+            controller_map.delete(options.id);
+          }
           return response_json;
         } catch (e) {
+          if (options.id !== undefined) {
+            controller_map.delete(options.id);
+          }
           console.error(e);
           throw new Error(`fetch(options), application/json parsing error. ${e.message}`);
         }
@@ -60,23 +81,35 @@ const request = async (options) => {
           link_element.download = response_blob_filename;
           link_element.click();
           setTimeout(() => window.URL.revokeObjectURL(response_blob_object_url), 250);
+          if (options.id !== undefined) {
+            controller_map.delete(options.id);
+          }
           return {};
         } catch (e) {
+          if (options.id !== undefined) {
+            controller_map.delete(options.id);
+          }
           console.error(e);
           throw new Error(`fetch(options), application/octet-stream parsing error. ${e.message}`);
         }
       }
       default: {
+        if (options.id !== undefined) {
+          controller_map.delete(options.id);
+        }
         throw new Error(`fetch(options), Unexpected response_content_type, got "${response_content_type}"`);
       }
     }
   } catch (e) {
+    if (options.id !== undefined) {
+      controller_map.delete(options.id);
+    }
     console.error(e);
     throw new Error(`fetch(options), Network error. ${e.message}`);
   }
 
 };
 
-const EndpointClient = { request };
+const EndpointClient = { request, controller_map };
 
 module.exports = EndpointClient;
