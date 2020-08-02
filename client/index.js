@@ -9,7 +9,7 @@ const request = async (options) => {
   const url = qs.stringifyUrl({ url: options.url, query: options.query });
 
   if (methods.includes(options.method) === false) {
-    throw new Error('fetch(options), Invalid method.');
+    throw new Error('request(options), Invalid method.');
   }
 
   const init = {
@@ -19,7 +19,7 @@ const request = async (options) => {
 
   if (options.id !== undefined) {
     if (typeof options.id !== 'string' || options.id === '') {
-      throw new Error('fetch(options), "options.id" must be a non-empty string.');
+      throw new Error('request(options), "options.id" must be a non-empty string.');
     }
     if (controller_map.has(options.id) === true) {
       const existing_controller = controller_map.get(options.id);
@@ -51,7 +51,7 @@ const request = async (options) => {
     const response_content_type = response.headers.get('content-type');
 
     if (typeof response_content_type !== 'string') {
-      throw new Error('fetch(options), response_content_type must be a string.');
+      throw new Error('request(options), response_content_type must be a string.');
     }
 
     switch (response_content_type) {
@@ -67,7 +67,7 @@ const request = async (options) => {
             controller_map.delete(options.id);
           }
           console.error(e);
-          throw new Error(`fetch(options), application/json parsing error. ${e.message}`);
+          throw new Error(`request(options), application/json parsing error. ${e.message}`);
         }
       }
       case 'application/octet-stream': {
@@ -90,22 +90,25 @@ const request = async (options) => {
             controller_map.delete(options.id);
           }
           console.error(e);
-          throw new Error(`fetch(options), application/octet-stream parsing error. ${e.message}`);
+          throw new Error(`request(options), application/octet-stream parsing error. ${e.message}`);
         }
       }
       default: {
         if (options.id !== undefined) {
           controller_map.delete(options.id);
         }
-        throw new Error(`fetch(options), Unexpected response_content_type, got "${response_content_type}"`);
+        throw new Error(`request(options), Unexpected response_content_type, got "${response_content_type}"`);
       }
     }
   } catch (e) {
     if (options.id !== undefined) {
       controller_map.delete(options.id);
     }
+    if (e.name === 'AbortError') {
+      throw e;
+    }
     console.error(e);
-    throw new Error(`fetch(options), Network error. ${e.message}`);
+    throw new Error(`request(options), Network error. ${e.message}`);
   }
 
 };
