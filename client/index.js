@@ -24,6 +24,7 @@ const request = async (options) => {
     if (controller_map.has(options.id) === true) {
       const existing_controller = controller_map.get(options.id);
       existing_controller.abort();
+      controller_map.delete(options.id);
     }
     const new_controller = new AbortController();
     init.signal = new_controller.signal;
@@ -101,9 +102,6 @@ const request = async (options) => {
       }
     }
   } catch (e) {
-    if (options.id !== undefined) {
-      controller_map.delete(options.id);
-    }
     if (e.name === 'AbortError') {
       throw e;
     }
