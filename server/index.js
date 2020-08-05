@@ -217,7 +217,7 @@ function EndpointServer(options) {
     }
 
     if (ip.substring(0, 7) === '::ffff:' && is_ip.v4(ip.substring(8)) === true) {
-      ip = ip.substring(8);
+      ip = ip.substring(7);
     }
 
     let ua = '';
