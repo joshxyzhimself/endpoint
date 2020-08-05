@@ -11,6 +11,7 @@ const mime = require('mime-types');
 const cookie = require('cookie');
 const Busboy = require('busboy');
 const statuses = require('statuses');
+const is_ip = require('is-ip');
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
@@ -200,16 +201,33 @@ function EndpointServer(options) {
 
   const requestListener = async (request, response) => {
 
+    let ip = '';
+    if (typeof request.connection === 'object') {
+      if (typeof request.connection.remoteAddress === 'string' && is_ip(request.connection.remoteAddress) === true) {
+        ip = request.connection.remoteAddress;
+      } else if (typeof request.connection.socket === 'object') {
+        if (typeof request.connection.socket.remoteAddress === 'string' && is_ip(request.connection.remoteAddress) === true) {
+          ip = request.connection.socket.remoteAddress;
+        }
+      }
+    } else if (typeof request.socket === 'object') {
+      if (typeof request.socket.remoteAddress === 'string' && is_ip(request.connection.remoteAddress) === true) {
+        ip = request.socket.remoteAddress;
+      }
+    }
+
     const request2 = {
-      is_encrypted: request.socket.encrypted === true,
+      ip,
+      encrypted: request.socket.encrypted === true,
       method: request.method,
       headers: request.headers,
-      url: url.parse(request.url, true),
+      url: url.parse(request.url, true)
     };
+
     const response2 = {
       code: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: {},
+      body: {}
     };
 
     if (methods.includes(request2.method) === false) {
