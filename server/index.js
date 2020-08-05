@@ -216,6 +216,10 @@ function EndpointServer(options) {
       }
     }
 
+    if (ip.substring(0,7) === '::ffff:' && is_ip.v4(ip.substring(8)) === true) {
+      ip = ip.substring(8);
+    }
+
     let ua = '';
     if (typeof request.headers['user-agent'] === 'string') {
       ua = request.headers['user-agent'];
