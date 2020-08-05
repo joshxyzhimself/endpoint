@@ -216,8 +216,14 @@ function EndpointServer(options) {
       }
     }
 
+    let ua = '';
+    if (typeof request.headers['user-agent'] === 'string') {
+      ua = request.headers['user-agent'];
+    }
+
     const request2 = {
       ip,
+      ua,
       encrypted: request.socket.encrypted === true,
       method: request.method,
       headers: request.headers,
