@@ -12,7 +12,7 @@ const cookie = require('cookie');
 const Busboy = require('busboy');
 const statuses = require('statuses');
 const is_ip = require('is-ip');
-const WebSocket = require('web_socket_client');
+const WebSocket = require('ws');
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
