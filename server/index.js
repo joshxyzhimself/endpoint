@@ -12,6 +12,7 @@ const cookie = require('cookie');
 const Busboy = require('busboy');
 const statuses = require('statuses');
 const is_ip = require('is-ip');
+const WebSocket = require('web_socket_client');
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
@@ -128,6 +129,38 @@ const handle = async (request2, response, response2, handlers, options) => {
   }
 };
 
+const get_request_ip_address = (request) => {
+  let ip = '';
+
+  if (typeof request.socket === 'object' && typeof request.socket.remoteAddress === 'string') {
+    const temp_ip = request.socket.remoteAddress;
+    if (is_ip(temp_ip) === true) {
+      ip = temp_ip;
+    }
+  }
+
+  if (typeof request.headers['x-forwarded-for'] === 'string') {
+    const temp_ip = request.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+    if (is_ip(temp_ip) === true) {
+      ip = temp_ip;
+    }
+  }
+
+  if (ip.substring(0, 7) === '::ffff:' && is_ip.v4(ip.substring(8)) === true) {
+    ip = ip.substring(7);
+  }
+
+  return ip;
+};
+
+const get_request_user_agent = (request) => {
+  let ua = '';
+  if (typeof request.headers['user-agent'] === 'string') {
+    ua = request.headers['user-agent'];
+  }
+  return ua;
+};
+
 function EndpointServer(options) {
 
   const endpoint = this;
@@ -201,29 +234,8 @@ function EndpointServer(options) {
 
   const requestListener = async (request, response) => {
 
-    let ip = '';
-    if (typeof request.connection === 'object') {
-      if (typeof request.connection.remoteAddress === 'string' && is_ip(request.connection.remoteAddress) === true) {
-        ip = request.connection.remoteAddress;
-      } else if (typeof request.connection.socket === 'object') {
-        if (typeof request.connection.socket.remoteAddress === 'string' && is_ip(request.connection.remoteAddress) === true) {
-          ip = request.connection.socket.remoteAddress;
-        }
-      }
-    } else if (typeof request.socket === 'object') {
-      if (typeof request.socket.remoteAddress === 'string' && is_ip(request.connection.remoteAddress) === true) {
-        ip = request.socket.remoteAddress;
-      }
-    }
-
-    if (ip.substring(0, 7) === '::ffff:' && is_ip.v4(ip.substring(8)) === true) {
-      ip = ip.substring(7);
-    }
-
-    let ua = '';
-    if (typeof request.headers['user-agent'] === 'string') {
-      ua = request.headers['user-agent'];
-    }
+    const ip = get_request_ip_address(request);
+    const ua = get_request_user_agent(request);
 
     const request2 = {
       ip,
@@ -384,6 +396,25 @@ function EndpointServer(options) {
     const server = https.createServer({ key, cert, ca }, requestListener);
     server.on('close', () => console.error('Server closed'));
     server.on('error', (e) => console.error('Server error', e.message));
+    if (options.useWebSocket === true && typeof options.onWebSocketConnection === 'function') {
+      const web_socket_server = new WebSocket.Server({ server });
+      const isAlive = new WeakMap();
+      web_socket_server.on('connection', async (web_socket_client, request) => {
+        web_socket_client.ip = get_request_ip_address(request);
+        web_socket_client.ua = get_request_user_agent(request);
+        isAlive.set(web_socket_client, true);
+        web_socket_client.on('pong', () => isAlive.set(web_socket_client, true));
+        options.onWebSocketConnection(web_socket_client, web_socket_server);
+      });
+      setInterval(() => web_socket_server.clients.forEach((web_socket_client) => {
+        if (isAlive.get(web_socket_client) === false) {
+          web_socket_client.terminate();
+          return;
+        }
+        isAlive.set(web_socket_client, false);
+        web_socket_client.ping(() => {});
+      }), 30000);
+    }
     server.listen(port, callback);
   };
 }

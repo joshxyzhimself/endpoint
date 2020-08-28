@@ -27,6 +27,7 @@
     "is-ip": "^3.1.0",
     "mime-types": "^2.1.27",
     "query-string": "^6.13.1",
-    "statuses": "^2.0.0"
+    "statuses": "^2.0.0",
+    "ws": "^7.3.1"
   }
 }
