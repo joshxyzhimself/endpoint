@@ -80,7 +80,7 @@ const prepare = (request2, response, response2, options, error) => {
     }
   }
 
-  if (options.useCompression === true) {
+  if (options.use_compression === true) {
     if (request2.headers['accept-encoding'] !== undefined) {
       if (request2.headers['accept-encoding'].includes('br') === true) {
         response2.headers['Content-Encoding'] = 'br';
@@ -225,11 +225,14 @@ function EndpointServer(options) {
   if (typeof options !== 'object' || options === null) {
     throw new Error('new EndpointServer(options), "options" must be a plain object.');
   }
-  if (typeof options.useCompression !== 'boolean') {
-    throw new Error('new EndpointServer(options), "options.useCompression" must be a boolean.');
+  if (typeof options.use_compression !== 'boolean') {
+    throw new Error('new EndpointServer(options), "options.use_compression" must be a boolean.');
   }
-  if (Number.isInteger(options.sessionMaxAge) === false || options.sessionMaxAge < 0) {
-    throw new Error('new EndpointServer(options), "options.sessionMaxAge" must be an integer >= 0.');
+  if (Number.isInteger(options.session_max_age) === false || options.session_max_age < 0) {
+    throw new Error('new EndpointServer(options), "options.session_max_age" must be an integer >= 0.');
+  }
+  if (typeof options.use_websocket !== 'boolean') {
+    throw new Error('new EndpointServer(options), "options.use_websocket" must be a boolean.');
   }
 
   const requestListener = async (request, response) => {
@@ -259,8 +262,8 @@ function EndpointServer(options) {
 
     if (request2.headers.cookie === undefined) {
       request2.sid = crypto.randomBytes(32).toString('hex');
-      if (options.sessionMaxAge > 0) {
-        response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.sessionMaxAge}; SameSite=Strict;`;
+      if (options.session_max_age > 0) {
+        response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.session_max_age}; SameSite=Strict;`;
       } else {
         response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; SameSite=Strict;`;
       }
@@ -268,8 +271,8 @@ function EndpointServer(options) {
       const cookies = cookie.parse(request2.headers.cookie);
       if (cookies.sid === undefined) {
         request2.sid = crypto.randomBytes(32).toString('hex');
-        if (options.sessionMaxAge > 0) {
-          response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.sessionMaxAge}; SameSite=Strict;`;
+        if (options.session_max_age > 0) {
+          response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; Max-Age=${options.session_max_age}; SameSite=Strict;`;
         } else {
           response2.headers['Set-Cookie'] = `sid=${request2.sid}; Path=/; SameSite=Strict;`;
         }
@@ -385,37 +388,47 @@ function EndpointServer(options) {
     return prepare(request2, response, response2, options, new HTTPError(404));
   };
 
+  this.http_server = null;
   this.http = (port, callback) => {
-    const server = http.createServer(requestListener);
-    server.on('close', () => console.error('Server closed'));
-    server.on('error', (e) => console.error('Server error', e.message));
-    server.listen(port, callback);
+    const http_server = http.createServer(requestListener);
+    http_server.on('close', () => console.error('Server closed'));
+    http_server.on('error', (e) => console.error('Server error', e.message));
+    http_server.listen(port, callback);
+    this.http_server = http_server;
   };
 
+  this.https_server = null;
+  this.websocket_server = null;
   this.https = (port, key, cert, ca, callback) => {
-    const server = https.createServer({ key, cert, ca }, requestListener);
-    server.on('close', () => console.error('Server closed'));
-    server.on('error', (e) => console.error('Server error', e.message));
-    if (options.useWebSocket === true && typeof options.onWebSocketConnection === 'function') {
-      const web_socket_server = new WebSocket.Server({ server });
-      const isAlive = new WeakMap();
-      web_socket_server.on('connection', async (web_socket_client, request) => {
-        web_socket_client.ip = get_request_ip_address(request);
-        web_socket_client.ua = get_request_user_agent(request);
-        isAlive.set(web_socket_client, true);
-        web_socket_client.on('pong', () => isAlive.set(web_socket_client, true));
-        options.onWebSocketConnection(web_socket_client, web_socket_server);
+    const https_server = https.createServer({ key, cert, ca }, requestListener);
+    https_server.on('close', () => console.error('Server closed'));
+    https_server.on('error', (e) => console.error('Server error', e.message));
+    if (options.use_websocket === true && typeof options.on_websocket_connection === 'function') {
+      const websocket_server = new WebSocket.Server({ server: https_server });
+      const websocket_client_is_alive = new WeakMap();
+      websocket_server.on('connection', async (websocket_client, request) => {
+        websocket_client.ip = get_request_ip_address(request);
+        websocket_client.ua = get_request_user_agent(request);
+        websocket_client_is_alive.set(websocket_client, true);
+        websocket_client.on('pong', () => websocket_client_is_alive.set(websocket_client, true));
+        options.on_websocket_connection(websocket_client);
       });
-      setInterval(() => web_socket_server.clients.forEach((web_socket_client) => {
-        if (isAlive.get(web_socket_client) === false) {
-          web_socket_client.terminate();
+      setInterval(() => websocket_server.clients.forEach((websocket_client) => {
+        if (websocket_client_is_alive.get(websocket_client) === false) {
+          websocket_client.terminate();
           return;
         }
-        isAlive.set(web_socket_client, false);
-        web_socket_client.ping(() => {});
+        websocket_client_is_alive.set(websocket_client, false);
+        try {
+          websocket_client.ping(() => {});
+        } catch (e) {
+          console.error(e);
+        }
       }), 30000);
+      this.websocket_server = websocket_server;
     }
-    server.listen(port, callback);
+    https_server.listen(port, callback);
+    this.https_server = https_server;
   };
 }
 

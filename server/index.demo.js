@@ -8,8 +8,9 @@ const { EndpointServer, HTTPError } = require('./index');
 const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
 
 const endpoint = new EndpointServer({
-  useCompression: false,
-  sessionMaxAge: 0,
+  use_compression: false,
+  session_max_age: 0,
+  use_websocket: false,
 });
 
 // Cache-Control: no-store
