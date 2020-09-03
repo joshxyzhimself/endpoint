@@ -17,8 +17,15 @@ const WebSocket = require('ws');
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
 class HTTPError extends Error {
-  constructor (code, ...params) {
-    super(params);
+  constructor (code, message) {
+    super(message);
+
+    if (Number.isInteger(code) === false) {
+      throw new Error('new HTTPError(code, message), "code" must be an integer.');
+    }
+    if (typeof message !== 'string') {
+      throw new Error('new HTTPError(code, message), "message" must be a string.');
+    }
 
     if (typeof Error.captureStackTrace === 'function') {
       Error.captureStackTrace(this, HTTPError);
@@ -39,6 +46,20 @@ class HTTPError extends Error {
         timestamp: new Date().toISOString(),
       }
     };
+  }
+  static assert(value, code, message) {
+    if (typeof value !== 'boolean') {
+      throw new Error('HTTPError.assert(value, code, message), "value" must be a boolean.');
+    }
+    if (Number.isInteger(code) === false) {
+      throw new Error('HTTPError.assert(value, code, message), "code" must be an integer.');
+    }
+    if (typeof message !== 'string') {
+      throw new Error('HTTPError.assert(value, code, message), "message" must be a boolean.');
+    }
+    if (value === false) {
+      throw new HTTPError(code, message);
+    }
   }
 }
 
