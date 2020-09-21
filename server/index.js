@@ -14,7 +14,7 @@ const statuses = require('statuses');
 const is_ip = require('is-ip');
 const WebSocket = require('ws');
 
-const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
+const http_methods = new Set(['HEAD', 'GET', 'POST', 'PUT', 'DELETE']);
 
 class HTTPError extends Error {
   constructor (code, message) {
@@ -220,20 +220,20 @@ function EndpointServer(config) {
 
   const routes_map = new Map();
 
-  methods.forEach((method) => {
+  http_methods.forEach((http_method) => {
     const route_map = new Map();
-    endpoint[method.toLowerCase()] = (path, handler) => {
+    endpoint[http_method.toLowerCase()] = (path, handler) => {
       if (typeof path !== 'string') {
-        throw new Error('EndpointServer.method(path, handler), "path" must be a string.');
+        throw new Error('EndpointServer.http_method(path, handler), "path" must be a string.');
       }
       if (typeof handler !== 'function') {
-        throw new Error('EndpointServer.method(path, handler), "handler" must be a function.');
+        throw new Error('EndpointServer.http_method(path, handler), "handler" must be a function.');
       }
       if (path !== '*' && path.substring(0, 1) !== '/') {
-        throw new Error('EndpointServer.method(path, handler), "path" must have leading slash.');
+        throw new Error('EndpointServer.http_method(path, handler), "path" must have leading slash.');
       }
       if (path.length > 1 && path.substring(path.length - 1, path.length) === '/') {
-        throw new Error('EndpointServer.method(path, handler), "path" must not have trailing slash.');
+        throw new Error('EndpointServer.http_method(path, handler), "path" must not have trailing slash.');
       }
       if (route_map.has(path) === false) {
         route_map.set(path, [handler]);
@@ -241,7 +241,7 @@ function EndpointServer(config) {
         route_map.get(path).push(handler);
       }
     };
-    routes_map.set(method, route_map);
+    routes_map.set(http_method, route_map);
   });
 
   if (typeof config !== 'object' || config === null) {
@@ -280,7 +280,7 @@ function EndpointServer(config) {
       body: {}
     };
 
-    if (methods.includes(endpoint_request.method) === false) {
+    if (http_methods.has(endpoint_request.method) === false) {
       return prepare_response(endpoint_request, raw_response, endpoint_response, config, new HTTPError(405));
     }
 
@@ -342,6 +342,8 @@ function EndpointServer(config) {
 
     let handlers = route_map.get(endpoint_request.url.pathname);
 
+    // catch-all "*" for HEAD and GET does not affect explicit GET routes
+    // this means middlewares for catch-all "*" and explicit GET routes are applied separately
     if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
       if (handlers === undefined) {
         handlers = route_map.get('*');
