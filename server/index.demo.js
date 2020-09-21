@@ -11,6 +11,7 @@ const endpoint = new EndpointServer({
   use_compression: false,
   session_max_age: 0,
   use_websocket: false,
+  use_stack_trace: false,
 });
 
 // Cache-Control: no-store
