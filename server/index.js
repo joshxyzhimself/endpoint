@@ -190,31 +190,31 @@ function EndpointServer(config) {
   const static_map = new Map();
   const cache_control_map = new Map();
 
-  endpoint.static = (dir, dir2, cacheControl) => {
-    if (typeof dir !== 'string') {
-      throw new Error('EndpointServer.static(dir, dir2, cacheControl), "dir" must be a string.');
+  endpoint.static = (endpoint_directory, local_directory, cache_control) => {
+    if (typeof endpoint_directory !== 'string') {
+      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "dir" must be a string.');
     }
-    if (dir.substring(0, 1) !== '/') {
-      throw new Error('EndpointServer.static(dir, dir2, cacheControl), "dir" must have leading slash.');
+    if (endpoint_directory.substring(0, 1) !== '/') {
+      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "dir" must have leading slash.');
     }
-    if (dir.length > 1 && dir.substring(dir.length - 1, dir.length) === '/') {
-      throw new Error('EndpointServer.static(dir, dir2, cacheControl), "dir" must not have trailing slash.');
+    if (endpoint_directory.length > 1 && endpoint_directory.substring(endpoint_directory.length - 1, endpoint_directory.length) === '/') {
+      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "dir" must not have trailing slash.');
     }
-    if (typeof dir2 !== 'string') {
-      throw new Error('EndpointServer.static(dir, dir2, cacheControl), "dir2" must be a string.');
+    if (typeof local_directory !== 'string') {
+      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "local_directory" must be a string.');
     }
-    if (dir2.substring(0, 1) !== '/') {
-      throw new Error('EndpointServer.static(dir, dir2, cacheControl), "dir2" must have leading slash.');
+    if (local_directory.substring(0, 1) !== '/') {
+      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "local_directory" must have leading slash.');
     }
-    if (dir2.length > 1 && dir2.substring(dir2.length - 1, dir2.length) === '/') {
-      throw new Error('EndpointServer.static(dir, dir2, cacheControl), "dir2" must not have trailing slash.');
+    if (local_directory.length > 1 && local_directory.substring(local_directory.length - 1, local_directory.length) === '/') {
+      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "local_directory" must not have trailing slash.');
     }
-    if (cacheControl !== undefined && typeof cacheControl !== 'string') {
-      throw new Error('EndpointServer.static(dir, dir2, cacheControl), "cacheControl" must be a string.');
+    if (cache_control !== undefined && typeof cache_control !== 'string') {
+      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "cache_control" must be a string.');
     }
-    static_map.set(dir, dir2);
-    if (cacheControl !== undefined) {
-      cache_control_map.set(dir, cacheControl);
+    static_map.set(endpoint_directory, local_directory);
+    if (cache_control !== undefined) {
+      cache_control_map.set(endpoint_directory, cache_control);
     }
   };
 
@@ -308,14 +308,14 @@ function EndpointServer(config) {
     if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
       const ext = extname(endpoint_request.url.pathname);
       if (ext !== '') {
-        const dir = dirname(endpoint_request.url.pathname);
-        if (static_map.has(dir) === false) {
+        const endpoint_directory = dirname(endpoint_request.url.pathname);
+        if (static_map.has(endpoint_directory) === false) {
           return prepare_response(endpoint_request, raw_response, endpoint_response, config, new HTTPError(404));
         }
-        const dir2 = static_map.get(dir);
+        const local_directory = static_map.get(endpoint_directory);
 
         const file_basename = basename(endpoint_request.url.pathname);
-        const file_path = join(dir2, file_basename);
+        const file_path = join(local_directory, file_basename);
 
         try {
           await fs.promises.access(file_path);
@@ -329,8 +329,8 @@ function EndpointServer(config) {
         }
 
         const file_content_buffer = await fs.promises.readFile(file_path);
-        if (cache_control_map.has(dir) === true) {
-          endpoint_response.headers['Cache-Control'] = cache_control_map.get(dir);
+        if (cache_control_map.has(endpoint_directory) === true) {
+          endpoint_response.headers['Cache-Control'] = cache_control_map.get(endpoint_directory);
         }
         endpoint_response.headers['Content-Type'] = file_content_type;
         endpoint_response.body = file_content_buffer;
