@@ -9,6 +9,7 @@ const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.ii
 
 const endpoint = new EndpointServer({
   use_compression: false,
+  use_session_id: false,
   session_max_age: 0,
   use_websocket: false,
   use_stack_trace: false,
@@ -68,7 +69,7 @@ endpoint.get('*', (request, response) => {
 });
 
 endpoint.get('/test', (request, response) => {
-  response.body = { ...request.url.query };
+  response.body = { request };
   return response;
 });
 

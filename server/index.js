@@ -70,14 +70,16 @@ const send_response = (endpoint_request, raw_response, endpoint_response) => {
     delete endpoint_response.body;
   }
 
-  if (endpoint_response.headers['Cache-Control'] === undefined) {
-    endpoint_response.headers['Cache-Control'] = 'no-store';
-  } else if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
-    endpoint_response.headers['ETag'] = crypto.createHash('sha256').update(endpoint_response.body).digest('hex');
-    if (endpoint_request.headers['if-none-match'] !== undefined) {
-      if (endpoint_request.headers['if-none-match'] === endpoint_response.headers['ETag']) {
-        endpoint_response.code = 304;
-        delete endpoint_response.body;
+  if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
+    if (endpoint_response.headers['Cache-Control'] === undefined) {
+      endpoint_response.headers['Cache-Control'] = 'no-store';
+    } else if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
+      endpoint_response.headers['ETag'] = crypto.createHash('sha256').update(endpoint_response.body).digest('hex');
+      if (endpoint_request.headers['if-none-match'] !== undefined) {
+        if (endpoint_request.headers['if-none-match'] === endpoint_response.headers['ETag']) {
+          endpoint_response.code = 304;
+          delete endpoint_response.body;
+        }
       }
     }
   }
@@ -185,6 +187,25 @@ const get_request_user_agent = (raw_request) => {
 
 function EndpointServer(config) {
 
+  if (typeof config !== 'object' || config === null) {
+    throw new Error('new EndpointServer(config), "config" must be an object.');
+  }
+  if (typeof config.use_compression !== 'boolean') {
+    throw new Error('new EndpointServer(config), "config.use_compression" must be a boolean.');
+  }
+  if (typeof config.use_session_id !== 'boolean') {
+    throw new Error('new EndpointServer(config), "config.use_session_id" must be a boolean.');
+  }
+  if (Number.isInteger(config.session_max_age) === false || config.session_max_age < 0) {
+    throw new Error('new EndpointServer(config), "config.session_max_age" must be an integer >= 0.');
+  }
+  if (typeof config.use_websocket !== 'boolean') {
+    throw new Error('new EndpointServer(config), "config.use_websocket" must be a boolean.');
+  }
+  if (typeof config.use_stack_trace !== 'boolean') {
+    throw new Error('new EndpointServer(config), "config.use_stack_trace" must be a boolean.');
+  }
+
   const endpoint = this;
 
   const static_map = new Map();
@@ -244,22 +265,6 @@ function EndpointServer(config) {
     routes_map.set(http_method, route_map);
   });
 
-  if (typeof config !== 'object' || config === null) {
-    throw new Error('new EndpointServer(config), "config" must be an object.');
-  }
-  if (typeof config.use_compression !== 'boolean') {
-    throw new Error('new EndpointServer(config), "config.use_compression" must be a boolean.');
-  }
-  if (Number.isInteger(config.session_max_age) === false || config.session_max_age < 0) {
-    throw new Error('new EndpointServer(config), "config.session_max_age" must be an integer >= 0.');
-  }
-  if (typeof config.use_websocket !== 'boolean') {
-    throw new Error('new EndpointServer(config), "config.use_websocket" must be a boolean.');
-  }
-  if (typeof config.use_stack_trace !== 'boolean') {
-    throw new Error('new EndpointServer(config), "config.use_stack_trace" must be a boolean.');
-  }
-
   const request_listener = async (raw_request, raw_response) => {
 
     const ip = get_request_ip_address(raw_request);
@@ -271,7 +276,8 @@ function EndpointServer(config) {
       encrypted: raw_request.socket.encrypted === true,
       method: raw_request.method,
       headers: raw_request.headers,
-      url: url.parse(raw_request.url, true)
+      url: url.parse(raw_request.url, true),
+      sid: null,
     };
 
     const endpoint_response = {
@@ -284,16 +290,8 @@ function EndpointServer(config) {
       return prepare_response(endpoint_request, raw_response, endpoint_response, config, new HTTPError(405));
     }
 
-    if (endpoint_request.headers.cookie === undefined) {
-      endpoint_request.sid = crypto.randomBytes(32).toString('hex');
-      if (config.session_max_age > 0) {
-        endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; Max-Age=${config.session_max_age}; SameSite=Strict;`;
-      } else {
-        endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
-      }
-    } else {
-      const cookies = cookie.parse(endpoint_request.headers.cookie);
-      if (cookies.sid === undefined) {
+    if (config.use_session_id === true) {
+      if (endpoint_request.headers.cookie === undefined) {
         endpoint_request.sid = crypto.randomBytes(32).toString('hex');
         if (config.session_max_age > 0) {
           endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; Max-Age=${config.session_max_age}; SameSite=Strict;`;
@@ -301,7 +299,17 @@ function EndpointServer(config) {
           endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
         }
       } else {
-        endpoint_request.sid = cookies.sid;
+        const cookies = cookie.parse(endpoint_request.headers.cookie);
+        if (cookies.sid === undefined) {
+          endpoint_request.sid = crypto.randomBytes(32).toString('hex');
+          if (config.session_max_age > 0) {
+            endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; Max-Age=${config.session_max_age}; SameSite=Strict;`;
+          } else {
+            endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
+          }
+        } else {
+          endpoint_request.sid = cookies.sid;
+        }
       }
     }
 
