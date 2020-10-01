@@ -91,7 +91,7 @@ const request = async (options) => {
           if (options.controller_id !== undefined) {
             controller_map.delete(options.controller_id);
           }
-          return { response_blob, response_blob_filename  };
+          return { response_blob, response_blob_filename };
         } catch (e) {
           if (options.controller_id !== undefined) {
             controller_map.delete(options.controller_id);
@@ -132,6 +132,6 @@ const download_response_blob = (response_blob, response_blob_filename) => {
   setTimeout(() => window.URL.revokeObjectURL(response_blob_object_url), 250);
 };
 
-const EndpointClient = { request, download_response_blob, controller_map  };
+const EndpointClient = { request, download_response_blob, controller_map };
 
 module.exports = EndpointClient;

@@ -34,9 +34,20 @@ class HTTPError extends Error {
     this.code = code;
     this.status = statuses.message[code] || 'Unknown';
   }
-  response_headers () {
-    return { 'Content-Type': 'application/json' };
+
+  response_headers (config) {
+    return {
+      'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload;',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': config.referrer_policy, // can be "no-referrer" or "same-origin"
+      'X-DNS-Prefetch-Control': config.x_dns_prefetch_control, // can be "off" on "on"
+      'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
+      'Content-Type': 'application/json',
+    };
   }
+
   response_body (config) {
     return {
       error: {
@@ -48,6 +59,7 @@ class HTTPError extends Error {
       }
     };
   }
+
   static assert(value, code, message) {
     if (typeof value !== 'boolean') {
       throw new Error('HTTPError.assert(value, code, message), "value" must be a boolean.');
@@ -185,6 +197,9 @@ const get_request_user_agent = (raw_request) => {
   return ua;
 };
 
+const referrer_policies = new Set(['no-referrer', 'same-origin']);
+const x_dns_prefetch_controls = new Set(['off', 'on']);
+
 function EndpointServer(config) {
 
   if (typeof config !== 'object' || config === null) {
@@ -205,6 +220,13 @@ function EndpointServer(config) {
   if (typeof config.use_stack_trace !== 'boolean') {
     throw new Error('new EndpointServer(config), "config.use_stack_trace" must be a boolean.');
   }
+  if (typeof config.referrer_policy !== 'string' || referrer_policies.has(config.referrer_policy) === false) {
+    throw new Error('new EndpointServer(config), "config.referrer_policy" must be "no-referrer" or "same-origin"');
+  }
+  if (typeof config.x_dns_prefetch_control !== 'string' || x_dns_prefetch_controls.has(config.x_dns_prefetch_control) === false) {
+    throw new Error('new EndpointServer(config), "config.x_dns_prefetch_control" must be "off" or "on"');
+  }
+
 
   const endpoint = this;
 
@@ -282,7 +304,16 @@ function EndpointServer(config) {
 
     const endpoint_response = {
       code: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload;',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'no-referrer', // can be "same-origin"
+        'X-DNS-Prefetch-Control': 'off', // can be "on"
+        'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
+        'Content-Type': 'application/json',
+      },
       body: {}
     };
 
@@ -293,19 +324,23 @@ function EndpointServer(config) {
     if (config.use_session_id === true) {
       if (endpoint_request.headers.cookie === undefined) {
         endpoint_request.sid = crypto.randomBytes(32).toString('hex');
+        endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
         if (config.session_max_age > 0) {
-          endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; Max-Age=${config.session_max_age}; SameSite=Strict;`;
-        } else {
-          endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
+          endpoint_response.headers['Set-Cookie'] += ` Max-Age=${config.session_max_age};`;
+        }
+        if (endpoint_request.encrypted === true) {
+          endpoint_response.headers['Set-Cookie'] += ' Secure;';
         }
       } else {
         const cookies = cookie.parse(endpoint_request.headers.cookie);
         if (cookies.sid === undefined) {
           endpoint_request.sid = crypto.randomBytes(32).toString('hex');
+          endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
           if (config.session_max_age > 0) {
-            endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; Max-Age=${config.session_max_age}; SameSite=Strict;`;
-          } else {
-            endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
+            endpoint_response.headers['Set-Cookie'] += `Max-Age=${config.session_max_age};`;
+          }
+          if (endpoint_request.encrypted === true) {
+            endpoint_response.headers['Set-Cookie'] += ' Secure;';
           }
         } else {
           endpoint_request.sid = cookies.sid;

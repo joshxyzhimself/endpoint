@@ -11,6 +11,8 @@ const endpoint = new EndpointServer({
   session_max_age: 0,
   use_websocket: false,
   use_stack_trace: false,
+  referrer_policy: 'no-referrer',
+  x_dns_prefetch_control: 'off',
 });
 
 // Cache-Control: no-store
