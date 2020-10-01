@@ -103,7 +103,7 @@ const prepare_response = (endpoint_request, raw_response, endpoint_response, con
 
   if (error instanceof HTTPError) {
     endpoint_response.code = error.code;
-    endpoint_response.headers = error.response_headers();
+    endpoint_response.headers = error.response_headers(config);
     endpoint_response.body = error.response_body(config);
   }
 
@@ -120,16 +120,16 @@ const prepare_response = (endpoint_request, raw_response, endpoint_response, con
     if (endpoint_request.headers['accept-encoding'] !== undefined) {
       if (endpoint_request.headers['accept-encoding'].includes('br') === true) {
         endpoint_response.headers['Content-Encoding'] = 'br';
-        zlib.brotliCompress(endpoint_response.body, (err, compressedBody) => {
-          endpoint_response.body = compressedBody;
+        zlib.brotliCompress(endpoint_response.body, (err, compressed_output) => {
+          endpoint_response.body = compressed_output;
           send_response(endpoint_request, raw_response, endpoint_response);
         });
         return;
       }
       if (endpoint_request.headers['accept-encoding'].includes('gzip') === true) {
         endpoint_response.headers['Content-Encoding'] = 'gzip';
-        zlib.gzip(endpoint_response.body, (err, compressedBody) => {
-          endpoint_response.body = compressedBody;
+        zlib.gzip(endpoint_response.body, (err, compressed_output) => {
+          endpoint_response.body = compressed_output;
           send_response(endpoint_request, raw_response, endpoint_response);
         });
         return;
