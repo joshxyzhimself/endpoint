@@ -5,7 +5,7 @@ const zlib = require('zlib');
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
-const { extname, dirname, basename, join } = require('path');
+const { extname, dirname, basename, join, isAbsolute } = require('path');
 
 const mime = require('mime-types');
 const cookie = require('cookie');
@@ -466,4 +466,16 @@ function EndpointServer(config) {
   };
 }
 
-module.exports = { EndpointServer, HTTPError };
+const cwd = process.cwd();
+
+const path_from_cwd = (path) => {
+  if (typeof path !== 'string') {
+    throw new Error('path_from_cwd(path), "path" must be a string.');
+  }
+  if (isAbsolute(path) === false) {
+    throw new Error('path_from_cwd(path), "path" must be an absolute path.');
+  }
+  return join(cwd, path);
+};
+
+module.exports = { EndpointServer, HTTPError, path_from_cwd };

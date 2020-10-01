@@ -1,11 +1,9 @@
 
 const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
-const process = require('process');
-const { EndpointServer, HTTPError } = require('./index');
+const { EndpointServer, HTTPError, path_from_cwd } = require('./index');
 
-const client_script = fs.readFileSync(path.join(process.cwd(), '/client/index.iife.js'));
+const client_script = fs.readFileSync(path_from_cwd('/client/index.iife.js'));
 
 const endpoint = new EndpointServer({
   use_compression: false,
@@ -26,8 +24,8 @@ const endpoint = new EndpointServer({
 
 // http://localhost:8080/favicon.ico
 // http://localhost:8080/images/capoo.jpeg
-endpoint.static('/', path.join(process.cwd(), '/static'), 'no-cache');
-endpoint.static('/images', path.join(process.cwd(), '/static/images'), 'private, max-age=3600, s-maxage=3600');
+endpoint.static('/', path_from_cwd('/static'), 'no-cache');
+endpoint.static('/images', path_from_cwd('/static/images'), 'private, max-age=3600, s-maxage=3600');
 
 // http://localhost:8080/
 endpoint.get('/', (request, response) => {
