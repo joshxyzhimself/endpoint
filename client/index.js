@@ -10,6 +10,14 @@ const request = async (options) => {
     throw new Error('request(options), "options" must be an object.');
   }
 
+  if (typeof options.url !== 'string' || options.url === '') {
+    throw new Error('request(options), "options.url" must be a non-empty string.');
+  }
+
+  if (options.query !== undefined && (typeof options.query !== 'object' || options.query === null)) {
+    throw new Error('request(options), "options.query" must be an object.');
+  }
+
   const url = qs.stringifyUrl({ url: options.url, query: options.query });
 
   if (methods.includes(options.method) === false) {
@@ -103,10 +111,10 @@ const request = async (options) => {
     if (e.name === 'AbortError') {
       throw e;
     }
+    console.error(options);
     console.error(e);
     throw new Error(`request(options), Network error. ${e.message}`);
   }
-
 };
 
 const download_response_blob = (response_blob, response_blob_filename) => {
