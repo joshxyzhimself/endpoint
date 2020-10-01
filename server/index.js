@@ -41,8 +41,8 @@ class HTTPError extends Error {
       'X-Frame-Options': 'DENY',
       'X-XSS-Protection': '1; mode=block',
       'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': config.referrer_policy, // can be "no-referrer" or "same-origin"
-      'X-DNS-Prefetch-Control': config.x_dns_prefetch_control, // can be "off" on "on"
+      'Referrer-Policy': config.referrer_policy,
+      'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
       'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
       'Content-Type': 'application/json',
     };
@@ -197,8 +197,8 @@ const get_request_user_agent = (raw_request) => {
   return ua;
 };
 
-const referrer_policies = new Set(['no-referrer', 'same-origin']);
-const x_dns_prefetch_controls = new Set(['off', 'on']);
+const accepted_referrer_policies = new Set(['no-referrer', 'same-origin']);
+const accepted_x_dns_prefetch_control = new Set(['off', 'on']);
 
 function EndpointServer(config) {
 
@@ -220,10 +220,10 @@ function EndpointServer(config) {
   if (typeof config.use_stack_trace !== 'boolean') {
     throw new Error('new EndpointServer(config), "config.use_stack_trace" must be a boolean.');
   }
-  if (typeof config.referrer_policy !== 'string' || referrer_policies.has(config.referrer_policy) === false) {
+  if (typeof config.referrer_policy !== 'string' || accepted_referrer_policies.has(config.referrer_policy) === false) {
     throw new Error('new EndpointServer(config), "config.referrer_policy" must be "no-referrer" or "same-origin"');
   }
-  if (typeof config.x_dns_prefetch_control !== 'string' || x_dns_prefetch_controls.has(config.x_dns_prefetch_control) === false) {
+  if (typeof config.x_dns_prefetch_control !== 'string' || accepted_x_dns_prefetch_control.has(config.x_dns_prefetch_control) === false) {
     throw new Error('new EndpointServer(config), "config.x_dns_prefetch_control" must be "off" or "on"');
   }
 
