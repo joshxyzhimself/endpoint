@@ -7,6 +7,9 @@ const EndpointClient = require('endpoint/client');
 
 await EndpointClient.request({
 
+  // Optional string, abort controller id
+  controller_id: String?,
+
   // Required string, one of HEAD, GET, POST, PUT, DELETE
   method: String,
 

@@ -6,6 +6,10 @@ const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 const controller_map = new Map();
 
 const request = async (options) => {
+  if (typeof options !== 'object' || options === null) {
+    throw new Error('request(options), "options" must be an object.');
+  }
+
   const url = qs.stringifyUrl({ url: options.url, query: options.query });
 
   if (methods.includes(options.method) === false) {
@@ -17,18 +21,18 @@ const request = async (options) => {
     headers: {},
   };
 
-  if (options.id !== undefined) {
-    if (typeof options.id !== 'string' || options.id === '') {
-      throw new Error('request(options), "options.id" must be a non-empty string.');
+  if (options.controller_id !== undefined) {
+    if (typeof options.controller_id !== 'string' || options.controller_id === '') {
+      throw new Error('request(options), "options.controller_id" must be a non-empty string.');
     }
-    if (controller_map.has(options.id) === true) {
-      const existing_controller = controller_map.get(options.id);
+    if (controller_map.has(options.controller_id) === true) {
+      const existing_controller = controller_map.get(options.controller_id);
       existing_controller.abort();
-      controller_map.delete(options.id);
+      controller_map.delete(options.controller_id);
     }
     const new_controller = new AbortController();
     init.signal = new_controller.signal;
-    controller_map.set(options.id, new_controller);
+    controller_map.set(options.controller_id, new_controller);
   }
 
   if (Array.isArray(options.files) === true) {
@@ -59,13 +63,13 @@ const request = async (options) => {
       case 'application/json': {
         try {
           const response_json = await response.json();
-          if (options.id !== undefined) {
-            controller_map.delete(options.id);
+          if (options.controller_id !== undefined) {
+            controller_map.delete(options.controller_id);
           }
           return response_json;
         } catch (e) {
-          if (options.id !== undefined) {
-            controller_map.delete(options.id);
+          if (options.controller_id !== undefined) {
+            controller_map.delete(options.controller_id);
           }
           console.error(e);
           throw new Error(`request(options), application/json parsing error. ${e.message}`);
@@ -76,27 +80,21 @@ const request = async (options) => {
           const response_content_disposition = response.headers.get('content-disposition');
           const response_blob_filename = response_content_disposition.substring(22, response_content_disposition.length - 1);
           const response_blob = await response.blob();
-          const response_blob_object_url = window.URL.createObjectURL(response_blob);
-          const link_element = document.createElement('a');
-          link_element.href = response_blob_object_url;
-          link_element.download = response_blob_filename;
-          link_element.click();
-          setTimeout(() => window.URL.revokeObjectURL(response_blob_object_url), 250);
-          if (options.id !== undefined) {
-            controller_map.delete(options.id);
+          if (options.controller_id !== undefined) {
+            controller_map.delete(options.controller_id);
           }
-          return {};
+          return { response_blob, response_blob_filename  };
         } catch (e) {
-          if (options.id !== undefined) {
-            controller_map.delete(options.id);
+          if (options.controller_id !== undefined) {
+            controller_map.delete(options.controller_id);
           }
           console.error(e);
           throw new Error(`request(options), application/octet-stream parsing error. ${e.message}`);
         }
       }
       default: {
-        if (options.id !== undefined) {
-          controller_map.delete(options.id);
+        if (options.controller_id !== undefined) {
+          controller_map.delete(options.controller_id);
         }
         throw new Error(`request(options), Unexpected response_content_type, got "${response_content_type}"`);
       }
@@ -111,6 +109,21 @@ const request = async (options) => {
 
 };
 
-const EndpointClient = { request, controller_map };
+const download_response_blob = (response_blob, response_blob_filename) => {
+  if (response_blob instanceof Blob === false) {
+    throw new Error('download_response_blob(response_blob, response_blob_filename), "response_blob" must be an instance of Blob.');
+  }
+  if (typeof response_blob_filename !== 'string') {
+    throw new Error('download_response_blob(response_blob, response_blob_filename), "response_blob_filename" must be a string.');
+  }
+  const response_blob_object_url = window.URL.createObjectURL(response_blob);
+  const link_element = document.createElement('a');
+  link_element.href = response_blob_object_url;
+  link_element.download = response_blob_filename;
+  link_element.click();
+  setTimeout(() => window.URL.revokeObjectURL(response_blob_object_url), 250);
+};
+
+const EndpointClient = { request, download_response_blob, controller_map  };
 
 module.exports = EndpointClient;
