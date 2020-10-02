@@ -299,6 +299,7 @@ const get_request_user_agent = (raw_request) => {
 
 const accepted_referrer_policies = new Set(['no-referrer', 'same-origin']);
 const accepted_x_dns_prefetch_control = new Set(['off', 'on']);
+const accepted_tls_min_version = new Set(['TLSv1.3', 'TLSv1.2']);
 
 function EndpointServer(config) {
 
@@ -325,6 +326,9 @@ function EndpointServer(config) {
   }
   if (typeof config.x_dns_prefetch_control !== 'string' || accepted_x_dns_prefetch_control.has(config.x_dns_prefetch_control) === false) {
     throw new Error('new EndpointServer(config), "config.x_dns_prefetch_control" must be "off" or "on"');
+  }
+  if (typeof config.tls_min_version !== 'string' || accepted_tls_min_version.has(config.tls_min_version) === false) {
+    throw new Error('new EndpointServer(config), "config.tls_min_version" must be "TLSv1.3" or "TLSv1.2"');
   }
 
   const endpoint = this;
@@ -603,8 +607,21 @@ function EndpointServer(config) {
 
   this.https_server = null;
   this.websocket_server = null;
+
   this.https = (port, key, cert, ca) => {
-    const https_server = https.createServer({ key, cert, ca }, request_listener);
+    const https_server_options = {
+      key,
+      cert,
+      ca,
+      minVersion: config.tls_min_version,
+      maxVersion: 'TLSv1.3',
+      secureOptions: crypto.constants.SSL_OP_NO_SSLv3
+         | crypto.constants.SSL_OP_NO_TLSv1
+         | crypto.constants.SSL_OP_NO_TLSv1_1
+         | crypto.constants.SSL_OP_NO_TLSv1_2
+         | crypto.constants.SSL_OP_NO_TICKET,
+    };
+    const https_server = https.createServer(https_server_options, request_listener);
     https_server.on('close', () => {
       is_using_https = false;
       console.log('https_server CLOSED');

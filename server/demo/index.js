@@ -13,6 +13,7 @@ const endpoint = new EndpointServer({
   use_stack_trace: true,
   referrer_policy: 'no-referrer', // can be "no-referrer" or "same-origin"
   x_dns_prefetch_control: 'off', // can be "off" on "on"
+  tls_min_version: 'TLSv1.3', // can be "TLSv1.3" or "TLSv1.2"
 });
 
 // Cache-Control: no-store
