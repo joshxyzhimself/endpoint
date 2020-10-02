@@ -10,6 +10,8 @@
 - Accepts `accept-encoding` for `brotli`, `gzip` compression
 - Returns `content-encoding` for `brotli`, `gzip` compression
 - Returns `content-length`
+- insecure GET and HEAD requests are upgraded
+- insecure POST request return 405
 
 #### Cache
 
