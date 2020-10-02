@@ -258,10 +258,10 @@ const handle_request = async (endpoint_request, raw_response, endpoint_response,
   } catch (e) {
     if (e instanceof HTTPError) {
       endpoint_response.error = e;
-      return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+      return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
     }
     endpoint_response.error = new HTTPError(500, e.message, e.stack);
-    return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+    return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
   }
 };
 
@@ -421,6 +421,11 @@ function EndpointServer(config) {
       error: null,
     };
 
+    if (http_methods.has(endpoint_request.method) === false) {
+      endpoint_response.error = new HTTPError(405);
+      return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    }
+
     if (is_using_https === true && endpoint_request.encrypted === false) {
       if (endpoint_request.method === 'GET' || endpoint_request.method === 'HEAD') {
         endpoint_response.code = 308;
@@ -430,9 +435,12 @@ function EndpointServer(config) {
       }
     }
 
-    if (http_methods.has(endpoint_request.method) === false) {
-      endpoint_response.error = new HTTPError(405);
-      return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+    if (is_using_https === false) {
+      if (endpoint_request.method === 'POST') {
+        endpoint_response.error = new HTTPError(405);
+        internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+        return;
+      }
     }
 
     if (config.use_session_id === true) {
@@ -468,7 +476,7 @@ function EndpointServer(config) {
         const endpoint_directory = dirname(endpoint_request.url.pathname);
         if (static_map.has(endpoint_directory) === false) {
           endpoint_response.error = new HTTPError(404);
-          return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+          return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
         }
         const local_directory = static_map.get(endpoint_directory);
 
@@ -479,13 +487,13 @@ function EndpointServer(config) {
           await fs.promises.access(file_path);
         } catch (e) {
           endpoint_response.error = new HTTPError(404, undefined, e.stack);
-          return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+          return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
         }
 
         const file_content_type = mime.contentType(file_basename);
         if (file_content_type === false) {
           endpoint_response.error = new HTTPError(400);
-          return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+          return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
         }
 
         // TODO: replace readFile with createReadStream
@@ -526,7 +534,7 @@ function EndpointServer(config) {
               endpoint_request.body_buffer = buffer;
             } catch (e) {
               endpoint_response.error = new HTTPError(400, undefined, e.stack);
-              return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+              return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
             }
             return handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
           });
@@ -574,7 +582,7 @@ function EndpointServer(config) {
     }
 
     endpoint_response.error = new HTTPError(404);
-    return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+    return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
   };
 
   this.http_server = null;
