@@ -255,4 +255,4 @@ endpoint.post('/auth-post', (request, response) => {
   return response;
 });
 
-endpoint.http(8080, () => console.log('Listening at port 8080.'));
+endpoint.http(8080);

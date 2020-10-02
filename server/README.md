@@ -130,6 +130,9 @@ endpoint.get('/test-500-1', () => {
 endpoint.get('/test-500-2', () => {
   return 123; // unexpected return value
 });
+
+// listen to port 8080
+endpoint.http(8080);
 ```
 
 #### License

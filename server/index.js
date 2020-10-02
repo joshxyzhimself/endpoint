@@ -327,11 +327,11 @@ function EndpointServer(config) {
     throw new Error('new EndpointServer(config), "config.x_dns_prefetch_control" must be "off" or "on"');
   }
 
-
   const endpoint = this;
 
   const static_map = new Map();
   const cache_control_map = new Map();
+  let is_using_https = false;
 
   endpoint.static = (endpoint_directory, local_directory, cache_control) => {
     if (typeof endpoint_directory !== 'string') {
@@ -420,6 +420,15 @@ function EndpointServer(config) {
       redirect: null,
       error: null,
     };
+
+    if (is_using_https === true && endpoint_request.encrypted === false) {
+      if (endpoint_request.method === 'GET' || endpoint_request.method === 'HEAD') {
+        endpoint_response.code = 308;
+        endpoint_response.redirect = `https://${endpoint_request.headers.host}${endpoint_request.url.path}`;
+        internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+        return;
+      }
+    }
 
     if (http_methods.has(endpoint_request.method) === false) {
       endpoint_response.error = new HTTPError(405);
@@ -569,20 +578,33 @@ function EndpointServer(config) {
   };
 
   this.http_server = null;
-  this.http = (port, callback) => {
+  this.http = (port) => {
     const http_server = http.createServer(request_listener);
-    http_server.on('close', () => console.error('Server closed'));
-    http_server.on('error', (e) => console.error('Server error', e.message));
-    http_server.listen(port, callback);
+    http_server.on('close', () => {
+      console.log('http_server CLOSED');
+    });
+    http_server.on('error', (e) => {
+      console.error('http_server ERROR', e.message);
+      console.error(e);
+    });
+    http_server.listen(port, () => {
+      console.log('https_server LISTEN', port);
+    });
     this.http_server = http_server;
   };
 
   this.https_server = null;
   this.websocket_server = null;
-  this.https = (port, key, cert, ca, callback) => {
+  this.https = (port, key, cert, ca) => {
     const https_server = https.createServer({ key, cert, ca }, request_listener);
-    https_server.on('close', () => console.error('Server closed'));
-    https_server.on('error', (e) => console.error('Server error', e.message));
+    https_server.on('close', () => {
+      is_using_https = false;
+      console.log('https_server CLOSED');
+    });
+    https_server.on('error', (e) => {
+      console.error('https_server ERROR', e.message);
+      console.error(e);
+    });
     if (config.use_websocket === true && typeof config.on_websocket_connection === 'function') {
       const websocket_server = new WebSocket.Server({ server: https_server });
       const websocket_client_is_alive = new WeakMap();
@@ -607,7 +629,10 @@ function EndpointServer(config) {
       }), 30000);
       this.websocket_server = websocket_server;
     }
-    https_server.listen(port, callback);
+    https_server.listen(port, () => {
+      is_using_https = true;
+      console.log('https_server LISTEN', port);
+    });
     this.https_server = https_server;
   };
 }
