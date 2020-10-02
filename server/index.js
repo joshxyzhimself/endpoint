@@ -73,10 +73,6 @@ internals.send_buffer_response = (config, endpoint_request, raw_response, endpoi
   raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end(endpoint_response.buffer);
 };
 
-const compressed_content_mtimems_cache = new Map();
-const compressed_content_length_cache = new Map();
-const compressed_content_etag_cache = new Map();
-
 internals.compress_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
 
   if (config.use_compression === true) {
@@ -118,7 +114,11 @@ internals.compress_buffer_response = (config, endpoint_request, raw_response, en
   internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
-internals.compress_stream_response = async (config, endpoint_request, raw_response, endpoint_response) => {
+const file_mtimems_cache = new Map();
+const file_length_cache = new Map();
+const file_etag_cache = new Map();
+
+internals.compress_stream_response = (config, endpoint_request, raw_response, endpoint_response) => {
   if (config.use_compression === true) {
     if (endpoint_request.headers['accept-encoding'] !== undefined) {
 
@@ -135,49 +135,84 @@ internals.compress_stream_response = async (config, endpoint_request, raw_respon
 
       if (compression_content_encoding !== null) {
 
-        const content_file_stat = await fs.promises.stat(endpoint_response.stream_file_path);
-        const compressed_content_id = `${crypto.createHash('sha1').update(endpoint_response.stream_file_path).digest('hex')}.${compression_content_encoding}`; // .stream_file_path
-        const compressed_content_file_path = join('/tmp', compressed_content_id);
+        // TODO: fix blocking statSync
+        const raw_file_stat = fs.statSync(endpoint_response.stream_file_path);
+        const compressed_file_id = crypto.createHash('sha1').update(endpoint_response.stream_file_path).digest('hex').concat('.', compression_content_encoding);
+        const compressed_file_path = join('/tmp', compressed_file_id);
 
-        if (compressed_content_mtimems_cache.get(compressed_content_id) === content_file_stat.mtimeMs) {
-          endpoint_response.headers['Content-Length'] = compressed_content_length_cache.get(compressed_content_id);
+        if (file_mtimems_cache.get(compressed_file_id) === raw_file_stat.mtimeMs) {
+          endpoint_response.headers['Content-Length'] = file_length_cache.get(compressed_file_id);
           endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
+          endpoint_response.headers['ETag'] = file_etag_cache.get(compressed_file_id);
           raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
-          fs.createReadStream(compressed_content_file_path).pipe(raw_response);
+          fs.createReadStream(compressed_file_path).pipe(raw_response);
           return;
         }
 
-        let compressed_content_length = 0;
-        let compressed_content_hash = crypto.createHash('sha256');
+        let compressed_file_length = 0;
+        let compressed_file_hash = crypto.createHash('sha256');
 
         endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
         raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
 
-        const compressed_content_passthrough = new stream.PassThrough()
+        const hash_stream_passthrough = new stream.PassThrough()
           .on('data', (chunk) => {
-            compressed_content_length += chunk.byteLength;
-            compressed_content_hash.update(chunk);
+            compressed_file_length += chunk.byteLength;
+            compressed_file_hash.update(chunk);
             raw_response.write(chunk);
           })
           .on('end', () => {
-            compressed_content_hash = compressed_content_hash.digest('hex');
+            compressed_file_hash = compressed_file_hash.digest('hex');
             raw_response.end();
           });
 
         fs.createReadStream(endpoint_response.stream_file_path)
           .pipe(compression_stream_transform())
-          .pipe(compressed_content_passthrough)
-          .pipe(fs.createWriteStream(compressed_content_file_path, { emitClose: true }))
+          .pipe(hash_stream_passthrough)
+          .pipe(fs.createWriteStream(compressed_file_path, { emitClose: true }))
           .on('close', () => {
-            compressed_content_mtimems_cache.set(compressed_content_id, content_file_stat.mtimeMs);
-            compressed_content_length_cache.set(compressed_content_id, compressed_content_length);
-            compressed_content_etag_cache.set(compressed_content_id, compressed_content_hash);
+            file_mtimems_cache.set(compressed_file_id, raw_file_stat.mtimeMs);
+            file_length_cache.set(compressed_file_id, compressed_file_length);
+            file_etag_cache.set(compressed_file_id, compressed_file_hash);
           });
 
         return;
       }
     }
   }
+
+  // TODO: fix blocking statSync
+  const raw_file_stat = fs.statSync(endpoint_response.stream_file_path);
+  const raw_file_id = crypto.createHash('sha1').update(endpoint_response.stream_file_path).digest('hex');
+  const raw_file_path = endpoint_response.stream_file_path;
+
+  if (file_mtimems_cache.get(raw_file_id) === raw_file_stat.mtimeMs) {
+    endpoint_response.headers['Content-Length'] = raw_file_stat.size;
+    endpoint_response.headers['ETag'] = file_etag_cache.get(raw_file_id);
+    raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
+    fs.createReadStream(raw_file_path).pipe(raw_response);
+    return;
+  }
+  let raw_file_hash = crypto.createHash('sha256');
+
+  raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
+
+  const hash_stream_passthrough = new stream.PassThrough()
+    .on('data', (chunk) => {
+      raw_file_hash.update(chunk);
+      raw_response.write(chunk);
+    })
+    .on('end', () => {
+      raw_file_hash = raw_file_hash.digest('hex');
+      raw_response.end();
+    });
+
+  fs.createReadStream(endpoint_response.stream_file_path)
+    .pipe(hash_stream_passthrough)
+    .on('close', () => {
+      file_mtimems_cache.set(raw_file_id, raw_file_stat.mtimeMs);
+      file_etag_cache.set(raw_file_id, raw_file_hash);
+    });
 };
 
 internals.prepare_response_error = (config, endpoint_request, raw_response, endpoint_response) => {
