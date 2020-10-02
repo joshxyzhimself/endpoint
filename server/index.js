@@ -261,6 +261,7 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
     }
     console.error(endpoint_response.error);
     endpoint_response.code = endpoint_response.error.code;
+
     endpoint_response.headers = {
       'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload;',
       'X-Frame-Options': 'DENY',
@@ -269,6 +270,7 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
       'Referrer-Policy': config.referrer_policy,
       'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
       'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
+      'Cache-Control': 'no-store',
       'Content-Type': 'application/json; charset=utf-8',
     };
     endpoint_response.json = {
@@ -302,18 +304,18 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
     return;
   }
 
-  if (endpoint_response.redirect !== null) {
+  if (endpoint_response.headers.Location !== undefined) {
     if (accepted_redirect_codes.has(endpoint_response.code) === false) {
       endpoint_response.error = new HTTPError(500, 'endpoint_response.code must be 301/302/307/308.');
       internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
-    if (typeof endpoint_response.redirect !== 'string') {
-      endpoint_response.error = new HTTPError(500, 'endpoint_response.redirect must be a string.');
+    if (typeof endpoint_response.headers.Location !== 'string') {
+      endpoint_response.error = new HTTPError(500, 'endpoint_response.headers.Location must be a string.');
       internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
-    raw_response.writeHead(endpoint_response.code, { Location: endpoint_response.redirect }).end();
+    raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
     return;
   }
 
@@ -537,8 +539,8 @@ function EndpointServer(config) {
         'X-Frame-Options': 'DENY',
         'X-XSS-Protection': '1; mode=block',
         'X-Content-Type-Options': 'nosniff',
-        'Referrer-Policy': 'no-referrer', // can be "same-origin"
-        'X-DNS-Prefetch-Control': 'off', // can be "on"
+        'Referrer-Policy': config.referrer_policy,
+        'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
         'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
         'Cache-Control': 'no-store',
       },
