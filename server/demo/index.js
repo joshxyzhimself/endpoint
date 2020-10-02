@@ -1,7 +1,7 @@
 
 const fs = require('fs');
 const crypto = require('crypto');
-const { EndpointServer, HTTPError, path_from_cwd } = require('./index');
+const { EndpointServer, HTTPError, path_from_cwd } = require('../index');
 
 const client_script = fs.readFileSync(path_from_cwd('/client/index.iife.js'));
 
@@ -10,7 +10,7 @@ const endpoint = new EndpointServer({
   use_session_id: false,
   session_max_age: 0,
   use_websocket: false,
-  use_stack_trace: false,
+  use_stack_trace: true,
   referrer_policy: 'no-referrer', // can be "no-referrer" or "same-origin"
   x_dns_prefetch_control: 'off', // can be "off" on "on"
 });
@@ -31,9 +31,8 @@ endpoint.static('/images', path_from_cwd('/static/images'), 'private, max-age=36
 
 // http://localhost:8080/
 endpoint.get('/', (request, response) => {
-  response.headers['Content-Type'] = 'text/html; charset=utf-8';
   response.headers['Cache-Control'] = 'no-cache';
-  response.body = `
+  response.text = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -50,9 +49,8 @@ endpoint.get('/', (request, response) => {
 });
 
 endpoint.get('*', (request, response) => {
-  response.headers['Content-Type'] = 'text/html; charset=utf-8';
   response.headers['Cache-Control'] = 'no-cache';
-  response.body = `
+  response.text = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -69,14 +67,19 @@ endpoint.get('*', (request, response) => {
 });
 
 endpoint.get('/test', (request, response) => {
-  response.body = { request };
+  response.json = { request };
+  return response;
+});
+endpoint.get('/test-buffer', (request, response) => {
+  response.buffer = Buffer.from('test-buffer');
+  response.headers['Content-Disposition'] = 'attachment; filename="test-buffer.txt"';
   return response;
 });
 
 endpoint.get('/client-test', (request, response) => {
   response.headers['Content-Type'] = 'text/html; charset=utf-8';
   response.headers['Cache-Control'] = 'no-cache';
-  response.body = `
+  response.text = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -132,7 +135,7 @@ endpoint.get('/client-test', (request, response) => {
 endpoint.get('/auth-test', (request, response) => {
   response.headers['Content-Type'] = 'text/html; charset=utf-8';
   response.headers['Cache-Control'] = 'no-cache';
-  response.body = `
+  response.text = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -188,7 +191,7 @@ endpoint.get('/error-test-500', () => {
 });
 
 const ResponseError = (response, code, message) => {
-  response.body = { error: { code, message } };
+  response.json = { error: { code, message } };
   return response;
 };
 
@@ -238,12 +241,12 @@ endpoint.post('/auth-get', auth_middleware);
 endpoint.post('/auth-post', auth_middleware);
 
 endpoint.get('/auth-get', (request, response) => {
-  response.body = { foo: 'bar' };
+  response.json = { foo: 'bar' };
   return response;
 });
 
 endpoint.post('/auth-post', (request, response) => {
-  response.body = { foo: 'bar' };
+  response.json = { foo: 'bar' };
   return response;
 });
 

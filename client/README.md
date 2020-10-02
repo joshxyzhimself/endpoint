@@ -87,34 +87,3 @@ http://localhost:8080/favicon.ico
 http://localhost:8080/images/capoo.jpeg
 http://localhost:8080/auth-test
 ```
-
-## EndpointServer
-
-#### Usage
-
-```js
-const EndpointServer = require('endpoint/server');
-
-const endpoint = new EndpointServer({});
-
-endpoint.http(8080, () => console.log('Listening at port 8080.'));
-```
-
-#### Implementation Notes
-
-- Supports `head`, `get`, `post`, `put`, `delete` methods
-- Accepts `content-type` of `application/json`
-- Accepts `content-type` of `multipart/form-data`
-  - Accepts JSON `body` along with `files`
-- Accepts `content-type` of `application/x-www-form-urlencoded`
-- Returns `content-type` of `application/json`
-- Accepts `accept-encoding` for `brotli`, `gzip` compression
-- Returns `content-encoding` for `brotli`, `gzip` compression
-- Returns `content-length`
-
-#### Testing
-
-```
-npx ava --verbose
-node ./server/index.demo.js
-```
