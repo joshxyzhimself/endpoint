@@ -551,7 +551,6 @@ function EndpointServer(config) {
       stream_raw_path: null,
       stream_source_path: null,
       stream_etag: null,
-      redirect: null,
       error: null,
     };
 
@@ -564,7 +563,7 @@ function EndpointServer(config) {
     if (is_using_https === true && endpoint_request.encrypted === false) {
       if (endpoint_request.method === 'GET' || endpoint_request.method === 'HEAD') {
         endpoint_response.code = 308;
-        endpoint_response.redirect = `https://${endpoint_request.headers.host}${endpoint_request.url.path}`;
+        endpoint_response.headers.Location = `https://${endpoint_request.headers.host}${endpoint_request.url.path}`;
         internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
         return;
       }
