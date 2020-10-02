@@ -157,88 +157,99 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
 
       if (compression_content_encoding !== null) {
 
-        // TODO: fix blocking statSync
-        const raw_file_stat = fs.statSync(endpoint_response.stream_raw_path);
-        const compressed_file_id = crypto.createHash('sha1').update(endpoint_response.stream_raw_path).digest('hex').concat('.', compression_content_encoding);
-        const compressed_file_path = join('/tmp', compressed_file_id);
+        fs.stat(endpoint_response.stream_raw_path, (raw_file_stat_error, raw_file_stat) => {
 
-        if (file_mtimems_cache.get(compressed_file_id) === raw_file_stat.mtimeMs) {
-          endpoint_response.headers['Content-Length'] = file_length_cache.get(compressed_file_id);
+          if (raw_file_stat_error !== null) {
+            endpoint_response.error = new HTTPError(500, raw_file_stat_error.message, raw_file_stat_error.stack);
+            internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+            return;
+          }
+
+          const compressed_file_id = crypto.createHash('sha1').update(endpoint_response.stream_raw_path).digest('hex').concat('.', compression_content_encoding);
+          const compressed_file_path = join('/tmp', compressed_file_id);
+
+          if (file_mtimems_cache.get(compressed_file_id) === raw_file_stat.mtimeMs) {
+            endpoint_response.headers['Content-Length'] = file_length_cache.get(compressed_file_id);
+            endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
+            endpoint_response.stream_etag = file_etag_cache.get(compressed_file_id);
+            endpoint_response.stream_source_path = compressed_file_path;
+            internals.send_stream_response(config, endpoint_request, raw_response, endpoint_response);
+            return;
+          }
+
+          let compressed_file_length = 0;
+          let compressed_file_hash = crypto.createHash('sha256');
+
           endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
+          raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
 
-          endpoint_response.stream_etag = file_etag_cache.get(compressed_file_id);
-          endpoint_response.stream_source_path = compressed_file_path;
+          const hash_stream_passthrough = new stream.PassThrough()
+            .on('data', (chunk) => {
+              compressed_file_length += chunk.byteLength;
+              compressed_file_hash.update(chunk);
+              raw_response.write(chunk);
+            })
+            .on('end', () => {
+              compressed_file_hash = compressed_file_hash.digest('hex');
+              raw_response.end();
+            });
 
-          internals.send_stream_response(config, endpoint_request, raw_response, endpoint_response);
-          return;
-        }
-
-        let compressed_file_length = 0;
-        let compressed_file_hash = crypto.createHash('sha256');
-
-        endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
-        raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
-
-        const hash_stream_passthrough = new stream.PassThrough()
-          .on('data', (chunk) => {
-            compressed_file_length += chunk.byteLength;
-            compressed_file_hash.update(chunk);
-            raw_response.write(chunk);
-          })
-          .on('end', () => {
-            compressed_file_hash = compressed_file_hash.digest('hex');
-            raw_response.end();
-          });
-
-        fs.createReadStream(endpoint_response.stream_raw_path)
-          .pipe(compression_stream_transform())
-          .pipe(hash_stream_passthrough)
-          .pipe(fs.createWriteStream(compressed_file_path, { emitClose: true }))
-          .on('close', () => {
-            file_mtimems_cache.set(compressed_file_id, raw_file_stat.mtimeMs);
-            file_length_cache.set(compressed_file_id, compressed_file_length);
-            file_etag_cache.set(compressed_file_id, compressed_file_hash);
-          });
+          fs.createReadStream(endpoint_response.stream_raw_path)
+            .pipe(compression_stream_transform())
+            .pipe(hash_stream_passthrough)
+            .pipe(fs.createWriteStream(compressed_file_path, { emitClose: true }))
+            .on('close', () => {
+              file_mtimems_cache.set(compressed_file_id, raw_file_stat.mtimeMs);
+              file_length_cache.set(compressed_file_id, compressed_file_length);
+              file_etag_cache.set(compressed_file_id, compressed_file_hash);
+            });
+        });
 
         return;
       }
     }
   }
 
-  // TODO: fix blocking statSync
-  const raw_file_stat = fs.statSync(endpoint_response.stream_raw_path);
-  const raw_file_id = crypto.createHash('sha1').update(endpoint_response.stream_raw_path).digest('hex');
-  const raw_file_path = endpoint_response.stream_raw_path;
+  fs.stat(endpoint_response.stream_raw_path, (raw_file_stat_error, raw_file_stat) => {
 
-  if (file_mtimems_cache.get(raw_file_id) === raw_file_stat.mtimeMs) {
-    endpoint_response.headers['Content-Length'] = raw_file_stat.size;
+    if (raw_file_stat_error !== null) {
+      endpoint_response.error = new HTTPError(500, raw_file_stat_error.message, raw_file_stat_error.stack);
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
+    }
 
-    endpoint_response.stream_etag = file_etag_cache.get(raw_file_id);
-    endpoint_response.stream_source_path = raw_file_path;
+    const raw_file_id = crypto.createHash('sha1').update(endpoint_response.stream_raw_path).digest('hex');
+    const raw_file_path = endpoint_response.stream_raw_path;
 
-    internals.send_stream_response(config, endpoint_request, raw_response, endpoint_response);
-    return;
-  }
-  let raw_file_hash = crypto.createHash('sha256');
+    if (file_mtimems_cache.get(raw_file_id) === raw_file_stat.mtimeMs) {
+      endpoint_response.headers['Content-Length'] = raw_file_stat.size;
+      endpoint_response.stream_etag = file_etag_cache.get(raw_file_id);
+      endpoint_response.stream_source_path = raw_file_path;
+      internals.send_stream_response(config, endpoint_request, raw_response, endpoint_response);
+      return;
+    }
+    let raw_file_hash = crypto.createHash('sha256');
 
-  raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
+    raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
 
-  const hash_stream_passthrough = new stream.PassThrough()
-    .on('data', (chunk) => {
-      raw_file_hash.update(chunk);
-      raw_response.write(chunk);
-    })
-    .on('end', () => {
-      raw_file_hash = raw_file_hash.digest('hex');
-      raw_response.end();
-    });
+    const hash_stream_passthrough = new stream.PassThrough()
+      .on('data', (chunk) => {
+        raw_file_hash.update(chunk);
+        raw_response.write(chunk);
+      })
+      .on('end', () => {
+        raw_file_hash = raw_file_hash.digest('hex');
+        raw_response.end();
+      });
 
-  fs.createReadStream(endpoint_response.stream_raw_path)
-    .pipe(hash_stream_passthrough)
-    .on('close', () => {
-      file_mtimems_cache.set(raw_file_id, raw_file_stat.mtimeMs);
-      file_etag_cache.set(raw_file_id, raw_file_hash);
-    });
+    fs.createReadStream(endpoint_response.stream_raw_path)
+      .pipe(hash_stream_passthrough)
+      .on('close', () => {
+        file_mtimems_cache.set(raw_file_id, raw_file_stat.mtimeMs);
+        file_etag_cache.set(raw_file_id, raw_file_hash);
+      });
+
+  });
 };
 
 internals.prepare_response_error = (config, endpoint_request, raw_response, endpoint_response) => {
@@ -364,14 +375,17 @@ const handle_request = async (endpoint_request, raw_response, endpoint_response,
     if (returned_endpoint_response === undefined) {
       throw new Error('Invalid handler return type, at least one handler must return the "endpoint_response" object or throw an "HTTPError" error.');
     }
-    return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+    internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+    return;
   } catch (e) {
     if (e instanceof HTTPError) {
       endpoint_response.error = e;
-      return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
     }
     endpoint_response.error = new HTTPError(500, e.message, e.stack);
-    return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    return;
   }
 };
 
@@ -541,7 +555,8 @@ function EndpointServer(config) {
 
     if (http_methods.has(endpoint_request.method) === false) {
       endpoint_response.error = new HTTPError(405);
-      return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
     }
 
     if (is_using_https === true && endpoint_request.encrypted === false) {
@@ -594,7 +609,8 @@ function EndpointServer(config) {
         const endpoint_directory = dirname(endpoint_request.url.pathname);
         if (static_map.has(endpoint_directory) === false) {
           endpoint_response.error = new HTTPError(404);
-          return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          return;
         }
         const local_directory = static_map.get(endpoint_directory);
 
@@ -605,13 +621,15 @@ function EndpointServer(config) {
           await fs.promises.access(file_path);
         } catch (e) {
           endpoint_response.error = new HTTPError(404, undefined, e.stack);
-          return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          return;
         }
 
         const file_content_type = mime.contentType(file_basename);
         if (file_content_type === false) {
           endpoint_response.error = new HTTPError(400);
-          return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          return;
         }
 
         if (cache_control_map.has(endpoint_directory) === true) {
@@ -619,9 +637,8 @@ function EndpointServer(config) {
         }
         endpoint_response.headers['Content-Type'] = file_content_type;
         endpoint_response.stream_raw_path = file_path;
-        // const file_content_buffer = await fs.promises.readFile(file_path);
-        // endpoint_response.buffer = file_content_buffer;
-        return internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+        internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+        return;
       }
     }
 
@@ -652,9 +669,11 @@ function EndpointServer(config) {
               endpoint_request.body_buffer = buffer;
             } catch (e) {
               endpoint_response.error = new HTTPError(400, undefined, e.stack);
-              return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+              internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+              return;
             }
-            return handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
+            handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
+            return;
           });
           return;
         } else {
@@ -688,19 +707,21 @@ function EndpointServer(config) {
             busboy.on('field', (fieldname, val) => {
               endpoint_request.body[fieldname] = val;
             });
-            busboy.on('finish', async () => {
-              return handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
+            busboy.on('finish', () => {
+              handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
             });
-            return raw_request.pipe(busboy);
+            raw_request.pipe(busboy);
+            return;
           }
         }
       }
-
-      return handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
+      handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
+      return;
     }
 
     endpoint_response.error = new HTTPError(404);
-    return internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    return;
   };
 
   this.http_server = null;
@@ -747,7 +768,7 @@ function EndpointServer(config) {
     if (config.use_websocket === true && typeof config.on_websocket_connection === 'function') {
       const websocket_server = new WebSocket.Server({ server: https_server });
       const websocket_client_is_alive = new WeakMap();
-      websocket_server.on('connection', async (websocket_client, raw_request) => {
+      websocket_server.on('connection', (websocket_client, raw_request) => {
         websocket_client.ip = get_request_ip_address(raw_request);
         websocket_client.ua = get_request_user_agent(raw_request);
         websocket_client_is_alive.set(websocket_client, true);

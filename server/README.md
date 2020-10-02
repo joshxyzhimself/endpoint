@@ -1,5 +1,5 @@
 
-#### Notes
+#### Initial Notes
 
 - Supports `head`, `get`, `post`, `put`, `delete` methods
 - Accepts `content-type` of `application/json`
@@ -10,8 +10,23 @@
 - Accepts `accept-encoding` for `brotli`, `gzip` compression
 - Returns `content-encoding` for `brotli`, `gzip` compression
 - Returns `content-length`
+
+#### Recent Updates
+
 - insecure GET and HEAD requests are upgraded
 - insecure POST request return 405
+- support return of buffer
+- setting response.json sets "application/json; charset=utf-8" content-type
+- setting response.text sets "text/html; charset=utf-8" content-type
+- setting response.text sets "application/octet-stream" content-type
+- streaming raw file reads
+- streaming raw file compression
+- raw file hash caching
+- compressed file length caching
+- compressed file hash caching
+- compressed file data caching
+- raw file 304 if request.headers.if-none-match matches etag
+- compressed file 304 if request.headers.if-none-match matches etag
 
 #### Cache
 
