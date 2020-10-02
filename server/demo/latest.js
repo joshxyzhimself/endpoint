@@ -3,7 +3,7 @@ const { EndpointServer, HTTPError, path_from_cwd } = require('../index');
 
 const endpoint = new EndpointServer({
   use_compression: false,
-  use_session_id: false,
+  use_session_id: true,
   session_max_age: 0,
   use_websocket: false,
   use_stack_trace: true,
@@ -50,6 +50,18 @@ endpoint.get('*', (request, response) => {
         <br />
         <a href="/test-500-2">/test-500-2</a>
         <br />
+        <hr />
+        <p>pages</p>
+        <a href="/login">/login</a>
+        <br />
+        <a href="/account">/account</a>
+        <br />
+        <p>actions</p>
+        <a href="/login-user">/login-user</a>
+        <br />
+        <a href="/logout-user">/logout-user</a>
+        <br />
+        <hr />
       </body>
     </html>
   `;
@@ -123,6 +135,115 @@ endpoint.get('/test-500-1', () => {
 endpoint.get('/test-500-2', () => {
   return 123; // unexpected return value
 });
+
+const sid_session_map = new Map();
+
+const cookie_sessions_middleware = async (request) => {
+  if (sid_session_map.has(request.sid) === false) {
+    sid_session_map.set(request.sid, { user: null });
+  }
+  request.session = sid_session_map.get(request.sid);
+};
+
+const guests_only_middleware = async (request) => {
+  if (typeof request.session === 'object') {
+    if (request.session.user === null) {
+      return undefined;
+    }
+  }
+  throw new HTTPError(403);
+};
+
+const users_only_middleware = async (request) => {
+  if (typeof request.session === 'object') {
+    if (request.session.user !== null) {
+      if (typeof request.session.user === 'object') {
+        return undefined;
+      }
+    }
+  }
+  throw new HTTPError(403);
+};
+
+
+endpoint.get('/login', cookie_sessions_middleware);
+endpoint.get('/login', guests_only_middleware);
+endpoint.get('/login', (request, response) => {
+  response.text = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>You're now at /login, this is for guests!</p>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
+endpoint.get('/account', cookie_sessions_middleware);
+endpoint.get('/account', users_only_middleware);
+endpoint.get('/account', (request, response) => {
+  response.text = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>You're now at /account page, this is for users!</p>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
+endpoint.get('/login-user', cookie_sessions_middleware);
+endpoint.get('/login-user', guests_only_middleware);
+endpoint.get('/login-user', (request, response) => {
+  request.session.user = { id: 'alice-id' };
+  response.text = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>You're now logged-in!</p>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
+endpoint.get('/logout-user', cookie_sessions_middleware);
+endpoint.get('/logout-user', users_only_middleware);
+endpoint.get('/logout-user', (request, response) => {
+  request.session.user = null;
+  response.text = `
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <title>Test</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+      </head>
+      <body class="app-body">
+        <p>You're now logged-out!</p>
+      </body>
+    </html>
+  `;
+  return response;
+});
+
 
 // listen to port 8080
 endpoint.http(8080);
