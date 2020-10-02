@@ -142,6 +142,11 @@ internals.compress_response = (config, endpoint_request, raw_response, endpoint_
 
 internals.prepare_response_error = (config, endpoint_request, raw_response, endpoint_response) => {
   if (endpoint_response.error !== null) {
+    if (endpoint_response.error instanceof HTTPError === false) {
+      endpoint_response.error = new HTTPError(500, 'endpoint_response.error must be an instance of HTTPError.');
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
+    }
     console.error(endpoint_response.error);
     endpoint_response.code = endpoint_response.error.code;
     endpoint_response.headers = {
