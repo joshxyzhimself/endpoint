@@ -6,7 +6,7 @@ const { EndpointServer, HTTPError, path_from_cwd } = require('../index');
 const client_script = fs.readFileSync(path_from_cwd('/client/index.iife.js'));
 
 const endpoint = new EndpointServer({
-  use_compression: false,
+  use_compression: true,
   use_session_id: false,
   session_max_age: 0,
   use_websocket: false,
