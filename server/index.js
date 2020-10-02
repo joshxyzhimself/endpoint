@@ -143,7 +143,21 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
         if (file_mtimems_cache.get(compressed_file_id) === raw_file_stat.mtimeMs) {
           endpoint_response.headers['Content-Length'] = file_length_cache.get(compressed_file_id);
           endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
-          endpoint_response.headers['ETag'] = file_etag_cache.get(compressed_file_id);
+
+          if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
+            if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
+              endpoint_response.headers['ETag'] = file_etag_cache.get(compressed_file_id);
+              if (endpoint_request.headers['if-none-match'] === endpoint_response.headers['ETag']) {
+                endpoint_response.code = 304;
+              }
+            }
+          }
+          if (endpoint_request.method === 'HEAD' || endpoint_response.code === 304) {
+            endpoint_response.buffer = null;
+            raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
+            return;
+          }
+
           raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
           fs.createReadStream(compressed_file_path).pipe(raw_response);
           return;
@@ -188,7 +202,21 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
 
   if (file_mtimems_cache.get(raw_file_id) === raw_file_stat.mtimeMs) {
     endpoint_response.headers['Content-Length'] = raw_file_stat.size;
-    endpoint_response.headers['ETag'] = file_etag_cache.get(raw_file_id);
+
+    if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
+      if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
+        endpoint_response.headers['ETag'] = file_etag_cache.get(raw_file_id);
+        if (endpoint_request.headers['if-none-match'] === endpoint_response.headers['ETag']) {
+          endpoint_response.code = 304;
+        }
+      }
+    }
+    if (endpoint_request.method === 'HEAD' || endpoint_response.code === 304) {
+      endpoint_response.buffer = null;
+      raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
+      return;
+    }
+
     raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
     fs.createReadStream(raw_file_path).pipe(raw_response);
     return;
