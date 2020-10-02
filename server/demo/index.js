@@ -75,6 +75,11 @@ endpoint.get('/test-buffer', (request, response) => {
   response.headers['Content-Disposition'] = 'attachment; filename="test-buffer.txt"';
   return response;
 });
+endpoint.get('/test-redirect', (request, response) => {
+  response.code = 301;
+  response.redirect = '/test';
+  return response;
+});
 
 endpoint.get('/client-test', (request, response) => {
   response.headers['Content-Type'] = 'text/html; charset=utf-8';

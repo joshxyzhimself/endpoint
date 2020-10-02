@@ -95,6 +95,13 @@ endpoint.get('/test-buffer', (request, response) => {
   return response;
 });
 
+// return Redirect, accepts 301/302/307/308
+endpoint.get('/test-redirect', (request, response) => {
+  response.code = 301;
+  response.redirect = '/test';
+  return response;
+});
+
 // return 405 error
 endpoint.get('/test-405', () => {
   throw new HTTPError(405);
