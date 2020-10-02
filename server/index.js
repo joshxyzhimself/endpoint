@@ -56,25 +56,19 @@ class HTTPError extends Error {
 
 const internals = {};
 
-// TODO: handle endpoint_response.stream
 internals.send_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
-  if (endpoint_request.method === 'HEAD') {
-    delete endpoint_response.buffer;
-  }
   if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
-    if (endpoint_response.headers['Cache-Control'] === undefined) {
-      endpoint_response.headers['Cache-Control'] = 'no-store';
-    } else if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
-      if (endpoint_response.buffer !== null) {
-        endpoint_response.headers['ETag'] = crypto.createHash('sha256').update(endpoint_response.buffer).digest('hex');
-      }
-      if (endpoint_request.headers['if-none-match'] !== undefined) {
-        if (endpoint_request.headers['if-none-match'] === endpoint_response.headers['ETag']) {
-          endpoint_response.code = 304;
-          delete endpoint_response.buffer;
-        }
+    if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
+      endpoint_response.headers['ETag'] = crypto.createHash('sha256').update(endpoint_response.buffer).digest('hex');
+      if (endpoint_request.headers['if-none-match'] === endpoint_response.headers['ETag']) {
+        endpoint_response.code = 304;
       }
     }
+  }
+  if (endpoint_request.method === 'HEAD' || endpoint_response.code === 304) {
+    endpoint_response.buffer = null;
+    raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
+    return;
   }
   raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end(endpoint_response.buffer);
 };
@@ -83,100 +77,107 @@ const compressed_content_mtimems_cache = new Map();
 const compressed_content_length_cache = new Map();
 const compressed_content_etag_cache = new Map();
 
-internals.compress_response = async (config, endpoint_request, raw_response, endpoint_response) => {
+internals.compress_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
+
   if (config.use_compression === true) {
     if (endpoint_request.headers['accept-encoding'] !== undefined) {
 
-      let compression_buffer_transform = null;
-      let compression_stream_transform = null;
       let compression_content_encoding = null;
+      let compression_buffer_transform = null;
 
       if (endpoint_request.headers['accept-encoding'].includes('br') === true) {
+        compression_content_encoding = 'br';
         compression_buffer_transform = zlib.brotliCompress;
-        compression_stream_transform = zlib.createBrotliCompress;
-        compression_content_encoding= 'br';
       } else if (endpoint_request.headers['accept-encoding'].includes('gzip') === true) {
+        compression_content_encoding = 'gzip';
         compression_buffer_transform = zlib.gzip;
-        compression_stream_transform = zlib.createGzip;
-        compression_content_encoding= 'gzip';
       }
 
-      console.log({ compression_content_encoding });
-
-      if (compression_buffer_transform !== null && compression_stream_transform !== null && compression_content_encoding !== null) {
-        if (endpoint_response.buffer !== null) {
-          if (Buffer.isBuffer(endpoint_response.buffer) === false) {
-            endpoint_response.error = new HTTPError(500, 'endpoint_response.buffer must be a buffer.');
+      if (compression_content_encoding !== null) {
+        if (Buffer.isBuffer(endpoint_response.buffer) === false) {
+          endpoint_response.error = new HTTPError(500, 'endpoint_response.buffer must be a buffer.');
+          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          return;
+        }
+        compression_buffer_transform(endpoint_response.buffer, (compression_error, compression_buffer_output) => {
+          if (compression_error !== null) {
+            endpoint_response.error = new HTTPError(500, compression_error.message, compression_error.stack);
             internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
             return;
           }
-          compression_buffer_transform(endpoint_response.buffer, (compression_error, compression_buffer_output) => {
-            if (compression_error !== null) {
-              endpoint_response.error = new HTTPError(500, compression_error.message, compression_error.stack);
-              internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
-              return;
-            }
-            endpoint_response.buffer = compression_buffer_output;
-            endpoint_response.headers['Content-Length'] = compression_buffer_output.byteLength;
-            endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
-            internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
-          });
-          return;
-        }
-        if (endpoint_response.stream !== null) {
-
-          const content_file_stat = await fs.promises.stat(endpoint_response.stream_file_path);
-          const compressed_content_id = `${crypto.createHash('sha1').update(endpoint_response.stream_file_path).digest('hex')}.${compression_content_encoding}`; // .stream_file_path
-          const compressed_content_file_path = join('/tmp', compressed_content_id);
-
-          if (compressed_content_mtimems_cache.get(compressed_content_id) === content_file_stat.mtimeMs) {
-            endpoint_response.headers['Content-Length'] = compressed_content_length_cache.get(compressed_content_id);
-            endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
-            raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
-            fs.createReadStream(compressed_content_file_path).pipe(raw_response);
-            return;
-          }
-
-          let compressed_content_length = 0;
-          let compressed_content_hash = crypto.createHash('sha256');
-
+          endpoint_response.buffer = compression_buffer_output;
+          endpoint_response.headers['Content-Length'] = compression_buffer_output.byteLength;
           endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
-          raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
-
-          const compressed_content_passthrough = new stream.PassThrough()
-            .on('data', (chunk) => {
-              compressed_content_length += chunk.byteLength;
-              compressed_content_hash.update(chunk);
-              raw_response.write(chunk);
-            })
-            .on('end', () => {
-              compressed_content_hash = compressed_content_hash.digest('hex');
-              raw_response.end();
-            });
-
-          endpoint_response.stream
-            .pipe(compression_stream_transform())
-            .pipe(compressed_content_passthrough)
-            .pipe(fs.createWriteStream(compressed_content_file_path, { emitClose: true }))
-            .on('close', () => {
-              compressed_content_mtimems_cache.set(compressed_content_id, content_file_stat.mtimeMs);
-              compressed_content_length_cache.set(compressed_content_id, compressed_content_length);
-              compressed_content_etag_cache.set(compressed_content_id, compressed_content_hash);
-            });
-
-          return;
-        }
+          internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+        });
+        return;
       }
     }
-  } else {
-    if (endpoint_response.buffer !== null) {
-      endpoint_response.headers['Content-Length'] = endpoint_response.buffer.byteLength;
-    }
-    // TODO: ETag here
-    // Uncompressed stream here
   }
-
+  endpoint_response.headers['Content-Length'] = endpoint_response.buffer.byteLength;
   internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+};
+
+internals.compress_stream_response = async (config, endpoint_request, raw_response, endpoint_response) => {
+  if (config.use_compression === true) {
+    if (endpoint_request.headers['accept-encoding'] !== undefined) {
+
+      let compression_content_encoding = null;
+      let compression_stream_transform = null;
+
+      if (endpoint_request.headers['accept-encoding'].includes('br') === true) {
+        compression_content_encoding = 'br';
+        compression_stream_transform = zlib.createBrotliCompress;
+      } else if (endpoint_request.headers['accept-encoding'].includes('gzip') === true) {
+        compression_content_encoding = 'gzip';
+        compression_stream_transform = zlib.createGzip;
+      }
+
+      if (compression_content_encoding !== null) {
+
+        const content_file_stat = await fs.promises.stat(endpoint_response.stream_file_path);
+        const compressed_content_id = `${crypto.createHash('sha1').update(endpoint_response.stream_file_path).digest('hex')}.${compression_content_encoding}`; // .stream_file_path
+        const compressed_content_file_path = join('/tmp', compressed_content_id);
+
+        if (compressed_content_mtimems_cache.get(compressed_content_id) === content_file_stat.mtimeMs) {
+          endpoint_response.headers['Content-Length'] = compressed_content_length_cache.get(compressed_content_id);
+          endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
+          raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
+          fs.createReadStream(compressed_content_file_path).pipe(raw_response);
+          return;
+        }
+
+        let compressed_content_length = 0;
+        let compressed_content_hash = crypto.createHash('sha256');
+
+        endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
+        raw_response.writeHead(endpoint_response.code, endpoint_response.headers);
+
+        const compressed_content_passthrough = new stream.PassThrough()
+          .on('data', (chunk) => {
+            compressed_content_length += chunk.byteLength;
+            compressed_content_hash.update(chunk);
+            raw_response.write(chunk);
+          })
+          .on('end', () => {
+            compressed_content_hash = compressed_content_hash.digest('hex');
+            raw_response.end();
+          });
+
+        fs.createReadStream(endpoint_response.stream_file_path)
+          .pipe(compression_stream_transform())
+          .pipe(compressed_content_passthrough)
+          .pipe(fs.createWriteStream(compressed_content_file_path, { emitClose: true }))
+          .on('close', () => {
+            compressed_content_mtimems_cache.set(compressed_content_id, content_file_stat.mtimeMs);
+            compressed_content_length_cache.set(compressed_content_id, compressed_content_length);
+            compressed_content_etag_cache.set(compressed_content_id, compressed_content_hash);
+          });
+
+        return;
+      }
+    }
+  }
 };
 
 internals.prepare_response_error = (config, endpoint_request, raw_response, endpoint_response) => {
@@ -215,7 +216,7 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
     endpoint_response.stream_file_path = null;
     endpoint_response.error = null;
   }
-  internals.compress_response(config, endpoint_request, raw_response, endpoint_response);
+  internals.compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
 const http_methods = new Set(['HEAD', 'GET', 'POST', 'PUT', 'DELETE']);
@@ -269,13 +270,20 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
     endpoint_response.text = null;
   }
 
-  if (endpoint_response.buffer !== null || endpoint_response.stream !== null) {
+  if (endpoint_response.buffer !== null || endpoint_response.stream_file_path !== null) {
     if (endpoint_response.headers['Content-Type'] === undefined) {
       endpoint_response.headers['Content-Type'] = 'application/octet-stream';
     }
   }
 
-  internals.compress_response(config, endpoint_request, raw_response, endpoint_response);
+  if (endpoint_response.buffer !== null) {
+    internals.compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+    return;
+  }
+  if (endpoint_response.stream_file_path !== null) {
+    internals.compress_stream_response(config, endpoint_request, raw_response, endpoint_response);
+    return;
+  }
 };
 
 const handle_request = async (endpoint_request, raw_response, endpoint_response, handlers, config) => {
@@ -456,6 +464,7 @@ function EndpointServer(config) {
         'Referrer-Policy': 'no-referrer', // can be "same-origin"
         'X-DNS-Prefetch-Control': 'off', // can be "on"
         'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
+        'Cache-Control': 'no-store',
       },
       text: null,
       json: null,
@@ -545,7 +554,6 @@ function EndpointServer(config) {
           endpoint_response.headers['Cache-Control'] = cache_control_map.get(endpoint_directory);
         }
         endpoint_response.headers['Content-Type'] = file_content_type;
-        endpoint_response.stream = fs.createReadStream(file_path);
         endpoint_response.stream_file_path = file_path;
         // const file_content_buffer = await fs.promises.readFile(file_path);
         // endpoint_response.buffer = file_content_buffer;
