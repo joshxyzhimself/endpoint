@@ -529,7 +529,7 @@ function EndpointServer(config) {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': config.referrer_policy,
       'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
-      'Content-Security-Policy': `upgrade-insecure-requests; default-src ${endpoint_request.encrypted === true ? 'https' : 'http'}: 'self' 'unsafe-inline';`,
+      'Content-Security-Policy': `upgrade-insecure-requests; default-src ${endpoint_request.encrypted === true ? 'https' : 'http'}: 'self';`,
       'Cache-Control': 'no-store',
     };
 
