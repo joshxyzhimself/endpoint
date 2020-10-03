@@ -262,17 +262,7 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
     console.error(endpoint_response.error);
     endpoint_response.code = endpoint_response.error.code;
 
-    endpoint_response.headers = {
-      'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload;',
-      'X-Frame-Options': 'DENY',
-      'X-XSS-Protection': '1; mode=block',
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': config.referrer_policy,
-      'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
-      'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
-      'Cache-Control': 'no-store',
-      'Content-Type': 'application/json; charset=utf-8',
-    };
+    endpoint_response.headers = { ...endpoint_response.default_headers, 'Content-Type': 'application/json; charset=utf-8' };
     endpoint_response.json = {
       error: {
         code: endpoint_response.error.code,
@@ -532,18 +522,21 @@ function EndpointServer(config) {
       sid: null,
     };
 
+    const default_headers = {
+      'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload;',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': config.referrer_policy,
+      'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
+      'Content-Security-Policy': `upgrade-insecure-requests; default-src ${endpoint_request.encrypted === true ? 'https' : 'http'}: 'self' 'unsafe-inline';`,
+      'Cache-Control': 'no-store',
+    };
+
     const endpoint_response = {
       code: 200,
-      headers: {
-        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload;',
-        'X-Frame-Options': 'DENY',
-        'X-XSS-Protection': '1; mode=block',
-        'X-Content-Type-Options': 'nosniff',
-        'Referrer-Policy': config.referrer_policy,
-        'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
-        'Content-Security-Policy': 'default-src https:; upgrade-insecure-requests; connect-src https: \'self\'; img-src https: \'self\'; script-src https: \'unsafe-inline\'; style-src https: \'unsafe-inline\';', // can be edited
-        'Cache-Control': 'no-store',
-      },
+      headers: { ...default_headers },
+      default_headers,
       text: null,
       json: null,
       buffer: null,
