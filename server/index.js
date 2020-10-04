@@ -738,7 +738,6 @@ function EndpointServer(config) {
   this.websocket_server = null;
 
   this.https = (port, key, cert, ca, tls_min_version, dhparam) => {
-    console.log({ port, key, cert, ca, tls_min_version, dhparam });
     if (Number.isInteger(port) === false || port <= 0) {
       throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "port" must be an integer > 0.');
     }
@@ -754,11 +753,7 @@ function EndpointServer(config) {
     if (typeof tls_min_version !== 'string' || accepted_tls_min_version.has(tls_min_version) === false) {
       throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "tls_min_version" must be "TLSv1.3" or "TLSv1.2"');
     }
-    console.log('typeof dhparam', typeof dhparam);
-    console.log('typeof dhparam !== undefined', typeof dhparam !== undefined);
-    console.log('typeof dhparam !== string', typeof dhparam !== 'string');
-    console.log('both', typeof dhparam !== undefined && typeof dhparam !== 'string');
-    if (typeof dhparam !== undefined && typeof dhparam !== 'string') {
+    if (dhparam !== undefined && typeof dhparam !== 'string') {
       throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "dhparam" must be a string.');
     }
     const https_server_options = {
@@ -780,7 +775,7 @@ function EndpointServer(config) {
     if (tls_min_version === 'TLSv1.3') {
       https_server_options.secureOptions |= crypto.constants.SSL_OP_NO_TLSv1_2;
     }
-    if (typeof dhparam !== undefined) {
+    if (dhparam !== undefined) {
       https_server_options.dhparam = dhparam;
     }
     const https_server = https.createServer(https_server_options, request_listener);
