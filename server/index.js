@@ -754,6 +754,10 @@ function EndpointServer(config) {
     if (typeof tls_min_version !== 'string' || accepted_tls_min_version.has(tls_min_version) === false) {
       throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "tls_min_version" must be "TLSv1.3" or "TLSv1.2"');
     }
+    console.log('typeof dhparam', typeof dhparam);
+    console.log('typeof dhparam !== undefined', typeof dhparam !== undefined);
+    console.log('typeof dhparam !== string', typeof dhparam !== 'string');
+    console.log('both', typeof dhparam !== undefined && typeof dhparam !== 'string');
     if (typeof dhparam !== undefined && typeof dhparam !== 'string') {
       throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "dhparam" must be a string.');
     }
