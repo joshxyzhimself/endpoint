@@ -443,9 +443,6 @@ function EndpointServer(config) {
   if (typeof config.x_dns_prefetch_control !== 'string' || accepted_x_dns_prefetch_control.has(config.x_dns_prefetch_control) === false) {
     throw new Error('new EndpointServer(config), "config.x_dns_prefetch_control" must be "off" or "on"');
   }
-  if (typeof config.tls_min_version !== 'string' || accepted_tls_min_version.has(config.tls_min_version) === false) {
-    throw new Error('new EndpointServer(config), "config.tls_min_version" must be "TLSv1.3" or "TLSv1.2"');
-  }
 
   const endpoint = this;
 
@@ -720,6 +717,9 @@ function EndpointServer(config) {
 
   this.http_server = null;
   this.http = (port) => {
+    if (Number.isInteger(port) === false || port <= 0) {
+      throw new Error('http(port) "port" must be an integer > 0.');
+    }
     const http_server = http.createServer(request_listener);
     http_server.on('close', () => {
       console.log('http_server CLOSED');
@@ -737,19 +737,47 @@ function EndpointServer(config) {
   this.https_server = null;
   this.websocket_server = null;
 
-  this.https = (port, key, cert, ca) => {
+  this.https = (port, key, cert, ca, tls_min_version, dhparam) => {
+    if (Number.isInteger(port) === false || port <= 0) {
+      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "port" must be an integer > 0.');
+    }
+    if (typeof key !== 'string') {
+      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "key" must be a string.');
+    }
+    if (typeof cert !== 'string') {
+      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "cert" must be a string.');
+    }
+    if (typeof ca !== 'string') {
+      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "ca" must be a string.');
+    }
+    if (typeof tls_min_version !== 'string' || accepted_tls_min_version.has(tls_min_version) === false) {
+      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "tls_min_version" must be "TLSv1.3" or "TLSv1.2"');
+    }
+    if (typeof dhparam !== undefined && typeof dhparam !== 'string') {
+      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "dhparam" must be a string.');
+    }
     const https_server_options = {
       key,
       cert,
       ca,
-      minVersion: config.tls_min_version,
+      minVersion: tls_min_version,
       maxVersion: 'TLSv1.3',
-      secureOptions: crypto.constants.SSL_OP_NO_SSLv3
-         | crypto.constants.SSL_OP_NO_TLSv1
-         | crypto.constants.SSL_OP_NO_TLSv1_1
-         | crypto.constants.SSL_OP_NO_TLSv1_2
-         | crypto.constants.SSL_OP_NO_TICKET,
+      ecdhCurve: 'auto',
+      honorCipherOrder: true,
+      secureOptions: crypto.constants.SSL_OP_NO_TICKET
+        | crypto.constants.SSL_OP_NO_SSLv2
+        | crypto.constants.SSL_OP_NO_SSLv3
+        | crypto.constants.SSL_OP_NO_TLSv1
+        | crypto.constants.SSL_OP_NO_TLSv1_1
+        | crypto.constants.SSL_OP_CIPHER_SERVER_PREFERENCE
+        | crypto.constants.SSL_OP_PRIORITIZE_CHACHA,
     };
+    if (tls_min_version === 'TLSv1.3') {
+      https_server_options.secureOptions |= crypto.constants.SSL_OP_NO_TLSv1_2;
+    }
+    if (typeof dhparam !== undefined) {
+      https_server_options.dhparam = dhparam;
+    }
     const https_server = https.createServer(https_server_options, request_listener);
     https_server.on('close', () => {
       is_using_https = false;
