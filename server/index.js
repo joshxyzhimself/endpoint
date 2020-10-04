@@ -738,6 +738,7 @@ function EndpointServer(config) {
   this.websocket_server = null;
 
   this.https = (port, key, cert, ca, tls_min_version, dhparam) => {
+    console.log({ port, key, cert, ca, tls_min_version, dhparam });
     if (Number.isInteger(port) === false || port <= 0) {
       throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "port" must be an integer > 0.');
     }
