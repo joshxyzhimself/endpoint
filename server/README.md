@@ -45,6 +45,7 @@ Cache-Control: private, max-age=3600, s-maxage=3600
 
 ```sh
 node ./server/demo/latest.js
+node ./server/demo/basic_auth.js
 ```
 
 #### License

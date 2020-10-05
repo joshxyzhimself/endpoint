@@ -67,14 +67,15 @@ internals.send_buffer_response = (config, endpoint_request, raw_response, endpoi
   }
   if (endpoint_request.method === 'HEAD' || endpoint_response.code === 304) {
     endpoint_response.buffer = null;
-    raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
     return;
   }
-  raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end(endpoint_response.buffer);
+  if (endpoint_response.buffer !== null) {
+    raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end(endpoint_response.buffer);
+  }
+  raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
 };
 
 internals.compress_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
-
   if (config.use_compression === true) {
     if (endpoint_request.headers['accept-encoding'] !== undefined) {
 
@@ -288,7 +289,6 @@ const http_methods = new Set(['HEAD', 'GET', 'POST', 'PUT', 'DELETE']);
 const accepted_redirect_codes = new Set([301, 302, 307, 308]);
 
 internals.prepare_response = (config, endpoint_request, raw_response, endpoint_response) => {
-
   if (endpoint_response.error !== null) {
     internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
     return;
@@ -349,6 +349,7 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
     internals.compress_stream_response(config, endpoint_request, raw_response, endpoint_response);
     return;
   }
+  internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
 const handle_request = async (endpoint_request, raw_response, endpoint_response, handlers, config) => {
