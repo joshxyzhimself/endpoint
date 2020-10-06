@@ -260,9 +260,16 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
       internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
-    console.error(endpoint_response.error);
+    if (config.use_stack_trace === true) {
+      console.error('---');
+      console.error('--- endpoint_request:');
+      console.error(endpoint_request);
+      console.error('--- endpoint_response:');
+      console.error(endpoint_response);
+      console.error('--- endpoint_response.error:');
+      console.error(endpoint_response.error);
+    }
     endpoint_response.code = endpoint_response.error.code;
-
     endpoint_response.headers = { ...endpoint_response.default_headers, 'Content-Type': 'application/json; charset=utf-8' };
     endpoint_response.json = {
       error: {
