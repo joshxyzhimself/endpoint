@@ -7,31 +7,44 @@ const EndpointClient = require('endpoint/client');
 
 await EndpointClient.request({
 
-  // Optional string, abort controller id
+  // Optional string
+  // Used as abort controller id
   controller_id: String?,
 
-  // Required string, one of HEAD, GET, POST, PUT, DELETE
+  // Required string
+  // Used as http method, e.g. HEAD, GET, POST, PUT, DELETE
   method: String,
 
   // Required string
   url: String,
 
-  // Optional object, will append as url query
+  // Optional object
+  // Will append as url query
+  // Compatible with "files", "json", "urlencoded"
   query: Object?,
 
-  // Optional object, will send as "application/json"
-  json: Object?,
-
-  // Optional array of files, compatible with "json"
+  // Optional array of files
   // Will send as multipart/form-data"
+  // Compatible with "json"
   files: Array?,
 
-  // Optional object, not compatible with "json" or "files"
+  // Optional object
+  // Will send as "application/json"
+  json: Object?,
+
+  // Optional object
   // Will send as "application/x-www-form-urlencoded"
+  // NOT COMPATIBLE with "files" or "json"
   urlencoded: Object?,
 });
 ```
 
+## Note
+
+- client2 is for hmac-auth requests
+- demo incomplete
+
+---
 
 ## EndpointClient2
 
