@@ -558,6 +558,7 @@ function EndpointServer(config) {
       return;
     }
 
+    // insecure GET & HEAD to secure GET & HEAD
     if (is_using_https === true && endpoint_request.encrypted === false) {
       if (endpoint_request.method === 'GET' || endpoint_request.method === 'HEAD') {
         endpoint_response.code = 308;
@@ -565,14 +566,10 @@ function EndpointServer(config) {
         internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
         return;
       }
-    }
-
-    if (is_using_https === false) {
-      if (endpoint_request.method === 'POST') {
-        endpoint_response.error = new HTTPError(405);
-        internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
-        return;
-      }
+      // disallow other insecure requests
+      endpoint_response.error = new HTTPError(405);
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
     }
 
     if (config.use_session_id === true) {
