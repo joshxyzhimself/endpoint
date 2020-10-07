@@ -16,18 +16,17 @@ const is_ip = require('is-ip');
 const WebSocket = require('ws');
 
 class HTTPError extends Error {
-  constructor (code, message, stack) {
+  constructor (code, message, source) {
     super(message);
 
     if (Number.isInteger(code) === false) {
-      throw new Error('new HTTPError(code, message), "code" must be an integer.');
+      throw new Error('new HTTPError(code, message, source?), "code" must be an integer.');
     }
     if (message !== undefined && typeof message !== 'string') {
-      throw new Error('new HTTPError(code, message), "message" must be a string.');
+      throw new Error('new HTTPError(code, message, source?), "message" must be a string.');
     }
-    if (stack !== undefined) {
-      this.stack = this.stack.concat('\n', stack);
-      console.log(this.stack);
+    if (message !== undefined && source instanceof Error) {
+      throw new Error('new HTTPError(code, message, source?), "source" must be a string.');
     }
 
     if (typeof Error.captureStackTrace === 'function') {
@@ -35,7 +34,8 @@ class HTTPError extends Error {
     }
 
     this.code = code;
-    this.status = statuses.message[code] || 'Unknown';
+    this.status = statuses.message[code] || null;
+    this.source = source || null;
   }
 
   static assert(value, code, message) {
@@ -57,6 +57,9 @@ class HTTPError extends Error {
 const internals = {};
 
 internals.send_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
+  if (config.use_stack_trace === true) {
+    console.log('@send_buffer_response');
+  }
   if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
     if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
       endpoint_response.headers['ETag'] = crypto.createHash('sha256').update(endpoint_response.buffer).digest('hex');
@@ -67,15 +70,18 @@ internals.send_buffer_response = (config, endpoint_request, raw_response, endpoi
   }
   if (endpoint_request.method === 'HEAD' || endpoint_response.code === 304) {
     endpoint_response.buffer = null;
-    return;
   }
   if (endpoint_response.buffer !== null) {
     raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end(endpoint_response.buffer);
+    return;
   }
   raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
 };
 
 internals.compress_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
+  if (config.use_stack_trace === true) {
+    console.log('@compress_buffer_response');
+  }
   if (config.use_compression === true) {
     if (endpoint_request.headers['accept-encoding'] !== undefined) {
 
@@ -98,7 +104,7 @@ internals.compress_buffer_response = (config, endpoint_request, raw_response, en
         }
         compression_buffer_transform(endpoint_response.buffer, (compression_error, compression_buffer_output) => {
           if (compression_error !== null) {
-            endpoint_response.error = new HTTPError(500, compression_error.message, compression_error.stack);
+            endpoint_response.error = new HTTPError(500, compression_error.message, compression_error);
             internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
             return;
           }
@@ -115,8 +121,10 @@ internals.compress_buffer_response = (config, endpoint_request, raw_response, en
   internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
-
 internals.send_stream_response = (config, endpoint_request, raw_response, endpoint_response) => {
+  if (config.use_stack_trace === true) {
+    console.log('@send_stream_response');
+  }
   if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
     if (endpoint_response.headers['Cache-Control'] !== 'no-store') {
       if (endpoint_response.stream_etag !== null) {
@@ -142,6 +150,9 @@ const file_length_cache = new Map();
 const file_etag_cache = new Map();
 
 internals.compress_stream_response = (config, endpoint_request, raw_response, endpoint_response) => {
+  if (config.use_stack_trace === true) {
+    console.log('@compress_stream_response');
+  }
   if (config.use_compression === true) {
     if (endpoint_request.headers['accept-encoding'] !== undefined) {
 
@@ -161,7 +172,7 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
         fs.stat(endpoint_response.stream_raw_path, (raw_file_stat_error, raw_file_stat) => {
 
           if (raw_file_stat_error !== null) {
-            endpoint_response.error = new HTTPError(500, raw_file_stat_error.message, raw_file_stat_error.stack);
+            endpoint_response.error = new HTTPError(500, raw_file_stat_error.message, raw_file_stat_error);
             internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
             return;
           }
@@ -214,7 +225,7 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
   fs.stat(endpoint_response.stream_raw_path, (raw_file_stat_error, raw_file_stat) => {
 
     if (raw_file_stat_error !== null) {
-      endpoint_response.error = new HTTPError(500, raw_file_stat_error.message, raw_file_stat_error.stack);
+      endpoint_response.error = new HTTPError(500, raw_file_stat_error.message, raw_file_stat_error);
       internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
@@ -254,6 +265,9 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
 };
 
 internals.prepare_response_error = (config, endpoint_request, raw_response, endpoint_response) => {
+  if (config.use_stack_trace === true) {
+    console.log('@prepare_response_error');
+  }
   if (endpoint_response.error !== null) {
     if (endpoint_response.error instanceof HTTPError === false) {
       endpoint_response.error = new HTTPError(500, 'endpoint_response.error must be an instance of HTTPError.');
@@ -268,6 +282,8 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
       console.error(endpoint_response);
       console.error('--- endpoint_response.error:');
       console.error(endpoint_response.error);
+      console.error('--- endpoint_response.error.source:');
+      console.error(endpoint_response.error.source);
     }
     endpoint_response.code = endpoint_response.error.code;
     endpoint_response.headers = { ...endpoint_response.default_headers, 'Content-Type': 'application/json; charset=utf-8' };
@@ -276,7 +292,6 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
         code: endpoint_response.error.code,
         status: endpoint_response.error.status,
         message: endpoint_response.error.message,
-        stack: config.use_stack_trace === true ? endpoint_response.error.stack : null,
         timestamp: new Date().toISOString(),
       }
     };
@@ -296,6 +311,9 @@ const http_methods = new Set(['HEAD', 'GET', 'POST', 'PUT', 'DELETE']);
 const accepted_redirect_codes = new Set([301, 302, 307, 308]);
 
 internals.prepare_response = (config, endpoint_request, raw_response, endpoint_response) => {
+  if (config.use_stack_trace === true) {
+    console.log('@prepare_response');
+  }
   if (endpoint_response.error !== null) {
     internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
     return;
@@ -329,6 +347,24 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
     endpoint_response.json = null;
   }
 
+  if (endpoint_response.html !== null) {
+    if (endpoint_response.text !== null) {
+      endpoint_response.error = new HTTPError(500, 'endpoint_response.html cannot be used with endpoint_response.text.');
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
+    }
+    if (typeof endpoint_response.html !== 'string') {
+      endpoint_response.error = new HTTPError(500, 'endpoint_response.html must be a string.');
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
+    }
+    endpoint_response.buffer = Buffer.from(endpoint_response.html);
+    if (endpoint_response.headers['Content-Type'] === undefined) {
+      endpoint_response.headers['Content-Type'] = 'text/html; charset=utf-8';
+    }
+    endpoint_response.html = null;
+  }
+
   if (endpoint_response.text !== null) {
     if (typeof endpoint_response.text !== 'string') {
       endpoint_response.error = new HTTPError(500, 'endpoint_response.text must be a string.');
@@ -337,7 +373,7 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
     }
     endpoint_response.buffer = Buffer.from(endpoint_response.text);
     if (endpoint_response.headers['Content-Type'] === undefined) {
-      endpoint_response.headers['Content-Type'] = 'text/html; charset=utf-8';
+      endpoint_response.headers['Content-Type'] = 'text/plain; charset=utf-8';
     }
     endpoint_response.text = null;
   }
@@ -356,10 +392,15 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
     internals.compress_stream_response(config, endpoint_request, raw_response, endpoint_response);
     return;
   }
+
+  // allows sending of responses with empty body
   internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
 const handle_request = async (endpoint_request, raw_response, endpoint_response, handlers, config) => {
+  if (config.use_stack_trace === true) {
+    console.log('@handle_request');
+  }
   try {
     let returned_endpoint_response;
     for (let i = 0, l = handlers.length; i < l; i += 1) {
@@ -377,13 +418,13 @@ const handle_request = async (endpoint_request, raw_response, endpoint_response,
     }
     internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
     return;
-  } catch (e) {
-    if (e instanceof HTTPError) {
-      endpoint_response.error = e;
+  } catch (handler_error) {
+    if (handler_error instanceof HTTPError) {
+      endpoint_response.error = handler_error;
       internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
-    endpoint_response.error = new HTTPError(500, e.message, e.stack);
+    endpoint_response.error = new HTTPError(500, handler_error.message, handler_error);
     internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
     return;
   }
@@ -513,6 +554,10 @@ function EndpointServer(config) {
   });
 
   const request_listener = async (raw_request, raw_response) => {
+    if (config.use_stack_trace === true) {
+      console.log('-----------------');
+      console.log('@request_listener');
+    }
 
     const ip = get_request_ip_address(raw_request);
     const ua = get_request_user_agent(raw_request);
@@ -526,6 +571,10 @@ function EndpointServer(config) {
       url: url.parse(raw_request.url, true),
       sid: null,
     };
+
+    if (config.use_stack_trace === true) {
+      console.log(endpoint_request.method, endpoint_request.url.pathname);
+    }
 
     const default_headers = {
       'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload;',
@@ -543,6 +592,7 @@ function EndpointServer(config) {
       headers: { ...default_headers },
       default_headers,
       text: null,
+      html: null,
       json: null,
       buffer: null,
       stream: null,
@@ -615,8 +665,8 @@ function EndpointServer(config) {
 
         try {
           await fs.promises.access(file_path);
-        } catch (e) {
-          endpoint_response.error = new HTTPError(404, undefined, e.stack);
+        } catch (file_access_error) {
+          endpoint_response.error = new HTTPError(404, undefined, file_access_error);
           internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
           return;
         }
@@ -663,8 +713,8 @@ function EndpointServer(config) {
             try {
               endpoint_request.body = JSON.parse(buffer.toString());
               endpoint_request.body_buffer = buffer;
-            } catch (e) {
-              endpoint_response.error = new HTTPError(400, undefined, e.stack);
+            } catch (json_parsing_error) {
+              endpoint_response.error = new HTTPError(400, undefined, json_parsing_error);
               internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
               return;
             }
@@ -729,9 +779,9 @@ function EndpointServer(config) {
     http_server.on('close', () => {
       console.log('http_server CLOSED');
     });
-    http_server.on('error', (e) => {
-      console.error('http_server ERROR', e.message);
-      console.error(e);
+    http_server.on('error', (http_server_error) => {
+      console.error('http_server ERROR', http_server_error.message);
+      console.error(http_server_error);
     });
     http_server.listen(port, () => {
       console.log('https_server LISTEN', port);
@@ -788,9 +838,9 @@ function EndpointServer(config) {
       is_using_https = false;
       console.log('https_server CLOSED');
     });
-    https_server.on('error', (e) => {
-      console.error('https_server ERROR', e.message);
-      console.error(e);
+    https_server.on('error', (https_server_error) => {
+      console.error('https_server ERROR', https_server_error.message);
+      console.error(https_server_error);
     });
     if (config.use_websocket === true && typeof config.on_websocket_connection === 'function') {
       const websocket_server = new WebSocket.Server({ server: https_server });
@@ -810,8 +860,8 @@ function EndpointServer(config) {
         websocket_client_is_alive.set(websocket_client, false);
         try {
           websocket_client.ping(() => {});
-        } catch (e) {
-          console.error(e);
+        } catch (websocket_ping_error) {
+          console.error(websocket_ping_error);
         }
       }), 30000);
       this.websocket_server = websocket_server;

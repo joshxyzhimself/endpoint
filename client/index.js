@@ -68,7 +68,22 @@ const request = async (options) => {
     }
 
     switch (response_content_type) {
-      case 'application/json': {
+      case 'text/plain; charset=utf-8': {
+        try {
+          const response_text = await response.text();
+          if (options.controller_id !== undefined) {
+            controller_map.delete(options.controller_id);
+          }
+          return response_text;
+        } catch (e) {
+          if (options.controller_id !== undefined) {
+            controller_map.delete(options.controller_id);
+          }
+          console.error(e);
+          throw new Error(`request(options), application/json parsing error. ${e.message}`);
+        }
+      }
+      case 'application/json; charset=utf-8': {
         try {
           const response_json = await response.json();
           if (options.controller_id !== undefined) {

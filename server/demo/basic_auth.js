@@ -18,7 +18,7 @@ endpoint.static('/', path_from_cwd('/server/demo/static'), 'no-cache');
 // return HTML, catch-all, as text/html; charset=utf-8
 endpoint.get('*', (request, response) => {
   response.headers['Cache-Control'] = 'no-cache';
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -43,7 +43,7 @@ endpoint.get('/login', (request, response) => {
     return response;
   }
   const authorization = Buffer.from(request.headers.authorization.substring(6), 'base64').toString('utf-8');
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -64,7 +64,7 @@ endpoint.get('/login', (request, response) => {
 
 endpoint.get('/logout', (request, response) => {
   response.code = 401;
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>

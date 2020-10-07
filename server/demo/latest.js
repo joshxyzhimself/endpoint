@@ -11,7 +11,6 @@ const endpoint = new EndpointServer({
   x_dns_prefetch_control: 'off', // can be "off" on "on"
 });
 
-
 // expose static directories
 endpoint.static('/', path_from_cwd('/server/demo/static'), 'no-cache');
 endpoint.static('/images', path_from_cwd('/server/demo/static/images'), 'private, max-age=3600, s-maxage=3600');
@@ -19,7 +18,7 @@ endpoint.static('/images', path_from_cwd('/server/demo/static/images'), 'private
 // return HTML, catch-all, as text/html; charset=utf-8
 endpoint.get('*', (request, response) => {
   response.headers['Cache-Control'] = 'no-cache';
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -70,7 +69,7 @@ endpoint.get('*', (request, response) => {
 // return HTML, as text/html; charset=utf-8
 endpoint.get('/test-page-1', (request, response) => {
   response.headers['Cache-Control'] = 'no-cache';
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -168,7 +167,7 @@ const users_only_middleware = async (request) => {
 endpoint.get('/login', cookie_sessions_middleware);
 endpoint.get('/login', guests_only_middleware);
 endpoint.get('/login', (request, response) => {
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -187,7 +186,7 @@ endpoint.get('/login', (request, response) => {
 endpoint.get('/account', cookie_sessions_middleware);
 endpoint.get('/account', users_only_middleware);
 endpoint.get('/account', (request, response) => {
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -207,7 +206,7 @@ endpoint.get('/login-user', cookie_sessions_middleware);
 endpoint.get('/login-user', guests_only_middleware);
 endpoint.get('/login-user', (request, response) => {
   request.session.user = { id: 'alice-id' };
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
@@ -227,7 +226,7 @@ endpoint.get('/logout-user', cookie_sessions_middleware);
 endpoint.get('/logout-user', users_only_middleware);
 endpoint.get('/logout-user', (request, response) => {
   request.session.user = null;
-  response.text = `
+  response.html = `
     <!doctype html>
     <html lang="en">
       <head>
