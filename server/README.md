@@ -35,6 +35,7 @@
 - https: cipher server preference, prioritize chacha, honor cipher order
 - https: no ticket, no sslv2, no sslv3, no tlsv1, no tlsv1.1
 - https: no tlsv1.2 if tls_min_version is tlsv1.3
+- utils: endpoint/server/scrypt helper
 
 #### Cache
 
