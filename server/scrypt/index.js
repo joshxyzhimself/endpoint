@@ -1,9 +1,12 @@
+const util = require('util');
 const crypto = require('crypto');
 
 /**
  * References
  * - https://blog.filippo.io/the-scrypt-parameters/
  */
+
+const scrypt_derive_key = util.promisify(crypto.scrypt);
 
 const scrypt = {
 
@@ -16,33 +19,21 @@ const scrypt = {
 
   // core functions
   create_salt: () => crypto.randomBytes(32).toString('hex'),
-  derive_key: (utf8_password, hex_salt) => new Promise((resolve, reject) => {
-    try {
-      if (typeof utf8_password !== 'string') {
-        throw Error('scrypt.derive_key(utf8_password, hex_salt), "utf8_password" must be a string');
-      }
-      if (typeof hex_salt !== 'string') {
-        throw Error('scrypt.derive_key(utf8_password, hex_salt), "hex_salt" must be a string');
-      }
-    } catch (validation_error) {
-      reject(validation_error);
-      return;
+  derive_key: async (password, password_salt) => {
+    if (typeof password !== 'string') {
+      throw new Error('scrypt.derive_key(password, password_salt), "password" must be a string');
     }
-    const utf8_password_normalized = utf8_password.normalize('NFKC');
-    crypto.scrypt(
-      Buffer.from(utf8_password_normalized),
-      Buffer.from(hex_salt, 'hex'),
-      scrypt.derived_key_length,
-      scrypt.derived_key_options,
-      (scrypt_error, scrypt_derived_key) => {
-        if (scrypt_error !== null) {
-          reject(scrypt_error);
-          return;
-        }
-        resolve(scrypt_derived_key.toString('hex'));
-      },
-    );
-  }),
+    if (typeof password_salt !== 'string') {
+      throw new Error('scrypt.derive_key(password, password_salt), "password_salt" must be a string');
+    }
+    const utf8_password_normalized = password.normalize('NFKC');
+    const utf8_password_normalized_buffer = Buffer.from(utf8_password_normalized);
+    const password_salt_buffer = Buffer.from(password_salt, 'hex');
+    const password_key_buffer = await scrypt_derive_key(utf8_password_normalized_buffer, password_salt_buffer,scrypt.derived_key_length,scrypt.derived_key_options);
+    const password_key = password_key_buffer.toString('hex');
+    return password_key;
+  },
 };
+
 
 module.exports = scrypt;

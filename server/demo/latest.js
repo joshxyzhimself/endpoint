@@ -118,7 +118,7 @@ endpoint.get('/test-404', () => {
 // return 400 error, with custom error stack
 endpoint.get('/test-400', () => {
   try {
-    throw Error('some error');
+    throw new Error('some error');
   } catch (e) {
     throw new HTTPError(400, undefined, e.stack);
   }
@@ -126,7 +126,7 @@ endpoint.get('/test-400', () => {
 
 // return 500 error, with error stack preserved, same as above
 endpoint.get('/test-500-1', () => {
-  throw Error('some error');
+  throw new Error('some error');
 });
 
 // return 500 error, an internal error
