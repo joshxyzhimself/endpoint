@@ -13,20 +13,28 @@
 
 #### Recent Updates
 
-- insecure GET and HEAD requests are upgraded
-- insecure POST request return 405
-- support return of buffer
-- setting response.json sets "application/json; charset=utf-8" content-type
-- setting response.text sets "text/html; charset=utf-8" content-type
-- setting response.text sets "application/octet-stream" content-type
-- streaming raw file reads
-- streaming raw file compression
-- raw file hash caching
-- compressed file length caching
-- compressed file hash caching
-- compressed file data caching
-- raw file 304 if request.headers.if-none-match matches etag
-- compressed file 304 if request.headers.if-none-match matches etag
+- if https available, insecure GET and HEAD requests are upgraded
+- if https available, insecure non-GET and non-HEAD requests return 405
+- response.json for "application/json; charset=utf-8" content-type
+- response.text for "text/plain; charset=utf-8" content-type
+- response.html for "text/html; charset=utf-8" content-type
+- response.filename for content-disposition
+- response.buffer for "application/octet-stream" content-type
+- response.stream for "application/octet-stream" content-type
+- response buffer compression
+- response stream compression
+- static raw file: hash caching
+- static raw file: if request.headers.if-none-match matches etag, returns 304
+- static raw file: compression
+- static compressed file: streaming
+- static compressed file: length caching
+- static compressed file: hash caching
+- static compressed file: if request.headers.if-none-match matches etag, returns 304
+- https: tls_min_version
+- https: dhparam
+- https: cipher server preference, prioritize chacha, honor cipher order
+- https: no ticket, no sslv2, no sslv3, no tlsv1, no tlsv1.1
+- https: no tlsv1.2 if tls_min_version is tlsv1.3
 
 #### Cache
 

@@ -94,7 +94,7 @@ endpoint.get('/test-json', (request, response) => {
 // return Buffer, as application/octet-stream
 endpoint.get('/test-buffer', (request, response) => {
   response.buffer = Buffer.from('test-buffer');
-  response.headers['Content-Disposition'] = 'attachment; filename="test-buffer.txt"';
+  response.filename = 'test-buffer-xyz.txt';
   return response;
 });
 

@@ -35,6 +35,7 @@ class HTTPError extends Error {
 
     this.code = code;
     this.status = statuses.message[code] || null;
+    this.message = message || null;
     this.source = source || null;
   }
 
@@ -287,22 +288,28 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
     }
     endpoint_response.code = endpoint_response.error.code;
     endpoint_response.headers = { ...endpoint_response.default_headers, 'Content-Type': 'application/json; charset=utf-8' };
-    endpoint_response.json = {
+
+    const endpoint_response_json = {
       error: {
         code: endpoint_response.error.code,
         status: endpoint_response.error.status,
         message: endpoint_response.error.message,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toUTCString(),
       }
     };
-    endpoint_response.text = JSON.stringify(endpoint_response.json);
+
     endpoint_response.json = null;
-    endpoint_response.buffer = Buffer.from(endpoint_response.text);
     endpoint_response.text = null;
+    endpoint_response.html = null;
+    endpoint_response.filename = null;
+    endpoint_response.buffer = null;
+    endpoint_response.stream = null;
     endpoint_response.stream_raw_path = null;
-    endpoint_response.stream_etag = null;
     endpoint_response.stream_source_path = null;
+    endpoint_response.stream_etag = null;
     endpoint_response.error = null;
+
+    endpoint_response.buffer = Buffer.from(JSON.stringify(endpoint_response_json));
   }
   internals.compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
@@ -376,6 +383,17 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
       endpoint_response.headers['Content-Type'] = 'text/plain; charset=utf-8';
     }
     endpoint_response.text = null;
+  }
+
+  if (endpoint_response.filename !== null) {
+    if (typeof endpoint_response.filename !== 'string') {
+      endpoint_response.error = new HTTPError(500, 'endpoint_response.filename must be a string.');
+      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      return;
+    }
+    if (endpoint_response.headers['Content-Disposition'] === undefined) {
+      endpoint_response.headers['Content-Disposition'] = `attachment; filename="${endpoint_response.filename}"`;
+    }
   }
 
   if (endpoint_response.buffer !== null || endpoint_response.stream_raw_path !== null) {
@@ -573,6 +591,7 @@ function EndpointServer(config) {
     };
 
     if (config.use_stack_trace === true) {
+      console.log(new Date().toUTCString());
       console.log(endpoint_request.method, endpoint_request.url.pathname);
     }
 
@@ -591,9 +610,10 @@ function EndpointServer(config) {
       code: 200,
       headers: { ...default_headers },
       default_headers,
+      json: null,
       text: null,
       html: null,
-      json: null,
+      filename: null,
       buffer: null,
       stream: null,
       stream_raw_path: null,
