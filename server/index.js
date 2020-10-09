@@ -573,7 +573,7 @@ function EndpointServer(config) {
 
   const request_listener = async (raw_request, raw_response) => {
     if (config.use_stack_trace === true) {
-      console.log('-----------------');
+      console.log('@', new Date().toUTCString());
       console.log('@request_listener');
     }
 
@@ -591,7 +591,6 @@ function EndpointServer(config) {
     };
 
     if (config.use_stack_trace === true) {
-      console.log(new Date().toUTCString());
       console.log(endpoint_request.method, endpoint_request.url.pathname);
     }
 
