@@ -25,8 +25,8 @@ class HTTPError extends Error {
     if (message !== undefined && typeof message !== 'string') {
       throw new Error('new HTTPError(code, message, source?), "message" must be a string.');
     }
-    if (message !== undefined && source instanceof Error) {
-      throw new Error('new HTTPError(code, message, source?), "source" must be a string.');
+    if (message !== undefined && source instanceof Error === false) {
+      throw new Error('new HTTPError(code, message, source?), "source" must be an instance of Error.');
     }
 
     if (typeof Error.captureStackTrace === 'function') {
@@ -583,6 +583,7 @@ function EndpointServer(config) {
     const endpoint_request = {
       ip,
       ua,
+      protocol: raw_request.socket.encrypted === true ? 'https' : 'http',
       encrypted: raw_request.socket.encrypted === true,
       method: raw_request.method,
       headers: raw_request.headers,
@@ -601,7 +602,7 @@ function EndpointServer(config) {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': config.referrer_policy,
       'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
-      'Content-Security-Policy': `upgrade-insecure-requests; default-src ${endpoint_request.encrypted === true ? 'https' : 'http'}://${endpoint_request.headers.host};`,
+      'Content-Security-Policy': `upgrade-insecure-requests; default-src ${endpoint_request.protocol}://${endpoint_request.headers.host};`,
       'Cache-Control': 'no-store',
     };
 
