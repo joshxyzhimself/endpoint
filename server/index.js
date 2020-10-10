@@ -25,7 +25,7 @@ class HTTPError extends Error {
     if (message !== undefined && typeof message !== 'string') {
       throw new Error('new HTTPError(code, message, source?), "message" must be a string.');
     }
-    if (message !== undefined && source instanceof Error === false) {
+    if (source !== undefined && source instanceof Error === false) {
       throw new Error('new HTTPError(code, message, source?), "source" must be an instance of Error.');
     }
 
