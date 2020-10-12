@@ -92,4 +92,4 @@ const next_dt = (time_unit_amount, time_unit) => {
   }
 };
 
-module.exports = { set_tz, to_iso, from_iso, current_dt, next_dt };
+module.exports = { set_tz, to_iso, from_iso, current_dt, next_dt, luxon };
