@@ -1,6 +1,3 @@
 /node_modules/
 
-/client/index.iife.js
-/client2/index.iife.js
-
 yarn.lock

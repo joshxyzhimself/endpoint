@@ -314,7 +314,7 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
   internals.compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
-const http_methods = new Set(['HEAD', 'GET', 'POST', 'PUT', 'DELETE']);
+const accepted_http_methods = new Set(['HEAD', 'GET', 'POST', 'PUT', 'DELETE']);
 const accepted_redirect_codes = new Set([301, 302, 307, 308]);
 
 internals.prepare_response = (config, endpoint_request, raw_response, endpoint_response) => {
@@ -547,7 +547,7 @@ function EndpointServer(config) {
 
   const routes_map = new Map();
 
-  http_methods.forEach((http_method) => {
+  accepted_http_methods.forEach((http_method) => {
     const route_map = new Map();
     endpoint[http_method.toLowerCase()] = (path, handler) => {
       if (typeof path !== 'string') {
@@ -622,7 +622,7 @@ function EndpointServer(config) {
       error: null,
     };
 
-    if (http_methods.has(endpoint_request.method) === false) {
+    if (accepted_http_methods.has(endpoint_request.method) === false) {
       endpoint_response.error = new HTTPError(405);
       internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;

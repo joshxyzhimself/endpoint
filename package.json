@@ -7,13 +7,10 @@
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^14.0.0",
-    "@rollup/plugin-node-resolve": "^8.4.0",
     "ava": "^3.10.1",
     "eslint": "^7.4.0",
     "form-data": "^3.0.0",
-    "got": "^11.7.0",
-    "rollup-plugin-terser": "^6.1.0"
+    "got": "^11.7.0"
   },
   "dependencies": {
     "@stablelib/base64": "^1.0.0",
@@ -30,6 +27,7 @@
     "luxon": "^1.25.0",
     "mime-types": "^2.1.27",
     "query-string": "^6.13.1",
+    "react": "^16.14.0",
     "statuses": "^2.0.0",
     "utf-8-validate": "^5.0.2",
     "ws": "^7.3.1"
