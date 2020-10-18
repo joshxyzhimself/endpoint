@@ -32,6 +32,8 @@ endpoint.get('*', (request, response) => {
         <br />
         <a href="/images/capoo.jpeg">/images/capoo.jpeg</a>
         <br />
+        <a href="/test-text">/test-text</a>
+        <br />
         <a href="/test-json">/test-json</a>
         <br />
         <a href="/test-buffer">/test-buffer</a>
@@ -82,6 +84,12 @@ endpoint.get('/test-page-1', (request, response) => {
       </body>
     </html>
   `;
+  return response;
+});
+
+// return string, as text/plain; charset=utf-8
+endpoint.get('/test-text', (request, response) => {
+  response.text = 'test';
   return response;
 });
 

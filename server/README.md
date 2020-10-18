@@ -36,6 +36,9 @@
 - https: no ticket, no sslv2, no sslv3, no tlsv1, no tlsv1.1
 - https: no tlsv1.2 if tls_min_version is tlsv1.3
 - utils: endpoint/server/scrypt helper
+- csp: upgrade-insecure-requests; if https available
+- csp: default-src ${protocol}://${host}; if html
+- csp: default-src 'none'; if json, text, buffer, stream
 
 #### Cache
 

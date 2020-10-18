@@ -369,6 +369,13 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
     if (endpoint_response.headers['Content-Type'] === undefined) {
       endpoint_response.headers['Content-Type'] = 'text/html; charset=utf-8';
     }
+    if (endpoint_response.headers['Content-Security-Policy'] === undefined) {
+      if (endpoint_request.is_https_available === true) {
+        endpoint_response.headers['Content-Security-Policy'] = `upgrade-insecure-requests; default-src ${endpoint_request.protocol}://${endpoint_request.headers.host};`;
+      } else {
+        endpoint_response.headers['Content-Security-Policy'] = `default-src ${endpoint_request.protocol}://${endpoint_request.headers.host};`;
+      }
+    }
     endpoint_response.html = null;
   }
 
@@ -399,6 +406,14 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
   if (endpoint_response.buffer !== null || endpoint_response.stream_raw_path !== null) {
     if (endpoint_response.headers['Content-Type'] === undefined) {
       endpoint_response.headers['Content-Type'] = 'application/octet-stream';
+    }
+  }
+
+  if (endpoint_response.headers['Content-Security-Policy'] === undefined) {
+    if (endpoint_request.is_https_available === true) {
+      endpoint_response.headers['Content-Security-Policy'] = 'upgrade-insecure-requests; default-src \'none\';';
+    } else {
+      endpoint_response.headers['Content-Security-Policy'] = 'default-src \'none\';';
     }
   }
 
@@ -515,7 +530,7 @@ function EndpointServer(config) {
 
   const static_map = new Map();
   const cache_control_map = new Map();
-  let is_using_https = false;
+  let is_https_available = false;
 
   endpoint.static = (endpoint_directory, local_directory, cache_control) => {
     if (typeof endpoint_directory !== 'string') {
@@ -589,6 +604,7 @@ function EndpointServer(config) {
       headers: raw_request.headers,
       url: url.parse(raw_request.url, true),
       sid: null,
+      is_https_available,
     };
 
     if (config.use_stack_trace === true) {
@@ -602,7 +618,6 @@ function EndpointServer(config) {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': config.referrer_policy,
       'X-DNS-Prefetch-Control': config.x_dns_prefetch_control,
-      'Content-Security-Policy': `upgrade-insecure-requests; default-src ${endpoint_request.protocol}://${endpoint_request.headers.host};`,
       'Cache-Control': 'no-store',
     };
 
@@ -629,7 +644,7 @@ function EndpointServer(config) {
     }
 
     // insecure GET & HEAD to secure GET & HEAD
-    if (is_using_https === true && endpoint_request.encrypted === false) {
+    if (is_https_available === true && endpoint_request.encrypted === false) {
       if (endpoint_request.method === 'GET' || endpoint_request.method === 'HEAD') {
         endpoint_response.code = 308;
         endpoint_response.headers.Location = `https://${endpoint_request.headers.host}${endpoint_request.url.path}`;
@@ -855,7 +870,7 @@ function EndpointServer(config) {
     }
     const https_server = https.createServer(https_server_options, request_listener);
     https_server.on('close', () => {
-      is_using_https = false;
+      is_https_available = false;
       console.log('https_server CLOSED');
     });
     https_server.on('error', (https_server_error) => {
@@ -887,7 +902,7 @@ function EndpointServer(config) {
       this.websocket_server = websocket_server;
     }
     https_server.listen(port, () => {
-      is_using_https = true;
+      is_https_available = true;
       console.log('https_server LISTEN', port);
     });
     this.https_server = https_server;
