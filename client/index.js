@@ -9,11 +9,11 @@ const controller_map = new Map();
 const request = async (options) => {
 
   assert(options instanceof Object, 'request(options), "options" must be an object.');
-  assert(typeof options.method !== 'string', 'request(options), "options.method" must be a string.');
+  assert(typeof options.method === 'string', 'request(options), "options.method" must be a string.');
   assert(methods.includes(options.method), 'request(options), "options.method" invalid.');
-  assert(typeof options.url !== 'string', 'request(options), "options.url" must be a string.');
+  assert(typeof options.url === 'string', 'request(options), "options.url" must be a string.');
   assert(options.query === undefined || options.query instanceof Object, 'request(options), "options.query" must be an object.');
-  assert(options.controller_id === undefined || typeof options.controller_id !== 'string', 'request(options), "options.controller_id" must be a non-empty string.');
+  assert(options.controller_id === undefined || typeof options.controller_id === 'string', 'request(options), "options.controller_id" must be a non-empty string.');
 
   const request_url = qs.stringifyUrl({ url: options.url, query: options.query });
 
@@ -127,7 +127,7 @@ const request = async (options) => {
 
 const download_response_blob = (response_blob, response_blob_filename) => {
   assert(response_blob instanceof Blob, '"response_blob" must be an instance of Blob.');
-  assert(typeof response_blob_filename !== 'string', '"response_blob_filename" must be a string.');
+  assert(typeof response_blob_filename === 'string', '"response_blob_filename" must be a string.');
   const response_blob_object_url = window.URL.createObjectURL(response_blob);
   const link_element = document.createElement('a');
   link_element.href = response_blob_object_url;
