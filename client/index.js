@@ -1,70 +1,63 @@
 
-const qs = require('query-string');
+import qs from 'query-string';
+import assert from '../extras/browser/assert';
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
 const controller_map = new Map();
 
 const request = async (options) => {
-  if (typeof options !== 'object' || options === null) {
-    throw new Error('request(options), "options" must be an object.');
-  }
 
-  if (typeof options.url !== 'string' || options.url === '') {
-    throw new Error('request(options), "options.url" must be a non-empty string.');
-  }
+  assert(options instanceof Object, 'request(options), "options" must be an object.');
+  assert(typeof options.method !== 'string', 'request(options), "options.method" must be a string.');
+  assert(methods.includes(options.method), 'request(options), "options.method" invalid.');
+  assert(typeof options.url !== 'string', 'request(options), "options.url" must be a string.');
+  assert(options.query === undefined || options.query instanceof Object, 'request(options), "options.query" must be an object.');
+  assert(options.controller_id === undefined || typeof options.controller_id !== 'string', 'request(options), "options.controller_id" must be a non-empty string.');
 
-  if (options.query !== undefined && (typeof options.query !== 'object' || options.query === null)) {
-    throw new Error('request(options), "options.query" must be an object.');
-  }
+  const request_url = qs.stringifyUrl({ url: options.url, query: options.query });
 
-  const url = qs.stringifyUrl({ url: options.url, query: options.query });
-
-  if (methods.includes(options.method) === false) {
-    throw new Error('request(options), Invalid method.');
-  }
-
-  const init = {
+  const request_init = {
     method: options.method,
     headers: {},
   };
 
   if (options.controller_id !== undefined) {
-    if (typeof options.controller_id !== 'string' || options.controller_id === '') {
-      throw new Error('request(options), "options.controller_id" must be a non-empty string.');
-    }
     if (controller_map.has(options.controller_id) === true) {
       const existing_controller = controller_map.get(options.controller_id);
       existing_controller.abort();
       controller_map.delete(options.controller_id);
     }
     const new_controller = new AbortController();
-    init.signal = new_controller.signal;
+    request_init.signal = new_controller.signal;
     controller_map.set(options.controller_id, new_controller);
   }
 
-  if (Array.isArray(options.files) === true) {
+  if (options.files instanceof Array) {
     const form = new FormData();
     options.files.forEach((file) => form.append('files', file));
-    if (typeof options.json === 'object') {
+    if (options.json instanceof Object) {
       form.append('body', JSON.stringify(options.json), 'body.json');
     }
-    init.headers['Content-Type'] = 'multipart/form-data';
-  } else if (typeof options.json === 'object') {
-    init.body = JSON.stringify(options.json);
-    init.headers['Content-Type'] = 'application/json';
-  } else if (typeof options.urlencoded === 'object') {
-    init.body = JSON.stringify(options.urlencoded);
-    init.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    request_init.headers['Content-Type'] = 'multipart/form-data';
+  } else if (options.json instanceof Object) {
+    request_init.body = JSON.stringify(options.json);
+    request_init.headers['Content-Type'] = 'application/json';
+  } else if (options.urlencoded instanceof Object) {
+    request_init.body = JSON.stringify(options.urlencoded);
+    request_init.headers['Content-Type'] = 'application/x-www-form-urlencoded';
   }
 
   try {
-    const response = await fetch(url, init);
+    const response = await fetch(request_url, request_init);
 
     const response_content_type = response.headers.get('content-type');
 
     if (typeof response_content_type !== 'string') {
-      throw new Error('request(options), response_content_type must be a string.');
+      if (options.controller_id !== undefined) {
+        controller_map.delete(options.controller_id);
+      }
+      return null;
     }
 
     switch (response_content_type) {
@@ -133,12 +126,8 @@ const request = async (options) => {
 };
 
 const download_response_blob = (response_blob, response_blob_filename) => {
-  if (response_blob instanceof Blob === false) {
-    throw new Error('download_response_blob(response_blob, response_blob_filename), "response_blob" must be an instance of Blob.');
-  }
-  if (typeof response_blob_filename !== 'string') {
-    throw new Error('download_response_blob(response_blob, response_blob_filename), "response_blob_filename" must be a string.');
-  }
+  assert(response_blob instanceof Blob, '"response_blob" must be an instance of Blob.');
+  assert(typeof response_blob_filename !== 'string', '"response_blob_filename" must be a string.');
   const response_blob_object_url = window.URL.createObjectURL(response_blob);
   const link_element = document.createElement('a');
   link_element.href = response_blob_object_url;
@@ -147,6 +136,6 @@ const download_response_blob = (response_blob, response_blob_filename) => {
   setTimeout(() => window.URL.revokeObjectURL(response_blob_object_url), 250);
 };
 
-const EndpointClient = { request, download_response_blob, controller_map };
+const endpoint_client = { request, download_response_blob, controller_map };
 
-module.exports = EndpointClient;
+export default endpoint_client;

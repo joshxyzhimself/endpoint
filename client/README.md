@@ -1,11 +1,11 @@
-## EndpointClient
+## endpoint_client
 
 #### Usage
 
 ```js
-const EndpointClient = require('endpoint/client');
+const endpoint_client = require('endpoint/client');
 
-await EndpointClient.request({
+await endpoint_client.request({
 
   // Optional string
   // Used as abort controller id
@@ -51,15 +51,15 @@ await EndpointClient.request({
 #### Usage
 
 ```js
-const EndpointClient = require('endpoint/client2');
+const endpoint_client = require('endpoint/client2');
 
 // sets key_hex and secret_hex in SessionStorage
-EndpointClient.auth(username: String, password: String);
+endpoint_client.auth(username: String, password: String);
 
 // deletes key_hex and secret_hex in SessionStorage
-EndpointClient.deauth();
+endpoint_client.deauth();
 
-await EndpointClient.request({
+await endpoint_client.request({
 
   // Required string, one of HEAD, GET, POST, PUT, DELETE
   method: String,
