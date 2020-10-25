@@ -1,5 +1,5 @@
 
-const { EndpointServer, HTTPError, path_from_cwd } = require('../index');
+const { EndpointServer, path_from_cwd } = require('../index');
 
 const endpoint = new EndpointServer({
   use_compression: false,

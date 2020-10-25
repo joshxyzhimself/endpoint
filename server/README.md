@@ -39,6 +39,8 @@
 - csp: upgrade-insecure-requests; if https available
 - csp: default-src ${protocol}://${host}; if html
 - csp: default-src 'none'; if json, text, buffer, stream
+- support client-side and server-side errors (see /demo/latest.js)
+- add middleware examples (see /demo/latest.js)
 
 #### Cache
 

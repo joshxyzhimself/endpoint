@@ -1,5 +1,7 @@
 
+const assert = require('assert');
 const { EndpointServer, HTTPError, path_from_cwd } = require('../index');
+const middlewares = require('./middlewares');
 
 const endpoint = new EndpointServer({
   use_compression: false,
@@ -45,6 +47,8 @@ endpoint.get('*', (request, response) => {
         <a href="/test-404">/test-404</a>
         <br />
         <a href="/test-400">/test-400</a>
+        <br />
+        <a href="/test-500">/test-500</a>
         <br />
         <a href="/test-500-1">/test-500-1</a>
         <br />
@@ -113,67 +117,45 @@ endpoint.get('/test-redirect', (request, response) => {
   return response;
 });
 
+/**
+ * NOTE THAT YOU CAN SPECIFY code, message, AND internal_error
+ * - code & message is returned to client
+ * - internal error is NOT returned to client
+ */
+
 // return 405 error
 endpoint.get('/test-405', () => {
-  throw new HTTPError(405);
+  throw new HTTPError(405, null, null); // this is how it works internally
 });
 
-// return 404 error, with error message
+// return 404 error
 endpoint.get('/test-404', () => {
-  throw new HTTPError(404, 'Optional error test message.');
+  throw new HTTPError(404, null, null); // this is how it works internally
 });
 
-// return 400 error, with custom error stack
+// return 400 error, CLIENT-SIDE ERROR
 endpoint.get('/test-400', () => {
-  try {
-    throw new Error('some error');
-  } catch (e) {
-    throw new HTTPError(400, undefined, e.stack);
-  }
+  HTTPError.assert(Math.random() < 0, 400, 'this error message is exposed to client.');
 });
 
-// return 500 error, with error stack preserved, same as above
+// return 500 error, SERVER-SIDE ERROR
+endpoint.get('/test-500', () => {
+  assert(Math.random() < 0, 'this error message is NOT exposed to client.');
+});
+
+// return 500 error, SERVER-SIDE ERROR
 endpoint.get('/test-500-1', () => {
-  throw new Error('some error');
+  throw new Error('this error message is NOT exposed to client.');
 });
 
-// return 500 error, an internal error
+// return 500 error, SERVER-SIDE ERROR
 endpoint.get('/test-500-2', () => {
   return 123; // unexpected return value
 });
 
-const sid_session_map = new Map();
 
-const cookie_sessions_middleware = async (request) => {
-  if (sid_session_map.has(request.sid) === false) {
-    sid_session_map.set(request.sid, { user: null });
-  }
-  request.session = sid_session_map.get(request.sid);
-};
-
-const guests_only_middleware = async (request) => {
-  if (typeof request.session === 'object') {
-    if (request.session.user === null) {
-      return undefined;
-    }
-  }
-  throw new HTTPError(403);
-};
-
-const users_only_middleware = async (request) => {
-  if (typeof request.session === 'object') {
-    if (request.session.user !== null) {
-      if (typeof request.session.user === 'object') {
-        return undefined;
-      }
-    }
-  }
-  throw new HTTPError(403);
-};
-
-
-endpoint.get('/login', cookie_sessions_middleware);
-endpoint.get('/login', guests_only_middleware);
+endpoint.get('/login', middlewares.cookie_sessions);
+endpoint.get('/login', middlewares.guests_only);
 endpoint.get('/login', (request, response) => {
   response.html = `
     <!doctype html>
@@ -184,15 +166,15 @@ endpoint.get('/login', (request, response) => {
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
       </head>
       <body class="app-body">
-        <p>You're now at /login, this is for guests!</p>
+        <p>You're now at /login, this page is for guests!</p>
       </body>
     </html>
   `;
   return response;
 });
 
-endpoint.get('/account', cookie_sessions_middleware);
-endpoint.get('/account', users_only_middleware);
+endpoint.get('/account', middlewares.cookie_sessions);
+endpoint.get('/account', middlewares.users_only);
 endpoint.get('/account', (request, response) => {
   response.html = `
     <!doctype html>
@@ -203,15 +185,15 @@ endpoint.get('/account', (request, response) => {
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
       </head>
       <body class="app-body">
-        <p>You're now at /account page, this is for users!</p>
+        <p>You're now at /account page, this page is for users!</p>
       </body>
     </html>
   `;
   return response;
 });
 
-endpoint.get('/login-user', cookie_sessions_middleware);
-endpoint.get('/login-user', guests_only_middleware);
+endpoint.get('/login-user', middlewares.cookie_sessions);
+endpoint.get('/login-user', middlewares.guests_only);
 endpoint.get('/login-user', (request, response) => {
   request.session.user = { id: 'alice-id' };
   response.html = `
@@ -230,8 +212,8 @@ endpoint.get('/login-user', (request, response) => {
   return response;
 });
 
-endpoint.get('/logout-user', cookie_sessions_middleware);
-endpoint.get('/logout-user', users_only_middleware);
+endpoint.get('/logout-user', middlewares.cookie_sessions);
+endpoint.get('/logout-user', middlewares.users_only);
 endpoint.get('/logout-user', (request, response) => {
   request.session.user = null;
   response.html = `
