@@ -27,7 +27,7 @@
     "luxon": "^1.25.0",
     "mime-types": "^2.1.27",
     "query-string": "^6.13.1",
-    "react": "^16.14.0",
+    "react": "^17.0.1",
     "statuses": "^2.0.0",
     "utf-8-validate": "^5.0.2",
     "ws": "^7.3.1"
