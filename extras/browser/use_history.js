@@ -1,8 +1,8 @@
 
-import React from 'react';
+import { useState, useEffect } from 'react';
 
-function useHistory() {
-  const [pathname, set_pathname] = React.useState(window.location.pathname);
+function use_history() {
+  const [pathname, set_pathname] = useState(window.location.pathname);
   const popstate_listener = () => {
     set_pathname(window.location.pathname);
   };
@@ -21,7 +21,7 @@ function useHistory() {
       }
     },
   };
-  React.useEffect(() => {
+  useEffect(() => {
     window.addEventListener('popstate', popstate_listener);
     return () => {
       window.removeEventListener('popstate', popstate_listener);
@@ -30,4 +30,4 @@ function useHistory() {
   return history;
 }
 
-export default useHistory;
+export default use_history;
