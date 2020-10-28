@@ -37,9 +37,14 @@ const request = async (options) => {
     const form = new FormData();
     options.files.forEach((file) => form.append('files', file));
     if (options.json instanceof Object) {
-      form.append('body', JSON.stringify(options.json), 'body.json');
+      form.append('body', new Blob([JSON.stringify(options.json)], { type : 'application/json' }), 'body.json');
     }
-    request_init.headers['Content-Type'] = 'multipart/form-data';
+    request_init.body = form;
+
+    /**
+     * Note: Content-Type of multipart/form-data (with boundary) is automatically assigned by fetch.
+     */
+
   } else if (options.json instanceof Object) {
     request_init.body = JSON.stringify(options.json);
     request_init.headers['Content-Type'] = 'application/json';
