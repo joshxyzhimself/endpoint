@@ -20,7 +20,7 @@ class HTTPError extends Error {
   constructor (code, message, internal_error) {
     super(message);
 
-    assert(typeof code === 'number' && Number.isNaN(code) === false);
+    assert(typeof code === 'number' && Number.isFinite(code) === true);
     assert(message === null || typeof message === 'string');
     assert(internal_error === null || internal_error instanceof Error);
 
@@ -37,7 +37,7 @@ class HTTPError extends Error {
   static assert(value, code, message) {
     try {
       assert(typeof value === 'boolean');
-      assert(typeof code === 'number' && Number.isNaN(code) === false);
+      assert(typeof code === 'number' && Number.isFinite(code) === true);
       assert(message === null || typeof message === 'string');
       assert(value === true);
     } catch (assertion_error) {
