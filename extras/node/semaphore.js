@@ -49,6 +49,7 @@ const send_next_message = async () => {
 
 const send_message = (apikey, raw_phone_number, message) => new Promise((resolve, reject) => {
   assert(typeof apikey === 'string', 'Invalid parameter type for "apikey".');
+  assert(typeof raw_phone_number === 'string', 'Invalid parameter type for "raw_phone_number".');
   assert(typeof message === 'string', 'Invalid parameter type for "message".');
   const number = normalize_phone_number(raw_phone_number);
   queue.push([apikey, number, message, resolve, reject]);
