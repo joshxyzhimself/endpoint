@@ -1,0 +1,10 @@
+{
+  "mailgun_domain": "mg.techies.pw",
+  "mailgun_password": "4a184448fc1fb3f66ed073b5ef29a082-52b6835e-29a677cf",
+  "mailgun_from": "No Reply <noreply@mg.techies.pw>",
+  "mailgun_to": "joshxyzhimself@gmail.com",
+  "semaphore_apikey" : "10ee1766229bb5e748e1d91747f346d3",
+  "semaphore_phone_number" : "09301500010",
+  "telegram_token" :"1122462386:AAFH0y2jGszDo7rfISp-2Rt6isxk_aZK7Bw",
+  "telegram_chat_id" :"-1001462689512"
+}

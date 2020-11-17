@@ -1,5 +1,5 @@
 
-const scrypt = require('./index');
+const scrypt = require('./scrypt');
 
 (async () => {
   const username = 'alice_123';
