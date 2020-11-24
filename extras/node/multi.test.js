@@ -3,17 +3,18 @@ const multi = require('./multi');
 
 /**
  * - if --expose-gc passed, clears garbage collector
- * - "concurrency" for amount of processes
- * - "concurrency2" for amount of concurrent tasks per process
+ * - "process_concurrency" for amount of processes
+ * - "task_concurrency" for amount of concurrent tasks per process
  * - main hooks: on_main_init, on_task_request, on_task_complete
  * - worker hooks: on_worker_init, on_task_response, on_worker_exit
  */
 
 const instance = new multi();
 
+// instance.process_concurrency = 100;
+instance.task_concurrency = 10;
+
 if (cluster.isMaster === true) {
-  // instance.concurrency = 100;
-  // instance.concurrency2 = 100;
 
   let i = 0;
 
@@ -26,8 +27,8 @@ if (cluster.isMaster === true) {
   // takes nothing; returns task or nothing
   instance.on_task_request = async () => {
     console.log('on_task_request');
-    if (i < 50) {
-      console.log(`returning task, ${50 - i} tasks left.`);
+    if (i < 500) {
+      console.log(`returning task, ${500 - i} tasks left.`);
       i += 1;
       return {};
     }

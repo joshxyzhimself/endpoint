@@ -4,16 +4,16 @@ const assert = require('assert');
 const cluster = require('cluster');
 
 const MessageTypes = {
-  Initialize: 0,
-  Request: 1,
-  Response: 2,
-  Exit: 3,
+  WorkerInit: 0,
+  TaskRequest: 1,
+  TaskResponse: 2,
+  WorkerExit: 3,
 };
 
 function multi() {
 
-  this.concurrency = os.cpus().length;
-  this.concurrency2 = 1;
+  this.process_concurrency = os.cpus().length;
+  this.task_concurrency = 1;
 
   if (cluster.isMaster === true) {
     this.on_main_init = async () => console.log('on_main_init');
@@ -27,14 +27,14 @@ function multi() {
 
   this.initialize = async () => {
     if (cluster.isMaster === true) {
-      assert(typeof this.concurrency === 'number' && Number.isFinite(this.concurrency) === true && this.concurrency > 0);
-      assert(typeof this.concurrency2 === 'number' && Number.isFinite(this.concurrency2) === true && this.concurrency2 > 0);
+      assert(typeof this.process_concurrency === 'number' && Number.isFinite(this.process_concurrency) === true && this.process_concurrency > 0);
+      assert(typeof this.task_concurrency === 'number' && Number.isFinite(this.task_concurrency) === true && this.task_concurrency > 0);
 
       const init_data = await this.on_main_init();
 
       const workers = [];
 
-      for (let i = 0, l = this.concurrency; i < l; i += 1) {
+      for (let i = 0, l = this.process_concurrency; i < l; i += 1) {
         const worker = cluster.fork();
         worker.on('error', console.error);
         worker.on('exit', async () => {
@@ -48,10 +48,13 @@ function multi() {
           }
         });
         worker.on('message', async (message) => {
+          assert(message instanceof Object);
+          assert(typeof message.type === 'number');
+
           const { type } = message;
 
           switch (type) {
-            case MessageTypes.Request: {
+            case MessageTypes.TaskRequest: {
               let task;
               try {
                 task = await this.on_task_request();
@@ -59,9 +62,9 @@ function multi() {
                 console.error(e);
               }
               if (task === undefined) {
-                worker.send({ type: MessageTypes.Exit });
+                worker.send({ type: MessageTypes.WorkerExit });
               } else {
-                worker.send({ type: MessageTypes.Response, task });
+                worker.send({ type: MessageTypes.TaskResponse, task });
               }
               break;
             }
@@ -73,7 +76,7 @@ function multi() {
         workers.push(worker);
       }
       workers.forEach((worker, worker_id) => worker.send({
-        type: MessageTypes.Initialize,
+        type: MessageTypes.WorkerInit,
         worker_id,
         init_data,
       }));
@@ -81,9 +84,16 @@ function multi() {
       let worker_id = null;
       let concurrent = 0;
       process.on('message', async (message) => {
+        assert(message instanceof Object);
+        assert(typeof message.type === 'number');
+
         const { type } = message;
+
         switch (type) {
-          case MessageTypes.Initialize: {
+          case MessageTypes.WorkerInit: {
+            assert(message.init_data === undefined || message.init_data instanceof Object);
+            assert(typeof message.worker_id === 'number');
+
             const { init_data } = message;
 
             worker_id = message.worker_id;
@@ -94,14 +104,14 @@ function multi() {
               console.error(e);
             }
 
-            for (let i = 0, l = this.concurrency2; i < l; i += 1) {
+            for (let i = 0, l = this.task_concurrency; i < l; i += 1) {
               concurrent += 1;
-              process.send({ type: MessageTypes.Request });
+              process.send({ type: MessageTypes.TaskRequest });
             }
 
             break;
           }
-          case MessageTypes.Response: {
+          case MessageTypes.TaskResponse: {
             const { task } = message;
             try {
               if (typeof global.gc === 'function') {
@@ -111,10 +121,10 @@ function multi() {
             } catch (e) {
               console.error(e);
             }
-            process.send({ type: MessageTypes.Request });
+            process.send({ type: MessageTypes.TaskRequest });
             break;
           }
-          case MessageTypes.Exit: {
+          case MessageTypes.WorkerExit: {
             concurrent -= 1;
             if (concurrent === 0) {
               try {
