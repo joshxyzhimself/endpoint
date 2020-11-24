@@ -82,7 +82,7 @@ function multi() {
       }));
     } else if (cluster.isWorker === true) {
       let worker_id = null;
-      let concurrent = 0;
+      let concurrent_tasks = 0;
       process.on('message', async (message) => {
         assert(message instanceof Object);
         assert(typeof message.type === 'number');
@@ -105,7 +105,7 @@ function multi() {
             }
 
             for (let i = 0, l = this.task_concurrency; i < l; i += 1) {
-              concurrent += 1;
+              concurrent_tasks += 1;
               process.send({ type: MessageTypes.TaskRequest });
             }
 
@@ -114,7 +114,7 @@ function multi() {
           case MessageTypes.TaskResponse: {
             const { task } = message;
             try {
-              if (typeof global.gc === 'function') {
+              if (global.gc instanceof Function) {
                 global.gc();
               }
               await this.on_task_response(task, worker_id);
@@ -125,8 +125,8 @@ function multi() {
             break;
           }
           case MessageTypes.WorkerExit: {
-            concurrent -= 1;
-            if (concurrent === 0) {
+            concurrent_tasks -= 1;
+            if (concurrent_tasks === 0) {
               try {
                 await this.on_worker_exit(worker_id);
               } catch (e) {
