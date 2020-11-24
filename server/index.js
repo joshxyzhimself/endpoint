@@ -284,7 +284,7 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
         status: endpoint_response.error.status,
         message: endpoint_response.error.message,
         timestamp: new Date().toUTCString(),
-      }
+      },
     };
 
     endpoint_response.json = null;
@@ -765,7 +765,7 @@ function EndpointServer(config) {
                     break;
                   }
                   case 'files': {
-                    endpoint_request.files.push({ file: buffer, fieldname, fileName, encoding, mimeType, });
+                    endpoint_request.files.push({ file: buffer, fieldname, fileName, encoding, mimeType });
                     break;
                   }
                   default: {
