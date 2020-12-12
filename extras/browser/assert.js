@@ -27,4 +27,4 @@ const assert = (value, message) => {
   }
 };
 
-export default assert;
+module.exports = assert;
