@@ -1,6 +1,6 @@
 
 import qs from 'query-string';
-import assert from '../extras/browser/assert';
+import assert from '../extras/common/assert';
 
 const methods = ['HEAD', 'GET', 'POST', 'PUT', 'DELETE'];
 
@@ -37,7 +37,7 @@ const request = async (options) => {
     const form = new FormData();
     options.files.forEach((file) => form.append('files', file));
     if (options.json instanceof Object) {
-      form.append('body', new Blob([JSON.stringify(options.json)], { type : 'application/json' }), 'body.json');
+      form.append('body', new Blob([JSON.stringify(options.json)], { type: 'application/json' }), 'body.json');
     }
     request_init.body = form;
 
