@@ -1,5 +1,9 @@
 
 class AssertionError extends Error {
+
+  /**
+   * @param {String} message
+   */
   constructor(message) {
     super(message);
     if (Error.captureStackTrace instanceof Function) {
