@@ -488,6 +488,32 @@ const accepted_referrer_policies = new Set(['no-referrer', 'same-origin']);
 const accepted_x_dns_prefetch_control = new Set(['off', 'on']);
 const accepted_tls_min_version = new Set(['TLSv1.3', 'TLSv1.2']);
 
+const create_websocket_server = (http_server, on_websocket_connection) => {
+  assert(http_server instanceof Object);
+  assert(on_websocket_connection instanceof Function);
+  const websocket_server = new WebSocket.Server({ server: http_server });
+  const websocket_client_is_alive = new WeakMap();
+  websocket_server.on('connection', (websocket_client, raw_request) => {
+    websocket_client.ip = get_request_ip_address(raw_request);
+    websocket_client.ua = get_request_user_agent(raw_request);
+    websocket_client_is_alive.set(websocket_client, true);
+    websocket_client.on('pong', () => websocket_client_is_alive.set(websocket_client, true));
+    on_websocket_connection(websocket_client);
+  });
+  setInterval(() => websocket_server.clients.forEach((websocket_client) => {
+    if (websocket_client_is_alive.get(websocket_client) === false) {
+      websocket_client.terminate();
+      return;
+    }
+    websocket_client_is_alive.set(websocket_client, false);
+    try {
+      websocket_client.ping(() => {});
+    } catch (websocket_ping_error) {
+      console.error(websocket_ping_error);
+    }
+  }), 30000);
+};
+
 function EndpointServer(config) {
 
   if (typeof config !== 'object' || config === null) {
@@ -502,9 +528,12 @@ function EndpointServer(config) {
   if (Number.isInteger(config.session_max_age) === false || config.session_max_age < 0) {
     throw new Error('new EndpointServer(config), "config.session_max_age" must be an integer >= 0.');
   }
-  if (typeof config.use_websocket !== 'boolean') {
-    throw new Error('new EndpointServer(config), "config.use_websocket" must be a boolean.');
+
+  assert(typeof config.use_websocket === 'boolean');
+  if (config.use_websocket === true) {
+    assert(config.on_websocket_connection instanceof Function);
   }
+
   if (typeof config.use_stack_trace !== 'boolean') {
     throw new Error('new EndpointServer(config), "config.use_stack_trace" must be a boolean.');
   }
@@ -795,6 +824,7 @@ function EndpointServer(config) {
   };
 
   this.http_server = null;
+  this.http_websocket_server = null;
   this.http = (port) => {
     if (Number.isInteger(port) === false || port <= 0) {
       throw new Error('http(port) "port" must be an integer > 0.');
@@ -807,6 +837,10 @@ function EndpointServer(config) {
       console.error('http_server ERROR', http_server_error.message);
       console.error(http_server_error);
     });
+    if (config.use_websocket === true) {
+      const http_websocket_server = create_websocket_server(http_server, config.on_websocket_connection);
+      this.http_websocket_server = http_websocket_server;
+    }
     http_server.listen(port, () => {
       console.log('https_server LISTEN', port);
     });
@@ -814,8 +848,7 @@ function EndpointServer(config) {
   };
 
   this.https_server = null;
-  this.websocket_server = null;
-
+  this.https_websocket_server = null;
   this.https = (port, key, cert, ca, tls_min_version, dhparam) => {
     if (Number.isInteger(port) === false || port <= 0) {
       throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "port" must be an integer > 0.');
@@ -866,29 +899,9 @@ function EndpointServer(config) {
       console.error('https_server ERROR', https_server_error.message);
       console.error(https_server_error);
     });
-    if (config.use_websocket === true && typeof config.on_websocket_connection === 'function') {
-      const websocket_server = new WebSocket.Server({ server: https_server });
-      const websocket_client_is_alive = new WeakMap();
-      websocket_server.on('connection', (websocket_client, raw_request) => {
-        websocket_client.ip = get_request_ip_address(raw_request);
-        websocket_client.ua = get_request_user_agent(raw_request);
-        websocket_client_is_alive.set(websocket_client, true);
-        websocket_client.on('pong', () => websocket_client_is_alive.set(websocket_client, true));
-        config.on_websocket_connection(websocket_client);
-      });
-      setInterval(() => websocket_server.clients.forEach((websocket_client) => {
-        if (websocket_client_is_alive.get(websocket_client) === false) {
-          websocket_client.terminate();
-          return;
-        }
-        websocket_client_is_alive.set(websocket_client, false);
-        try {
-          websocket_client.ping(() => {});
-        } catch (websocket_ping_error) {
-          console.error(websocket_ping_error);
-        }
-      }), 30000);
-      this.websocket_server = websocket_server;
+    if (config.use_websocket === true) {
+      const https_websocket_server = create_websocket_server(https_server, config.on_websocket_connection);
+      this.https_websocket_server = https_websocket_server;
     }
     https_server.listen(port, () => {
       is_https_available = true;
