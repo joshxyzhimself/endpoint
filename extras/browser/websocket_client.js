@@ -54,6 +54,7 @@ function websocket_client() {
   this.connect = connect;
   this.disconnect = disconnect;
   this.on = events.on.bind(events);
+  this.off = events.off.bind(events);
 }
 
 module.exports = websocket_client;
