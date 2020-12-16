@@ -18,6 +18,7 @@ function websocket_client() {
     const raw_data = JSON.stringify(data);
     assert(client instanceof WebSocket);
     assert(client.readyState === 1);
+    console.log('send', client.readyState);
     client.send(raw_data);
   };
   const connect = () => {
@@ -26,6 +27,7 @@ function websocket_client() {
     client = new WebSocket(`${websocket_protocol}//${websocket_host}/`);
     client.onopen = () => {
       if (client.readyState === 1) {
+        console.log('onopen readystate', client.readyState);
         events.emit('connect');
       }
     };
@@ -51,9 +53,16 @@ function websocket_client() {
     assert(client instanceof WebSocket);
     client.close(1000);
   };
+  const state = () => {
+    if (client instanceof WebSocket) {
+      return client.readyState;
+    }
+    return null;
+  };
   this.send = send;
   this.connect = connect;
   this.disconnect = disconnect;
+  this.state = state;
   this.on = events.on.bind(events);
   this.off = events.off.bind(events);
 }
