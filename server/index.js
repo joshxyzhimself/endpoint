@@ -452,18 +452,18 @@ const handle_request = async (endpoint_request, raw_response, endpoint_response,
   }
 };
 
-const get_request_ip_address = (raw_request) => {
+const get_ip = (request) => {
   let ip = '';
 
-  if (typeof raw_request.socket === 'object' && typeof raw_request.socket.remoteAddress === 'string') {
-    const temp_ip = raw_request.socket.remoteAddress;
+  if (typeof request.socket === 'object' && typeof request.socket.remoteAddress === 'string') {
+    const temp_ip = request.socket.remoteAddress;
     if (is_ip(temp_ip) === true) {
       ip = temp_ip;
     }
   }
 
-  if (typeof raw_request.headers['x-forwarded-for'] === 'string') {
-    const temp_ip = raw_request.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+  if (typeof request.headers['x-forwarded-for'] === 'string') {
+    const temp_ip = request.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
     if (is_ip(temp_ip) === true) {
       ip = temp_ip;
     }
@@ -476,99 +476,101 @@ const get_request_ip_address = (raw_request) => {
   return ip;
 };
 
-const get_request_user_agent = (raw_request) => {
+const get_ua = (request) => {
   let ua = '';
-  if (typeof raw_request.headers['user-agent'] === 'string') {
-    ua = raw_request.headers['user-agent'];
+  if (typeof request.headers['user-agent'] === 'string') {
+    ua = request.headers['user-agent'];
   }
   return ua;
 };
 
-const accepted_referrer_policies = new Set(['no-referrer', 'same-origin']);
-const accepted_x_dns_prefetch_control = new Set(['off', 'on']);
-const accepted_tls_min_version = new Set(['TLSv1.3', 'TLSv1.2']);
+/**
+ * @type {WeakMap<http.IncomingMessage, String>}
+ */
+const request_sids = new WeakMap();
 
+/**
+ * @param {http.IncomingMessage} request
+ */
+const get_session = (request) => {
+  if (typeof request.headers.cookie === 'string') {
+    const cookies = cookie.parse(request.headers.cookie);
+    if (typeof cookies.sid === 'string') {
+      const sid = cookies.sid;
+      const session = { sid };
+      request_sids.set(request, sid);
+      return session;
+    }
+  }
+  const sid = crypto.randomBytes(32).toString('hex');
+  const set_cookie = cookie.serialize('sid', sid, {
+    path: '/',
+    sameSite: 'strict',
+    secure: request.socket.encrypted === true,
+  });
+  const session = { sid, set_cookie };
+  request_sids.set(request, sid);
+  return session;
+};
+
+const valid_referrer_policies = new Set(['no-referrer', 'same-origin']);
+const valid_x_dns_prefetch_control = new Set(['off', 'on']);
+const valid_tls_min_version = new Set(['TLSv1.3', 'TLSv1.2']);
 
 function EndpointServer(config) {
 
-  if (typeof config !== 'object' || config === null) {
-    throw new Error('new EndpointServer(config), "config" must be an object.');
-  }
-  if (typeof config.use_compression !== 'boolean') {
-    throw new Error('new EndpointServer(config), "config.use_compression" must be a boolean.');
-  }
-  if (typeof config.use_session_id !== 'boolean') {
-    throw new Error('new EndpointServer(config), "config.use_session_id" must be a boolean.');
-  }
-  if (Number.isInteger(config.session_max_age) === false || config.session_max_age < 0) {
-    throw new Error('new EndpointServer(config), "config.session_max_age" must be an integer >= 0.');
-  }
+  assert(config instanceof Object);
+  assert(typeof config.use_compression === 'boolean');
 
   assert(typeof config.use_websocket === 'boolean');
   if (config.use_websocket === true) {
     assert(config.on_websocket_connection instanceof Function);
   }
+  assert(typeof config.use_stack_trace === 'boolean');
+  assert(typeof config.referrer_policy === 'string');
+  assert(valid_referrer_policies.has(config.referrer_policy) === true);
 
-  if (typeof config.use_stack_trace !== 'boolean') {
-    throw new Error('new EndpointServer(config), "config.use_stack_trace" must be a boolean.');
-  }
-  if (typeof config.referrer_policy !== 'string' || accepted_referrer_policies.has(config.referrer_policy) === false) {
-    throw new Error('new EndpointServer(config), "config.referrer_policy" must be "no-referrer" or "same-origin"');
-  }
-  if (typeof config.x_dns_prefetch_control !== 'string' || accepted_x_dns_prefetch_control.has(config.x_dns_prefetch_control) === false) {
-    throw new Error('new EndpointServer(config), "config.x_dns_prefetch_control" must be "off" or "on"');
-  }
+  assert(typeof config.x_dns_prefetch_control === 'string');
+  assert(valid_x_dns_prefetch_control.has(config.x_dns_prefetch_control) === true);
 
   const endpoint = this;
-
   const static_map = new Map();
   const cache_control_map = new Map();
   let is_https_available = false;
 
   endpoint.static = (endpoint_directory, local_directory, cache_control) => {
-    if (typeof endpoint_directory !== 'string') {
-      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "dir" must be a string.');
-    }
-    if (endpoint_directory.substring(0, 1) !== '/') {
-      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "dir" must have leading slash.');
-    }
-    if (endpoint_directory.length > 1 && endpoint_directory.substring(endpoint_directory.length - 1, endpoint_directory.length) === '/') {
-      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "dir" must not have trailing slash.');
-    }
-    if (typeof local_directory !== 'string') {
-      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "local_directory" must be a string.');
-    }
-    if (local_directory.substring(0, 1) !== '/') {
-      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "local_directory" must have leading slash.');
-    }
-    if (local_directory.length > 1 && local_directory.substring(local_directory.length - 1, local_directory.length) === '/') {
-      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "local_directory" must not have trailing slash.');
-    }
-    if (cache_control !== undefined && typeof cache_control !== 'string') {
-      throw new Error('EndpointServer.static(endpoint_directory, local_directory, cache_control), "cache_control" must be a string.');
-    }
+
+    // validate endpoint_directory
+    assert(typeof endpoint_directory === 'string');
+    assert(isAbsolute(endpoint_directory) === true);
+
+    // validate local_directory
+    assert(typeof local_directory === 'string');
+    assert(isAbsolute(local_directory) === true);
+    assert(fs.existsSync(local_directory) === true);
+    fs.accessSync(local_directory, fs.constants.R_OK);
+    const local_directory_stat = fs.statSync(local_directory);
+    assert(local_directory_stat.isDirectory() === true);
+
+    // validate cache_control
+    assert(cache_control === undefined || typeof cache_control === 'string');
+
     static_map.set(endpoint_directory, local_directory);
-    if (cache_control !== undefined) {
+    if (typeof cache_control === 'string') {
       cache_control_map.set(endpoint_directory, cache_control);
     }
   };
 
   const routes_map = new Map();
-
   accepted_http_methods.forEach((http_method) => {
     const route_map = new Map();
     endpoint[http_method.toLowerCase()] = (path, handler) => {
-      if (typeof path !== 'string') {
-        throw new Error('EndpointServer.http_method(path, handler), "path" must be a string.');
-      }
-      if (typeof handler !== 'function') {
-        throw new Error('EndpointServer.http_method(path, handler), "handler" must be a function.');
-      }
-      if (path !== '*' && path.substring(0, 1) !== '/') {
-        throw new Error('EndpointServer.http_method(path, handler), "path" must have leading slash.');
-      }
-      if (path.length > 1 && path.substring(path.length - 1, path.length) === '/') {
-        throw new Error('EndpointServer.http_method(path, handler), "path" must not have trailing slash.');
+      assert(typeof path === 'string');
+      assert(handler instanceof Function);
+      if (path !== '*') {
+        console.log({ path });
+        assert(path.substring(0, 1) === '/'); // must have leading slash
+        assert(path.substring(path.length - 1, path.length) !== '/'); // must not have trailing slash
       }
       if (route_map.has(path) === false) {
         route_map.set(path, [handler]);
@@ -585,51 +587,20 @@ function EndpointServer(config) {
     const websocket_server = new WebSocket.Server({ server: http_server });
     const websocket_client_is_alive = new WeakMap();
 
-    const session_ids = new WeakMap();
-
-    websocket_server.on('headers', (headers, raw_request) => {
-      const request_headers = raw_request.headers;
-
-      if (request_headers.cookie === undefined) {
-        const sid = crypto.randomBytes(32).toString('hex');
-        const sid_cookie_options = { path: '/', sameSite: 'strict' };
-        if (config.session_max_age > 0) {
-          sid_cookie_options.maxAge = config.session_max_age;
-        }
-        if (raw_request.socket.encrypted === true) {
-          sid_cookie_options.secure = true;
-        }
-        const sid_cookie = cookie.serialize('sid', sid, sid_cookie_options);
-        headers.push(`Set-Cookie: ${sid_cookie}`);
-        session_ids.set(raw_request, sid);
-      } else {
-        const cookies = cookie.parse(request_headers.cookie);
-        if (cookies.sid === undefined) {
-          const sid = crypto.randomBytes(32).toString('hex');
-          const sid_cookie_options = { path: '/', sameSite: 'strict' };
-          if (config.session_max_age > 0) {
-            sid_cookie_options.maxAge = config.session_max_age;
-          }
-          if (raw_request.socket.encrypted === true) {
-            sid_cookie_options.secure = true;
-          }
-          const sid_cookie = cookie.serialize('sid', sid, sid_cookie_options);
-          headers.push(`Set-Cookie: ${sid_cookie}`);
-          session_ids.set(raw_request, sid);
-        } else {
-          const sid = cookies.sid;
-          session_ids.set(raw_request, sid);
-        }
+    websocket_server.on('headers', (headers, request) => {
+      const session = get_session(request);
+      if (typeof session.set_cookie === 'string') {
+        headers.push(`Set-Cookie: ${session.set_cookie}`);
       }
     });
 
-    websocket_server.on('connection', (websocket_client, raw_request) => {
+    websocket_server.on('connection', (websocket_client, request) => {
       const endpoint_request = {
-        ip: get_request_ip_address(raw_request),
-        ua: get_request_user_agent(raw_request),
-        sid: session_ids.get(raw_request),
-        encrypted: raw_request.socket.encrypted === true,
-        headers: raw_request.headers,
+        ip: get_ip(request),
+        ua: get_ua(request),
+        sid: request_sids.get(request),
+        encrypted: request.socket.encrypted === true,
+        headers: request.headers,
       };
       websocket_client_is_alive.set(websocket_client, true);
       websocket_client.on('pong', () => websocket_client_is_alive.set(websocket_client, true));
@@ -649,22 +620,26 @@ function EndpointServer(config) {
     }), 30000);
   };
 
-  const request_listener = async (raw_request, raw_response) => {
+  /**
+   * @param {http.IncomingMessage} request
+   * @param {http.OutgoingMessage} raw_response
+   */
+  const request_listener = async (request, raw_response) => {
     if (config.use_stack_trace === true) {
       console.log('@', new Date().toUTCString());
       console.log('@request_listener');
     }
 
-    const ip = get_request_ip_address(raw_request);
-    const ua = get_request_user_agent(raw_request);
+    const ip = get_ip(request);
+    const ua = get_ua(request);
     const endpoint_request = {
       ip,
       ua,
-      protocol: raw_request.socket.encrypted === true ? 'https' : 'http',
-      encrypted: raw_request.socket.encrypted === true,
-      method: raw_request.method,
-      headers: raw_request.headers,
-      url: url.parse(raw_request.url, true),
+      protocol: request.socket.encrypted === true ? 'https' : 'http',
+      encrypted: request.socket.encrypted === true,
+      method: request.method,
+      headers: request.headers,
+      url: url.parse(request.url, true),
       sid: null,
       is_https_available,
     };
@@ -719,31 +694,9 @@ function EndpointServer(config) {
       return;
     }
 
-    if (config.use_session_id === true) {
-      if (endpoint_request.headers.cookie === undefined) {
-        endpoint_request.sid = crypto.randomBytes(32).toString('hex');
-        endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
-        if (config.session_max_age > 0) {
-          endpoint_response.headers['Set-Cookie'] += ` Max-Age=${config.session_max_age};`;
-        }
-        if (endpoint_request.encrypted === true) {
-          endpoint_response.headers['Set-Cookie'] += ' Secure;';
-        }
-      } else {
-        const cookies = cookie.parse(endpoint_request.headers.cookie);
-        if (cookies.sid === undefined) {
-          endpoint_request.sid = crypto.randomBytes(32).toString('hex');
-          endpoint_response.headers['Set-Cookie'] = `sid=${endpoint_request.sid}; Path=/; SameSite=Strict;`;
-          if (config.session_max_age > 0) {
-            endpoint_response.headers['Set-Cookie'] += `Max-Age=${config.session_max_age};`;
-          }
-          if (endpoint_request.encrypted === true) {
-            endpoint_response.headers['Set-Cookie'] += ' Secure;';
-          }
-        } else {
-          endpoint_request.sid = cookies.sid;
-        }
-      }
+    const session = get_session(request);
+    if (typeof session.set_cookie === 'string') {
+      endpoint_response.headers['Set-Cookie'] = session.set_cookie;
     }
 
     if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
@@ -803,10 +756,10 @@ function EndpointServer(config) {
 
         if (endpoint_request.headers['content-type'].includes('application/json') === true) {
           let buffer = Buffer.alloc(0);
-          raw_request.on('data', (chunk) => {
+          request.on('data', (chunk) => {
             buffer = Buffer.concat([buffer, chunk]);
           });
-          raw_request.on('end', () => {
+          request.on('end', () => {
             try {
               endpoint_request.body = JSON.parse(buffer.toString());
               endpoint_request.body_buffer = buffer;
@@ -853,7 +806,7 @@ function EndpointServer(config) {
             busboy.on('finish', () => {
               handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
             });
-            raw_request.pipe(busboy);
+            request.pipe(busboy);
             return;
           }
         }
@@ -870,9 +823,8 @@ function EndpointServer(config) {
   this.http_server = null;
   this.http_websocket_server = null;
   this.http = (port) => {
-    if (Number.isInteger(port) === false || port <= 0) {
-      throw new Error('http(port) "port" must be an integer > 0.');
-    }
+    assert(typeof port === 'number');
+    assert(Number.isInteger(port) === true);
     const http_server = http.createServer(request_listener);
     http_server.on('close', () => {
       console.log('http_server CLOSED');
@@ -894,24 +846,14 @@ function EndpointServer(config) {
   this.https_server = null;
   this.https_websocket_server = null;
   this.https = (port, key, cert, ca, tls_min_version, dhparam) => {
-    if (Number.isInteger(port) === false || port <= 0) {
-      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "port" must be an integer > 0.');
-    }
-    if (typeof key !== 'string') {
-      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "key" must be a string.');
-    }
-    if (typeof cert !== 'string') {
-      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "cert" must be a string.');
-    }
-    if (typeof ca !== 'string') {
-      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "ca" must be a string.');
-    }
-    if (typeof tls_min_version !== 'string' || accepted_tls_min_version.has(tls_min_version) === false) {
-      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "tls_min_version" must be "TLSv1.3" or "TLSv1.2"');
-    }
-    if (dhparam !== undefined && typeof dhparam !== 'string') {
-      throw new Error('https(port, key, cert, ca, tls_min_version, dhparam?), "dhparam" must be a string.');
-    }
+    assert(typeof port === 'number');
+    assert(Number.isInteger(port) === true);
+    assert(typeof key === 'string');
+    assert(typeof cert === 'string');
+    assert(typeof ca === 'string');
+    assert(typeof tls_min_version === 'string');
+    assert(valid_tls_min_version.has(tls_min_version) === true);
+    assert(dhparam === undefined || typeof dhparam === 'string');
     const https_server_options = {
       key,
       cert,
@@ -958,12 +900,8 @@ function EndpointServer(config) {
 const cwd = process.cwd();
 
 const path_from_cwd = (path) => {
-  if (typeof path !== 'string') {
-    throw new Error('path_from_cwd(path), "path" must be a string.');
-  }
-  if (isAbsolute(path) === false) {
-    throw new Error('path_from_cwd(path), "path" must be an absolute path.');
-  }
+  assert(typeof path === 'string');
+  assert(isAbsolute(path) === true);
   return join(cwd, path);
 };
 
