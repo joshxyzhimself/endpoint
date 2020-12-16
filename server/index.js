@@ -46,9 +46,7 @@ class HTTPError extends Error {
   }
 }
 
-const internals = {};
-
-internals.send_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
+const send_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
   if (config.use_stack_trace === true) {
     console.log('@send_buffer_response');
   }
@@ -70,7 +68,7 @@ internals.send_buffer_response = (config, endpoint_request, raw_response, endpoi
   raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
 };
 
-internals.compress_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
+const compress_buffer_response = (config, endpoint_request, raw_response, endpoint_response) => {
   if (config.use_stack_trace === true) {
     console.log('@compress_buffer_response');
   }
@@ -91,29 +89,29 @@ internals.compress_buffer_response = (config, endpoint_request, raw_response, en
       if (compression_content_encoding !== null) {
         if (Buffer.isBuffer(endpoint_response.buffer) === false) {
           endpoint_response.error = new HTTPError(500, null, 'endpoint_response.buffer must be a buffer.');
-          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
           return;
         }
         compression_buffer_transform(endpoint_response.buffer, (compression_error, compression_buffer_output) => {
           if (compression_error !== null) {
             endpoint_response.error = new HTTPError(500, null, compression_error);
-            internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+            prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
             return;
           }
           endpoint_response.buffer = compression_buffer_output;
           endpoint_response.headers['Content-Length'] = compression_buffer_output.byteLength;
           endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
-          internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+          send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
         });
         return;
       }
     }
   }
   endpoint_response.headers['Content-Length'] = endpoint_response.buffer.byteLength;
-  internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+  send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
-internals.send_stream_response = (config, endpoint_request, raw_response, endpoint_response) => {
+const send_stream_response = (config, endpoint_request, raw_response, endpoint_response) => {
   if (config.use_stack_trace === true) {
     console.log('@send_stream_response');
   }
@@ -141,7 +139,7 @@ const file_mtimems_cache = new Map();
 const file_length_cache = new Map();
 const file_etag_cache = new Map();
 
-internals.compress_stream_response = (config, endpoint_request, raw_response, endpoint_response) => {
+const compress_stream_response = (config, endpoint_request, raw_response, endpoint_response) => {
   if (config.use_stack_trace === true) {
     console.log('@compress_stream_response');
   }
@@ -165,7 +163,7 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
 
           if (raw_file_stat_error !== null) {
             endpoint_response.error = new HTTPError(500, null, raw_file_stat_error);
-            internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+            prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
             return;
           }
 
@@ -177,7 +175,7 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
             endpoint_response.headers['Content-Encoding'] = compression_content_encoding;
             endpoint_response.stream_etag = file_etag_cache.get(compressed_file_id);
             endpoint_response.stream_source_path = compressed_file_path;
-            internals.send_stream_response(config, endpoint_request, raw_response, endpoint_response);
+            send_stream_response(config, endpoint_request, raw_response, endpoint_response);
             return;
           }
 
@@ -218,7 +216,7 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
 
     if (raw_file_stat_error !== null) {
       endpoint_response.error = new HTTPError(500, null, raw_file_stat_error);
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
 
@@ -229,7 +227,7 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
       endpoint_response.headers['Content-Length'] = raw_file_stat.size;
       endpoint_response.stream_etag = file_etag_cache.get(raw_file_id);
       endpoint_response.stream_source_path = raw_file_path;
-      internals.send_stream_response(config, endpoint_request, raw_response, endpoint_response);
+      send_stream_response(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     let raw_file_hash = crypto.createHash('sha256');
@@ -256,7 +254,7 @@ internals.compress_stream_response = (config, endpoint_request, raw_response, en
   });
 };
 
-internals.prepare_response_error = (config, endpoint_request, raw_response, endpoint_response) => {
+const prepare_response_error = (config, endpoint_request, raw_response, endpoint_response) => {
   if (config.use_stack_trace === true) {
     console.log('@prepare_response_error');
   }
@@ -300,30 +298,30 @@ internals.prepare_response_error = (config, endpoint_request, raw_response, endp
 
     endpoint_response.buffer = Buffer.from(JSON.stringify(endpoint_response_json));
   }
-  internals.compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+  compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
 const accepted_http_methods = new Set(['HEAD', 'GET', 'POST', 'PUT', 'DELETE']);
 const accepted_redirect_codes = new Set([301, 302, 307, 308]);
 
-internals.prepare_response = (config, endpoint_request, raw_response, endpoint_response) => {
+const prepare_response = (config, endpoint_request, raw_response, endpoint_response) => {
   if (config.use_stack_trace === true) {
     console.log('@prepare_response');
   }
   if (endpoint_response.error !== null) {
-    internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
     return;
   }
 
   if (endpoint_response.headers.Location !== undefined) {
     if (accepted_redirect_codes.has(endpoint_response.code) === false) {
       endpoint_response.error = new HTTPError(500, null, new Error('endpoint_response.code must be 301/302/307/308.'));
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     if (typeof endpoint_response.headers.Location !== 'string') {
       endpoint_response.error = new HTTPError(500, null, 'endpoint_response.headers.Location must be a string.');
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     raw_response.writeHead(endpoint_response.code, endpoint_response.headers).end();
@@ -333,7 +331,7 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
   if (endpoint_response.json !== null) {
     if (typeof endpoint_response.json !== 'object') {
       endpoint_response.error = new HTTPError(500, null, new Error('endpoint_response.json must be an object.'));
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     endpoint_response.text = JSON.stringify(endpoint_response.json);
@@ -346,12 +344,12 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
   if (endpoint_response.html !== null) {
     if (endpoint_response.text !== null) {
       endpoint_response.error = new HTTPError(500, null, new Error('endpoint_response.html cannot be used with endpoint_response.text.'));
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     if (typeof endpoint_response.html !== 'string') {
       endpoint_response.error = new HTTPError(500, null, new Error('endpoint_response.html must be a string.'));
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     endpoint_response.buffer = Buffer.from(endpoint_response.html);
@@ -371,7 +369,7 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
   if (endpoint_response.text !== null) {
     if (typeof endpoint_response.text !== 'string') {
       endpoint_response.error = new HTTPError(500, null, new Error('endpoint_response.text must be a string.'));
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     endpoint_response.buffer = Buffer.from(endpoint_response.text);
@@ -384,7 +382,7 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
   if (endpoint_response.filename !== null) {
     if (typeof endpoint_response.filename !== 'string') {
       endpoint_response.error = new HTTPError(500, null, new Error('endpoint_response.filename must be a string.'));
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     if (endpoint_response.headers['Content-Disposition'] === undefined) {
@@ -407,16 +405,16 @@ internals.prepare_response = (config, endpoint_request, raw_response, endpoint_r
   }
 
   if (endpoint_response.buffer !== null) {
-    internals.compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+    compress_buffer_response(config, endpoint_request, raw_response, endpoint_response);
     return;
   }
   if (endpoint_response.stream_raw_path !== null) {
-    internals.compress_stream_response(config, endpoint_request, raw_response, endpoint_response);
+    compress_stream_response(config, endpoint_request, raw_response, endpoint_response);
     return;
   }
 
   // allows sending of responses with empty body
-  internals.send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
+  send_buffer_response(config, endpoint_request, raw_response, endpoint_response);
 };
 
 const handle_request = async (endpoint_request, raw_response, endpoint_response, handlers, config) => {
@@ -438,56 +436,64 @@ const handle_request = async (endpoint_request, raw_response, endpoint_response,
     if (returned_endpoint_response === undefined) {
       throw new Error('Invalid handler return type, at least one handler must return the "endpoint_response" object or throw an "HTTPError" error.');
     }
-    internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+    prepare_response(config, endpoint_request, raw_response, endpoint_response);
     return;
   } catch (handler_error) {
     if (handler_error instanceof HTTPError) {
       endpoint_response.error = handler_error;
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
     endpoint_response.error = new HTTPError(500, null, handler_error);
-    internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
     return;
   }
 };
 
-const get_ip = (request) => {
-  let ip = '';
-
+const get_ip_address = (request) => {
+  let ip_address = '';
   if (typeof request.socket === 'object' && typeof request.socket.remoteAddress === 'string') {
     const temp_ip = request.socket.remoteAddress;
     if (is_ip(temp_ip) === true) {
-      ip = temp_ip;
+      ip_address = temp_ip;
     }
   }
-
   if (typeof request.headers['x-forwarded-for'] === 'string') {
     const temp_ip = request.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
     if (is_ip(temp_ip) === true) {
-      ip = temp_ip;
+      ip_address = temp_ip;
     }
   }
-
-  if (ip.substring(0, 7) === '::ffff:' && is_ip.v4(ip.substring(8)) === true) {
-    ip = ip.substring(7);
+  if (ip_address.substring(0, 7) === '::ffff:' && is_ip.v4(ip_address.substring(8)) === true) {
+    ip_address = ip_address.substring(7);
   }
-
-  return ip;
+  return ip_address;
 };
 
-const get_ua = (request) => {
-  let ua = '';
+const get_user_agent = (request) => {
+  let user_agent = '';
   if (typeof request.headers['user-agent'] === 'string') {
-    ua = request.headers['user-agent'];
+    user_agent = request.headers['user-agent'];
   }
-  return ua;
+  return user_agent;
 };
 
 /**
- * @type {WeakMap<http.IncomingMessage, String>}
+ * @typedef {Object} Session
+ * @property {String} session_id
+ * @property {Object} session_data
+ * @property {String|void} session_cookie
  */
-const request_sids = new WeakMap();
+
+/**
+ * @type {Map<String, Session}
+ */
+const sessions = new Map();
+
+/**
+ * @type {WeakMap<http.IncomingMessage, Session>}
+ */
+const request_sessions = new WeakMap();
 
 /**
  * @param {http.IncomingMessage} request
@@ -495,21 +501,26 @@ const request_sids = new WeakMap();
 const get_session = (request) => {
   if (typeof request.headers.cookie === 'string') {
     const cookies = cookie.parse(request.headers.cookie);
-    if (typeof cookies.sid === 'string') {
-      const sid = cookies.sid;
-      const session = { sid };
-      request_sids.set(request, sid);
+    if (typeof cookies.session_id === 'string') {
+      const session_id = cookies.session_id;
+      if (sessions.has(session_id) === false) {
+        const session = { session_id, session_data: {} };
+        sessions.set(session_id, session);
+      }
+      const session = sessions.get(request.sid);
+      request_sessions.set(request, session);
       return session;
     }
   }
-  const sid = crypto.randomBytes(32).toString('hex');
-  const set_cookie = cookie.serialize('sid', sid, {
+  const session_id = crypto.randomBytes(32).toString('hex');
+  const session_cookie = cookie.serialize('session_id', session_id, {
     path: '/',
     sameSite: 'strict',
     secure: request.socket.encrypted === true,
   });
-  const session = { sid, set_cookie };
-  request_sids.set(request, sid);
+  const session = { session_id, session_data: {}, session_cookie };
+  sessions.set(session_id, session);
+  request_sessions.set(request, session);
   return session;
 };
 
@@ -533,12 +544,11 @@ function EndpointServer(config) {
   assert(typeof config.x_dns_prefetch_control === 'string');
   assert(valid_x_dns_prefetch_control.has(config.x_dns_prefetch_control) === true);
 
-  const endpoint = this;
   const static_map = new Map();
   const cache_control_map = new Map();
   let is_https_available = false;
 
-  endpoint.static = (endpoint_directory, local_directory, cache_control) => {
+  this.static = (endpoint_directory, local_directory, cache_control) => {
 
     // validate endpoint_directory
     assert(typeof endpoint_directory === 'string');
@@ -564,7 +574,7 @@ function EndpointServer(config) {
   const routes_map = new Map();
   accepted_http_methods.forEach((http_method) => {
     const route_map = new Map();
-    endpoint[http_method.toLowerCase()] = (path, handler) => {
+    this[http_method.toLowerCase()] = (path, handler) => {
       assert(typeof path === 'string');
       assert(handler instanceof Function);
       if (path !== '*') {
@@ -589,16 +599,16 @@ function EndpointServer(config) {
 
     websocket_server.on('headers', (headers, request) => {
       const session = get_session(request);
-      if (typeof session.set_cookie === 'string') {
-        headers.push(`Set-Cookie: ${session.set_cookie}`);
+      if (typeof session.session_cookie === 'string') {
+        headers.push(`Set-Cookie: ${session.session_cookie}`);
+        delete session.session_cookie;
       }
     });
 
     websocket_server.on('connection', (websocket_client, request) => {
       const endpoint_request = {
-        ip: get_ip(request),
-        ua: get_ua(request),
-        sid: request_sids.get(request),
+        ip_address: get_ip_address(request),
+        user_agent: get_user_agent(request),
         encrypted: request.socket.encrypted === true,
         headers: request.headers,
       };
@@ -630,17 +640,17 @@ function EndpointServer(config) {
       console.log('@request_listener');
     }
 
-    const ip = get_ip(request);
-    const ua = get_ua(request);
+    const ip_address = get_ip_address(request);
+    const user_agent = get_user_agent(request);
     const endpoint_request = {
-      ip,
-      ua,
+      ip_address,
+      user_agent,
       protocol: request.socket.encrypted === true ? 'https' : 'http',
       encrypted: request.socket.encrypted === true,
       method: request.method,
       headers: request.headers,
       url: url.parse(request.url, true),
-      sid: null,
+      session_id: null,
       is_https_available,
     };
 
@@ -676,7 +686,7 @@ function EndpointServer(config) {
 
     if (accepted_http_methods.has(endpoint_request.method) === false) {
       endpoint_response.error = new HTTPError(405, null, null);
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
 
@@ -685,12 +695,12 @@ function EndpointServer(config) {
       if (endpoint_request.method === 'GET' || endpoint_request.method === 'HEAD') {
         endpoint_response.code = 308;
         endpoint_response.headers.Location = `https://${endpoint_request.headers.host}${endpoint_request.url.path}`;
-        internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+        prepare_response(config, endpoint_request, raw_response, endpoint_response);
         return;
       }
       // disallow other insecure requests
       endpoint_response.error = new HTTPError(405, null, null);
-      internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+      prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
       return;
     }
 
@@ -705,7 +715,7 @@ function EndpointServer(config) {
         const endpoint_directory = dirname(endpoint_request.url.pathname);
         if (static_map.has(endpoint_directory) === false) {
           endpoint_response.error = new HTTPError(404, null, null);
-          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
           return;
         }
         const local_directory = static_map.get(endpoint_directory);
@@ -717,14 +727,14 @@ function EndpointServer(config) {
           await fs.promises.access(file_path);
         } catch (file_access_error) {
           endpoint_response.error = new HTTPError(404, null, file_access_error);
-          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
           return;
         }
 
         const file_content_type = mime.contentType(file_basename);
         if (file_content_type === false) {
           endpoint_response.error = new HTTPError(400, null, null);
-          internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+          prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
           return;
         }
 
@@ -733,7 +743,7 @@ function EndpointServer(config) {
         }
         endpoint_response.headers['Content-Type'] = file_content_type;
         endpoint_response.stream_raw_path = file_path;
-        internals.prepare_response(config, endpoint_request, raw_response, endpoint_response);
+        prepare_response(config, endpoint_request, raw_response, endpoint_response);
         return;
       }
     }
@@ -765,7 +775,7 @@ function EndpointServer(config) {
               endpoint_request.body_buffer = buffer;
             } catch (json_parsing_error) {
               endpoint_response.error = new HTTPError(400, null, json_parsing_error);
-              internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+              prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
               return;
             }
             handle_request(endpoint_request, raw_response, endpoint_response, handlers, config);
@@ -816,7 +826,7 @@ function EndpointServer(config) {
     }
 
     endpoint_response.error = new HTTPError(404, null, null);
-    internals.prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
+    prepare_response_error(config, endpoint_request, raw_response, endpoint_response);
     return;
   };
 
