@@ -29,16 +29,18 @@ function websocket_client() {
         events.emit('connect');
       }
     };
-    client.onmessage = (message_event) => {
-      events.emit('message', message_event);
+    client.onmessage = (event) => {
+      assert(typeof event.data === 'string');
+      const message = JSON.parse(event.data);
+      events.emit('message', message);
     };
-    client.onerror = async (error_event) => {
-      console.error({ error_event });
-      events.emit('error', error_event);
+    client.onerror = async (event) => {
+      console.error({ event });
+      events.emit('error', event);
     };
-    client.onclose = async (close_event) => {
-      events.emit('disconnect', close_event); // event.code, event.reason
-      if (close_event instanceof CloseEvent && close_event.code === 1000) {
+    client.onclose = async (event) => {
+      events.emit('disconnect', event.code, event.reason); // event.code, event.reason
+      if (event.code === 1000) {
         return;
       }
       await await_backoff();
@@ -47,7 +49,6 @@ function websocket_client() {
   };
   const disconnect = () => {
     assert(client instanceof WebSocket);
-    assert(client.readyState === 1);
     client.close(1000);
   };
   this.send = send;
