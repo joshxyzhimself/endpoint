@@ -39,7 +39,7 @@ function websocket_client() {
       events.emit('error', event);
     };
     client.onclose = async (event) => {
-      events.emit('disconnect', event.code, event.reason); // event.code, event.reason
+      events.emit('disconnect', event.code, event.reason);
       if (event.code === 1000) {
         return;
       }
