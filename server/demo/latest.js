@@ -153,8 +153,6 @@ endpoint.get('/test-500-2', () => {
   return 123; // unexpected return value
 });
 
-
-endpoint.get('/login', middlewares.cookie_sessions);
 endpoint.get('/login', middlewares.guests_only);
 endpoint.get('/login', (request, response) => {
   response.html = `
@@ -173,7 +171,6 @@ endpoint.get('/login', (request, response) => {
   return response;
 });
 
-endpoint.get('/account', middlewares.cookie_sessions);
 endpoint.get('/account', middlewares.users_only);
 endpoint.get('/account', (request, response) => {
   response.html = `
@@ -192,7 +189,6 @@ endpoint.get('/account', (request, response) => {
   return response;
 });
 
-endpoint.get('/login-user', middlewares.cookie_sessions);
 endpoint.get('/login-user', middlewares.guests_only);
 endpoint.get('/login-user', (request, response) => {
   request.session.user = { id: 'alice-id' };
@@ -212,7 +208,6 @@ endpoint.get('/login-user', (request, response) => {
   return response;
 });
 
-endpoint.get('/logout-user', middlewares.cookie_sessions);
 endpoint.get('/logout-user', middlewares.users_only);
 endpoint.get('/logout-user', (request, response) => {
   request.session.user = null;

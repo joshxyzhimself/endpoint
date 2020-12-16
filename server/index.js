@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const stream = require('stream');
 const assert = require('assert');
 const { extname, dirname, basename, join, isAbsolute } = require('path');
+const emitter = require('../extras/common/emitter');
 
 const statuses = require('statuses');
 const mime = require('mime-types');
@@ -504,10 +505,10 @@ const get_session = (request) => {
     if (typeof cookies.session_id === 'string') {
       const session_id = cookies.session_id;
       if (sessions.has(session_id) === false) {
-        const session = { session_id, session_data: {} };
+        const session = { session_id, session_data: { user: null } };
         sessions.set(session_id, session);
       }
-      const session = sessions.get(request.sid);
+      const session = sessions.get(session_id);
       request_sessions.set(request, session);
       return session;
     }
@@ -518,7 +519,7 @@ const get_session = (request) => {
     sameSite: 'strict',
     secure: request.socket.encrypted === true,
   });
-  const session = { session_id, session_data: {}, session_cookie };
+  const session = { session_id, session_data: { user: null }, session_cookie };
   sessions.set(session_id, session);
   request_sessions.set(request, session);
   return session;
@@ -534,9 +535,6 @@ function EndpointServer(config) {
   assert(typeof config.use_compression === 'boolean');
 
   assert(typeof config.use_websocket === 'boolean');
-  if (config.use_websocket === true) {
-    assert(config.on_websocket_connection instanceof Function);
-  }
   assert(typeof config.use_stack_trace === 'boolean');
   assert(typeof config.referrer_policy === 'string');
   assert(valid_referrer_policies.has(config.referrer_policy) === true);
@@ -547,6 +545,8 @@ function EndpointServer(config) {
   const static_map = new Map();
   const cache_control_map = new Map();
   let is_https_available = false;
+
+  this.emitter = new emitter();
 
   this.static = (endpoint_directory, local_directory, cache_control) => {
 
@@ -591,9 +591,8 @@ function EndpointServer(config) {
     routes_map.set(http_method, route_map);
   });
 
-  const create_websocket_server = (http_server, on_websocket_connection) => {
+  const create_websocket_server = (http_server) => {
     assert(http_server instanceof Object);
-    assert(on_websocket_connection instanceof Function);
     const websocket_server = new WebSocket.Server({ server: http_server });
     const websocket_client_is_alive = new WeakMap();
 
@@ -612,9 +611,11 @@ function EndpointServer(config) {
         encrypted: request.socket.encrypted === true,
         headers: request.headers,
       };
+      const session = get_session(request);
+      endpoint_request.session = session.session_data;
       websocket_client_is_alive.set(websocket_client, true);
       websocket_client.on('pong', () => websocket_client_is_alive.set(websocket_client, true));
-      on_websocket_connection(websocket_client, endpoint_request);
+      this.emitter.emit('websocket_connection', websocket_client, endpoint_request);
     });
     setInterval(() => websocket_server.clients.forEach((websocket_client) => {
       if (websocket_client_is_alive.get(websocket_client) === false) {
@@ -705,9 +706,11 @@ function EndpointServer(config) {
     }
 
     const session = get_session(request);
-    if (typeof session.set_cookie === 'string') {
-      endpoint_response.headers['Set-Cookie'] = session.set_cookie;
+    if (typeof session.session_cookie === 'string') {
+      endpoint_response.headers['Set-Cookie'] = session.session_cookie;
+      delete session.session_cookie;
     }
+    endpoint_request.session = session.session_data;
 
     if (endpoint_request.method === 'HEAD' || endpoint_request.method === 'GET') {
       const ext = extname(endpoint_request.url.pathname);
@@ -761,9 +764,7 @@ function EndpointServer(config) {
     }
 
     if (handlers !== undefined) {
-
       if (endpoint_request.headers['content-type'] !== undefined) {
-
         if (endpoint_request.headers['content-type'].includes('application/json') === true) {
           let buffer = Buffer.alloc(0);
           request.on('data', (chunk) => {
@@ -844,7 +845,7 @@ function EndpointServer(config) {
       console.error(http_server_error);
     });
     if (config.use_websocket === true) {
-      const http_websocket_server = create_websocket_server(http_server, config.on_websocket_connection);
+      const http_websocket_server = create_websocket_server(http_server);
       this.http_websocket_server = http_websocket_server;
     }
     http_server.listen(port, () => {
@@ -896,7 +897,7 @@ function EndpointServer(config) {
       console.error(https_server_error);
     });
     if (config.use_websocket === true) {
-      const https_websocket_server = create_websocket_server(https_server, config.on_websocket_connection);
+      const https_websocket_server = create_websocket_server(https_server);
       this.https_websocket_server = https_websocket_server;
     }
     https_server.listen(port, () => {
