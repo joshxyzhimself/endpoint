@@ -488,31 +488,6 @@ const accepted_referrer_policies = new Set(['no-referrer', 'same-origin']);
 const accepted_x_dns_prefetch_control = new Set(['off', 'on']);
 const accepted_tls_min_version = new Set(['TLSv1.3', 'TLSv1.2']);
 
-const create_websocket_server = (http_server, on_websocket_connection) => {
-  assert(http_server instanceof Object);
-  assert(on_websocket_connection instanceof Function);
-  const websocket_server = new WebSocket.Server({ server: http_server });
-  const websocket_client_is_alive = new WeakMap();
-  websocket_server.on('connection', (websocket_client, raw_request) => {
-    websocket_client.ip = get_request_ip_address(raw_request);
-    websocket_client.ua = get_request_user_agent(raw_request);
-    websocket_client_is_alive.set(websocket_client, true);
-    websocket_client.on('pong', () => websocket_client_is_alive.set(websocket_client, true));
-    on_websocket_connection(websocket_client);
-  });
-  setInterval(() => websocket_server.clients.forEach((websocket_client) => {
-    if (websocket_client_is_alive.get(websocket_client) === false) {
-      websocket_client.terminate();
-      return;
-    }
-    websocket_client_is_alive.set(websocket_client, false);
-    try {
-      websocket_client.ping(() => {});
-    } catch (websocket_ping_error) {
-      console.error(websocket_ping_error);
-    }
-  }), 30000);
-};
 
 function EndpointServer(config) {
 
@@ -604,6 +579,76 @@ function EndpointServer(config) {
     routes_map.set(http_method, route_map);
   });
 
+  const create_websocket_server = (http_server, on_websocket_connection) => {
+    assert(http_server instanceof Object);
+    assert(on_websocket_connection instanceof Function);
+    const websocket_server = new WebSocket.Server({ server: http_server });
+    const websocket_client_is_alive = new WeakMap();
+
+    const session_ids = new WeakMap();
+
+    websocket_server.on('headers', (headers, raw_request) => {
+      const request_headers = raw_request.headers;
+
+      if (request_headers.cookie === undefined) {
+        const sid = crypto.randomBytes(32).toString('hex');
+        const sid_cookie_options = { path: '/', sameSite: 'strict' };
+        if (config.session_max_age > 0) {
+          sid_cookie_options.maxAge = config.session_max_age;
+        }
+        if (raw_request.socket.encrypted === true) {
+          sid_cookie_options.secure = true;
+        }
+        const sid_cookie = cookie.serialize('sid', sid, sid_cookie_options);
+        headers.push(`Set-Cookie: ${sid_cookie}`);
+        session_ids.set(raw_request, sid);
+      } else {
+        const cookies = cookie.parse(request_headers.cookie);
+        if (cookies.sid === undefined) {
+          const sid = crypto.randomBytes(32).toString('hex');
+          const sid_cookie_options = { path: '/', sameSite: 'strict' };
+          if (config.session_max_age > 0) {
+            sid_cookie_options.maxAge = config.session_max_age;
+          }
+          if (raw_request.socket.encrypted === true) {
+            sid_cookie_options.secure = true;
+          }
+          const sid_cookie = cookie.serialize('sid', sid, sid_cookie_options);
+          headers.push(`Set-Cookie: ${sid_cookie}`);
+          session_ids.set(raw_request, sid);
+        } else {
+          const sid = cookies.sid;
+          session_ids.set(raw_request, sid);
+        }
+      }
+    });
+
+    websocket_server.on('connection', (websocket_client, raw_request) => {
+      const endpoint_request = {
+        ip: get_request_ip_address(raw_request),
+        ua: get_request_user_agent(raw_request),
+        sid: session_ids.get(raw_request),
+        encrypted: raw_request.socket.encrypted === true,
+        headers: raw_request.headers,
+      };
+      websocket_client_is_alive.set(websocket_client, true);
+      websocket_client.on('pong', () => websocket_client_is_alive.set(websocket_client, true));
+      on_websocket_connection(websocket_client, endpoint_request);
+    });
+    setInterval(() => websocket_server.clients.forEach((websocket_client) => {
+      if (websocket_client_is_alive.get(websocket_client) === false) {
+        websocket_client.terminate();
+        return;
+      }
+      websocket_client_is_alive.set(websocket_client, false);
+      try {
+        websocket_client.ping(() => {});
+      } catch (websocket_ping_error) {
+        console.error(websocket_ping_error);
+      }
+    }), 30000);
+  };
+
   const request_listener = async (raw_request, raw_response) => {
     if (config.use_stack_trace === true) {
       console.log('@', new Date().toUTCString());
@@ -612,7 +657,6 @@ function EndpointServer(config) {
 
     const ip = get_request_ip_address(raw_request);
     const ua = get_request_user_agent(raw_request);
-
     const endpoint_request = {
       ip,
       ua,
