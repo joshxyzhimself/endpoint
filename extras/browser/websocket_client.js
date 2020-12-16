@@ -18,7 +18,6 @@ function websocket_client() {
     const raw_data = JSON.stringify(data);
     assert(client instanceof WebSocket);
     assert(client.readyState === 1);
-    console.log('send', client.readyState);
     client.send(raw_data);
   };
   const connect = () => {
@@ -27,7 +26,6 @@ function websocket_client() {
     client = new WebSocket(`${websocket_protocol}//${websocket_host}/`);
     client.onopen = () => {
       if (client.readyState === 1) {
-        console.log('onopen readystate', client.readyState);
         events.emit('connect');
       }
     };
@@ -37,7 +35,6 @@ function websocket_client() {
       events.emit('message', message);
     };
     client.onerror = async (event) => {
-      console.error({ event });
       events.emit('error', event);
     };
     client.onclose = async (event) => {
