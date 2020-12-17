@@ -1,6 +1,6 @@
 
-const assert = require('endpoint/extras/common/assert');
-const emitter = require('endpoint/extras/common/emitter');
+const assert = require('../common/assert');
+const emitter = require('../common/emitter');
 
 function localstorage_client() {
   const events = new emitter();
