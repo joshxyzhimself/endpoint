@@ -578,7 +578,6 @@ function EndpointServer(config) {
       assert(typeof path === 'string');
       assert(handler instanceof Function);
       if (path !== '*') {
-        console.log({ path });
         assert(path.substring(0, 1) === '/'); // must have leading slash
         assert(path.substring(path.length - 1, path.length) !== '/'); // must not have trailing slash
       }
