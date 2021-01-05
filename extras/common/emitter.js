@@ -35,6 +35,9 @@ function emitter () {
     assert(listener_set instanceof Set);
     assert(listener_set.has(listener) === true);
     listener_set.delete(listener);
+    if (listener_set.size === 0) {
+      listener_sets.delete(name);
+    }
   };
 
   /**
