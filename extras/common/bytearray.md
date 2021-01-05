@@ -61,3 +61,25 @@
 - https://www.derpturkey.com/chacha20poly1305-aead-with-node-js/
 - https://blog.filippo.io/the-scrypt-parameters/
 - https://github.com/joshxyzhimself/notes
+
+#### misc
+
+// 1 byte, type
+// N byte, length
+// N byte, data
+
+// arrays
+// 1 byte, data type, as array
+// N byte, array length
+// N byte, array item type
+// N byte, array item length
+// N byte, array item data
+
+// objects
+// 1 byte, data type, as object
+// N byte, item key type
+// N byte, item key length
+// N byte, item key data
+// N byte, item value type
+// N byte, item value length
+// N byte, item value data

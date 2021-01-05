@@ -57,6 +57,15 @@ const random_base64 = (size) => {
   return bytes_to_base64(random_bytes(size));
 };
 
+const merge = (first, second) => {
+  assert(first instanceof Uint8Array);
+  assert(second instanceof Uint8Array);
+  const merged = new Uint8Array(first.byteLength, second.byteLength);
+  merged.set(first);
+  merged.set(second, first.byteLength);
+  return merged;
+};
+
 module.exports = {
   bytes_to_hex,
   hex_to_bytes,
@@ -65,4 +74,5 @@ module.exports = {
   random_bytes,
   random_hex,
   random_base64,
+  merge,
 };
