@@ -12,7 +12,7 @@ const types = {
   uint_8: type_index += 1,
   uint_16: type_index += 1,
   uint_32: type_index += 1,
-  uint_48: type_index += 1,
+  uint_53: type_index += 1,
 
   int_8: type_index += 1,
   int_16: type_index += 1,
@@ -21,24 +21,35 @@ const types = {
 
   float_32: type_index += 1,
   float_64: type_index += 1,
-  positive_infinity: type_index += 1,
-  negative_infinity: type_index += 1,
-  nan: type_index += 1,
 
   uint8array: type_index += 1,
   array: type_index += 1,
   object: type_index += 1,
   set: type_index += 1,
   map: type_index += 1,
+
+  positive_infinity: type_index += 1,
+  negative_infinity: type_index += 1,
+  nan: type_index += 1,
 };
 
 const text_encoder = new TextEncoder();
 const text_decoder = new TextDecoder();
 
-const float_32_array = new Float32Array(1);
-const uint8_float_32_array = new Uint8Array(float_32_array.buffer);
-const float_64_array = new Float64Array(1);
-const uint8_float_64_array = new Uint8Array(float_64_array.buffer);
+const uint16_array = new Uint16Array(1);
+const uint8_uint16_array = new Uint8Array(uint16_array.buffer);
+
+const uint32_array = new Uint32Array(1);
+const uint8_uint32_array = new Uint8Array(uint32_array.buffer);
+
+const biguint64_array = new BigUint64Array(1);
+const uint8_biguint64_array = new Uint8Array(biguint64_array.buffer);
+
+const float32_array = new Float32Array(1);
+const uint8_float32_array = new Uint8Array(float32_array.buffer);
+
+const float64_array = new Float64Array(1);
+const uint8_float64_array = new Uint8Array(float64_array.buffer);
 
 const encode = (data) => {
   switch (typeof data) {
@@ -78,27 +89,27 @@ const encode = (data) => {
           // float
           const key = types.float_32;
           const buffer = new Uint8Array(5);
-          float_32_array[0] = data;
+          float32_array[0] = data;
           buffer[0] = key;
-          buffer[1] = uint8_float_32_array[0];
-          buffer[2] = uint8_float_32_array[1];
-          buffer[3] = uint8_float_32_array[2];
-          buffer[4] = uint8_float_32_array[3];
+          buffer[1] = uint8_float32_array[0];
+          buffer[2] = uint8_float32_array[1];
+          buffer[3] = uint8_float32_array[2];
+          buffer[4] = uint8_float32_array[3];
           return buffer;
         } else {
           // double
           const key = types.float_64;
           const buffer = new Uint8Array(9);
-          float_64_array[0] = data;
+          float64_array[0] = data;
           buffer[0] = key;
-          buffer[1] = uint8_float_64_array[0];
-          buffer[2] = uint8_float_64_array[1];
-          buffer[3] = uint8_float_64_array[2];
-          buffer[4] = uint8_float_64_array[3];
-          buffer[5] = uint8_float_64_array[4];
-          buffer[6] = uint8_float_64_array[5];
-          buffer[7] = uint8_float_64_array[6];
-          buffer[8] = uint8_float_64_array[7];
+          buffer[1] = uint8_float64_array[0];
+          buffer[2] = uint8_float64_array[1];
+          buffer[3] = uint8_float64_array[2];
+          buffer[4] = uint8_float64_array[3];
+          buffer[5] = uint8_float64_array[4];
+          buffer[6] = uint8_float64_array[5];
+          buffer[7] = uint8_float64_array[6];
+          buffer[8] = uint8_float64_array[7];
           return buffer;
         }
       }
@@ -113,34 +124,40 @@ const encode = (data) => {
         if (data < 65536) { // 2 ** 16 = 65536
           const key = types.uint_16;
           const buffer = new Uint8Array(3);
+          uint16_array[0] = data;
           buffer[0] = key;
-          buffer[1] = data >> 8;
-          buffer[2] = data;
+          buffer[1] = uint8_uint16_array[0];
+          buffer[2] = uint8_uint16_array[1];
           return buffer;
         }
         if (data < 4294967296) { // 2 ** 32 = 4294967296
           const key = types.uint_32;
           const buffer = new Uint8Array(5);
+          uint32_array[0] = data;
           buffer[0] = key;
-          buffer[1] = data >> 24;
-          buffer[2] = data >> 16;
-          buffer[3] = data >> 8;
-          buffer[4] = data;
+          buffer[1] = uint8_uint32_array[0];
+          buffer[2] = uint8_uint32_array[1];
+          buffer[3] = uint8_uint32_array[2];
+          buffer[4] = uint8_uint32_array[3];
           return buffer;
         }
-        if (data < 281474976710656) { // 2 ** 48 = 281474976710656
-          const key = types.uint_48;
-          const buffer = new Uint8Array(7);
+        if (data <= Number.MAX_SAFE_INTEGER) { // 2 ** 53 - 1
+          const key = types.uint_53;
+          const buffer = new Uint8Array(9);
+          biguint64_array[0] = BigInt(data);
           buffer[0] = key;
-          buffer[1] = data >> 40;
-          buffer[2] = data >> 32;
-          buffer[3] = data >> 24;
-          buffer[4] = data >> 16;
-          buffer[5] = data >> 8;
-          buffer[6] = data;
+          buffer[1] = uint8_biguint64_array[0];
+          buffer[2] = uint8_biguint64_array[1];
+          buffer[3] = uint8_biguint64_array[2];
+          buffer[4] = uint8_biguint64_array[3];
+          buffer[5] = uint8_biguint64_array[4];
+          buffer[6] = uint8_biguint64_array[5];
+          buffer[7] = uint8_biguint64_array[6];
+          buffer[8] = uint8_biguint64_array[7];
           return buffer;
         }
-        throw new Error('encoder: uint max positive safe integer is capped at 2^48 - 1.');
+        console.log(data, Number.MAX_SAFE_INTEGER);
+        throw new Error('encoder: uint max positive safe integer is capped at 2^53 - 1.');
       }
       break;
     }
@@ -164,12 +181,6 @@ const encode = (data) => {
     }
   }
 };
-
-const pow_2_40 = Math.pow(2, 40);
-const pow_2_32 = Math.pow(2, 32);
-const pow_2_24 = Math.pow(2, 24);
-const pow_2_16 = Math.pow(2, 16);
-const pow_2_8 = Math.pow(2, 8);
 
 const decode = (buffer) => {
   assert(buffer instanceof Uint8Array);
@@ -202,43 +213,49 @@ const decode = (buffer) => {
       return value;
     }
     case types.uint_16: {
-      const value = (buffer[buffer._offset += 1] * pow_2_8) + (buffer[buffer._offset += 1]);
+      uint8_uint16_array[0] = buffer[buffer._offset += 1];
+      uint8_uint16_array[1] = buffer[buffer._offset += 1];
+      const value = uint16_array[0];
       return value;
     }
     case types.uint_32: {
-      const value = (buffer[buffer._offset += 1] * pow_2_24)
-        + (buffer[buffer._offset += 1] * pow_2_16)
-        + (buffer[buffer._offset += 1] * pow_2_8)
-        + (buffer[buffer._offset += 1]);
+      uint8_uint32_array[0] = buffer[buffer._offset += 1];
+      uint8_uint32_array[1] = buffer[buffer._offset += 1];
+      uint8_uint32_array[2] = buffer[buffer._offset += 1];
+      uint8_uint32_array[3] = buffer[buffer._offset += 1];
+      const value = uint32_array[0];
       return value;
     }
-    case types.uint_48: {
-      const value = (buffer[buffer._offset += 1] * pow_2_40)
-        + (buffer[buffer._offset += 1] * pow_2_32)
-        + (buffer[buffer._offset += 1] * pow_2_24)
-        + (buffer[buffer._offset += 1] * pow_2_16)
-        + (buffer[buffer._offset += 1] * pow_2_8)
-        + (buffer[buffer._offset += 1]);
+    case types.uint_53: {
+      uint8_biguint64_array[0] = buffer[buffer._offset += 1];
+      uint8_biguint64_array[1] = buffer[buffer._offset += 1];
+      uint8_biguint64_array[2] = buffer[buffer._offset += 1];
+      uint8_biguint64_array[3] = buffer[buffer._offset += 1];
+      uint8_biguint64_array[4] = buffer[buffer._offset += 1];
+      uint8_biguint64_array[5] = buffer[buffer._offset += 1];
+      uint8_biguint64_array[6] = buffer[buffer._offset += 1];
+      uint8_biguint64_array[7] = buffer[buffer._offset += 1];
+      const value = Number(biguint64_array[0]);
       return value;
     }
     case types.float_32: {
-      uint8_float_32_array[0] = buffer[buffer._offset += 1];
-      uint8_float_32_array[1] = buffer[buffer._offset += 1];
-      uint8_float_32_array[2] = buffer[buffer._offset += 1];
-      uint8_float_32_array[3] = buffer[buffer._offset += 1];
-      const value = float_32_array[0];
+      uint8_float32_array[0] = buffer[buffer._offset += 1];
+      uint8_float32_array[1] = buffer[buffer._offset += 1];
+      uint8_float32_array[2] = buffer[buffer._offset += 1];
+      uint8_float32_array[3] = buffer[buffer._offset += 1];
+      const value = float32_array[0];
       return value;
     }
     case types.float_64: {
-      uint8_float_64_array[0] = buffer[buffer._offset += 1];
-      uint8_float_64_array[1] = buffer[buffer._offset += 1];
-      uint8_float_64_array[2] = buffer[buffer._offset += 1];
-      uint8_float_64_array[3] = buffer[buffer._offset += 1];
-      uint8_float_64_array[4] = buffer[buffer._offset += 1];
-      uint8_float_64_array[5] = buffer[buffer._offset += 1];
-      uint8_float_64_array[6] = buffer[buffer._offset += 1];
-      uint8_float_64_array[7] = buffer[buffer._offset += 1];
-      const value = float_64_array[0];
+      uint8_float64_array[0] = buffer[buffer._offset += 1];
+      uint8_float64_array[1] = buffer[buffer._offset += 1];
+      uint8_float64_array[2] = buffer[buffer._offset += 1];
+      uint8_float64_array[3] = buffer[buffer._offset += 1];
+      uint8_float64_array[4] = buffer[buffer._offset += 1];
+      uint8_float64_array[5] = buffer[buffer._offset += 1];
+      uint8_float64_array[6] = buffer[buffer._offset += 1];
+      uint8_float64_array[7] = buffer[buffer._offset += 1];
+      const value = float64_array[0];
       return value;
     }
     default: {
@@ -252,10 +269,10 @@ const test_cases = [
   ['boolean_false', false],
   ['null', null],
   ['zero', 0],
-  ['uint_8', 255],
-  ['uint_16', 65535],
-  ['uint_32', 4294967295],
-  ['uint_48', 281474976710655],
+  ['uint_8', Math.pow(2, 8) - 1],
+  ['uint_16', Math.pow(2, 16) - 1],
+  ['uint_32', Math.pow(2, 32) - 1],
+  ['uint_53', Math.pow(2, 53) - 1],
   ['float_32', 1.5],
   ['float_64', 1.51],
   ['string', 'foo'],
@@ -276,7 +293,7 @@ process.nextTick(async () => {
       error = e;
     }
     if (result === false) {
-      console.log({ encoded, decoded, error: error.message });
+      console.log({ encoded, decoded, error: error });
     }
     console.log(`${label}, ${data}: ${result === true ? 'OK' : 'FAIL'}`);
   });
