@@ -1,18 +1,30 @@
 
-#### supported
+#### implementation notes
 
-- primitives: null, boolean, numbers, strings
-- special primitives: nan, -infinity, +infinity
-- containers: arrays, objects
-- special containers: sets, maps
-- raw data: binary
+- good performance, good readability, JSON compatible
+- primitives: null, boolean, uint8, uint16, uint32, int8, int16, int32, float, double, bigint, str8, str16, str32
+- containers: array8, array16, array32, map8, map16, map32
+- binary: bin8, bin16, bin32
+- requires bigint, https://caniuse.com/bigint
+
+#### using with websockets
+
+```js
+const encoded = bytearray.encode({ foo: 'bar' });
+websocket.send(encoded.buffer);
+```
 
 #### not supported
 
-- dates, bigints, typedarrays, buffers, arraybuffers
+- dictionaries / extensions
+- special containers: sets, maps
+- special primitives: nan, -infinity, +infinity
+- dates, other typedarrays, buffers, arraybuffers
 - extensions, timestamps
 
-#### goals
+--- 
+
+#### for streaming (wip)
 
 - runs in browser and nodejs
 - encode/decode speed & size
@@ -27,6 +39,8 @@
 
 #### references
 
+- https://github.com/msgpack/msgpack/blob/master/spec.md
+- https://developers.google.com/protocol-buffers/docs/proto
 - https://nodejs.org/api/stream.html
 - https://nodejs.org/api/buffer.html
 - https://github.com/fabeuluci/text-coder
@@ -38,7 +52,6 @@
 - https://stackoverflow.com/a/14071518/14051308
 - https://stackoverflow.com/a/37902334/14051308
 - https://caniuse.com/?search=TextDecoder
-- https://github.com/msgpack/msgpack/blob/master/spec.md
 - https://github.com/mongodb/js-bson
 
 #### compression
@@ -61,25 +74,3 @@
 - https://www.derpturkey.com/chacha20poly1305-aead-with-node-js/
 - https://blog.filippo.io/the-scrypt-parameters/
 - https://github.com/joshxyzhimself/notes
-
-#### misc
-
-// 1 byte, type
-// N byte, length
-// N byte, data
-
-// arrays
-// 1 byte, data type, as array
-// N byte, array length
-// N byte, array item type
-// N byte, array item length
-// N byte, array item data
-
-// objects
-// 1 byte, data type, as object
-// N byte, item key type
-// N byte, item key length
-// N byte, item key data
-// N byte, item value type
-// N byte, item value length
-// N byte, item value data
