@@ -9,9 +9,6 @@ const types = {
   null: type_index += 1,
   string: type_index += 1,
 
-  array: type_index += 1,
-  object: type_index += 1,
-
   uint_8: type_index += 1,
   uint_16: type_index += 1,
   uint_32: type_index += 1,
@@ -28,7 +25,11 @@ const types = {
   negative_infinity: type_index += 1,
   nan: type_index += 1,
 
-  buffer: type_index += 1,
+  uint8array: type_index += 1,
+  array: type_index += 1,
+  object: type_index += 1,
+  set: type_index += 1,
+  map: type_index += 1,
 };
 
 const text_encoder = new TextEncoder();
@@ -41,6 +42,12 @@ const uint8_float_64_array = new Uint8Array(float_64_array.buffer);
 
 const encode = (data) => {
   switch (typeof data) {
+    case 'boolean': {
+      const buffer = new Uint8Array(1);
+      const key = data === true ? types.boolean_true : types.boolean_false;
+      buffer[0] = key;
+      return buffer;
+    }
     case 'string': {
       const key = types.string;
       const value_buffer = text_encoder.encode(data);
@@ -137,12 +144,12 @@ const encode = (data) => {
       }
       break;
     }
-    case 'boolean': {
-      break;
-    }
     case 'object': {
       if (data === null) {
-        break;
+        const buffer = new Uint8Array(1);
+        const key = types.null;
+        buffer[0] = key;
+        return buffer;
       }
       if (data instanceof Array) {
         break;
@@ -174,6 +181,22 @@ const decode = (buffer) => {
   const type = buffer[buffer._offset += 1];
 
   switch (type) {
+    case types.boolean_false: {
+      return false;
+    }
+    case types.boolean_true: {
+      return true;
+    }
+    case types.null: {
+      return null;
+    }
+    case types.string: {
+      const value_length = decode(buffer);
+      const next_offset = buffer._offset += 1;
+      const value = text_decoder.decode(buffer.slice(next_offset, next_offset + value_length));
+      buffer._offset += value_length;
+      return value;
+    }
     case types.uint_8: {
       const value = buffer[buffer._offset += 1];
       return value;
@@ -218,13 +241,6 @@ const decode = (buffer) => {
       const value = float_64_array[0];
       return value;
     }
-    case types.string: {
-      const value_length = decode(buffer);
-      const next_offset = buffer._offset += 1;
-      const value = text_decoder.decode(buffer.slice(next_offset, next_offset + value_length));
-      buffer._offset += value_length;
-      return value;
-    }
     default: {
       throw new Error(`decoder: unknown type "${type}".`);
     }
@@ -232,6 +248,9 @@ const decode = (buffer) => {
 };
 
 const test_cases = [
+  ['boolean_true', true],
+  ['boolean_false', false],
+  ['null', null],
   ['zero', 0],
   ['uint_8', 255],
   ['uint_16', 65535],
@@ -259,6 +278,6 @@ process.nextTick(async () => {
     if (result === false) {
       console.log({ encoded, decoded, error: error.message });
     }
-    console.log(`${label}, ${data}: ${result}`);
+    console.log(`${label}, ${data}: ${result === true ? 'OK' : 'FAIL'}`);
   });
 });
