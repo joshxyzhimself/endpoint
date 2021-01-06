@@ -14,13 +14,25 @@ const encoded = bytearray.encode({ foo: 'bar' });
 websocket.send(encoded.buffer);
 ```
 
+#### benchmarks
+
+```
+JSON stringify x 2,059,997 ops/sec ±0.77% (90 runs sampled)
+bytearray encode x 153,385 ops/sec ±2.08% (79 runs sampled)
+
+JSON stringify test_data_2 x 360,664 ops/sec ±0.71% (90 runs sampled)
+bytearray encode test_data_2 x 32,546 ops/sec ±3.77% (69 runs sampled)
+
+JSON stringify parse x 655,283 ops/sec ±1.24% (87 runs sampled)
+bytearray encode decode x 52,642 ops/sec ±4.69% (65 runs sampled)
+```
+
 #### not supported
 
-- dictionaries / extensions
-- special containers: sets, maps
 - special primitives: nan, -infinity, +infinity
+- special containers: sets, maps
 - dates, other typedarrays, buffers, arraybuffers
-- extensions, timestamps
+- dictionaries, extensions, timestamps
 
 --- 
 
