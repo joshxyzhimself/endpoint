@@ -34,6 +34,11 @@ const types = {
 const text_encoder = new TextEncoder();
 const text_decoder = new TextDecoder();
 
+const float_32_array = new Float32Array(1);
+const uint8_float_32_array = new Uint8Array(float_32_array.buffer);
+const float_64_array = new Float64Array(1);
+const uint8_float_64_array = new Uint8Array(float_64_array.buffer);
+
 const encode = (data) => {
   switch (typeof data) {
     case 'string': {
@@ -64,10 +69,30 @@ const encode = (data) => {
       if (Math.floor(data) !== data) {
         if (Math.fround(data) === data) {
           // float
-          return;
+          const key = types.float_32;
+          const buffer = new Uint8Array(5);
+          float_32_array[0] = data;
+          buffer[0] = key;
+          buffer[1] = uint8_float_32_array[0];
+          buffer[2] = uint8_float_32_array[1];
+          buffer[3] = uint8_float_32_array[2];
+          buffer[4] = uint8_float_32_array[3];
+          return buffer;
         } else {
           // double
-          return;
+          const key = types.float_64;
+          const buffer = new Uint8Array(9);
+          float_64_array[0] = data;
+          buffer[0] = key;
+          buffer[1] = uint8_float_64_array[0];
+          buffer[2] = uint8_float_64_array[1];
+          buffer[3] = uint8_float_64_array[2];
+          buffer[4] = uint8_float_64_array[3];
+          buffer[5] = uint8_float_64_array[4];
+          buffer[6] = uint8_float_64_array[5];
+          buffer[7] = uint8_float_64_array[6];
+          buffer[8] = uint8_float_64_array[7];
+          return buffer;
         }
       }
       if (data >= 0) {
@@ -108,7 +133,7 @@ const encode = (data) => {
           buffer[6] = data;
           return buffer;
         }
-        throw new Error('@ uint, max positive safe integer is capped at 2^48 - 1.');
+        throw new Error('encoder: uint max positive safe integer is capped at 2^48 - 1.');
       }
       break;
     }
@@ -173,6 +198,26 @@ const decode = (buffer) => {
         + (buffer[buffer._offset += 1]);
       return value;
     }
+    case types.float_32: {
+      uint8_float_32_array[0] = buffer[buffer._offset += 1];
+      uint8_float_32_array[1] = buffer[buffer._offset += 1];
+      uint8_float_32_array[2] = buffer[buffer._offset += 1];
+      uint8_float_32_array[3] = buffer[buffer._offset += 1];
+      const value = float_32_array[0];
+      return value;
+    }
+    case types.float_64: {
+      uint8_float_64_array[0] = buffer[buffer._offset += 1];
+      uint8_float_64_array[1] = buffer[buffer._offset += 1];
+      uint8_float_64_array[2] = buffer[buffer._offset += 1];
+      uint8_float_64_array[3] = buffer[buffer._offset += 1];
+      uint8_float_64_array[4] = buffer[buffer._offset += 1];
+      uint8_float_64_array[5] = buffer[buffer._offset += 1];
+      uint8_float_64_array[6] = buffer[buffer._offset += 1];
+      uint8_float_64_array[7] = buffer[buffer._offset += 1];
+      const value = float_64_array[0];
+      return value;
+    }
     case types.string: {
       const value_length = decode(buffer);
       const next_offset = buffer._offset += 1;
@@ -181,17 +226,19 @@ const decode = (buffer) => {
       return value;
     }
     default: {
-      throw new Error(`Unknown type "${type}".`);
+      throw new Error(`decoder: unknown type "${type}".`);
     }
   }
 };
 
 const test_cases = [
   ['zero', 0],
-  ['uint8', 255],
-  ['uint16', 65535],
-  ['uint32', 4294967295],
-  ['uint48', 281474976710655],
+  ['uint_8', 255],
+  ['uint_16', 65535],
+  ['uint_32', 4294967295],
+  ['uint_48', 281474976710655],
+  ['float_32', 1.5],
+  ['float_64', 1.51],
   ['string', 'foo'],
 ];
 
@@ -199,10 +246,18 @@ process.nextTick(async () => {
   test_cases.forEach((test_case) => {
     const [label, data] = test_case;
     let result = false;
+    let encoded = null;
+    let decoded = null;
+    let error = null;
     try {
-      result = decode(encode(data), 0) === data;
+      encoded = encode(data);
+      decoded = decode(encoded);
+      result = decoded === data;
     } catch (e) {
-      console.error(e.message);
+      error = e;
+    }
+    if (result === false) {
+      console.log({ encoded, decoded, error: error.message });
     }
     console.log(`${label}, ${data}: ${result}`);
   });
