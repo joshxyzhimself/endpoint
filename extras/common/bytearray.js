@@ -1,7 +1,7 @@
 
 const assert = require('./assert');
 
-let type_index = 128;
+let type_index = 127;
 
 const boolean_false_type = type_index += 1;
 const boolean_true_type = type_index += 1;
@@ -15,10 +15,12 @@ const uint8_type = type_index += 1;
 const uint16_type = type_index += 1;
 const uint32_type = type_index += 1;
 const uint53_type = type_index += 1;
-const int8_type = type_index += 1;
-const int16_type = type_index += 1;
-const int32_type = type_index += 1;
-const int53_type = type_index += 1;
+
+const negative_uint8_type = type_index += 1;
+const negative_uint16_type = type_index += 1;
+const negative_uint32_type = type_index += 1;
+const negative_uint53_type = type_index += 1;
+
 const float32_type = type_index += 1;
 const float64_type = type_index += 1;
 const bigint_type = type_index += 1;
@@ -44,17 +46,30 @@ const uint8_uint16_array = new Uint8Array(uint16_array.buffer);
 const uint32_array = new Uint32Array(1);
 const uint8_uint32_array = new Uint8Array(uint32_array.buffer);
 
-const bigint64_array = new BigInt64Array(1);
-const uint8_biguint64_array = new Uint8Array(bigint64_array.buffer);
-
 const float32_array = new Float32Array(1);
 const uint8_float32_array = new Uint8Array(float32_array.buffer);
 
 const float64_array = new Float64Array(1);
 const uint8_float64_array = new Uint8Array(float64_array.buffer);
 
-const max_bigint = (2n ** 63n) - 1n;
-const min_bigint = max_bigint * -1n;
+let bigint64_array = null;
+let uint8_bigint64_array = null;
+
+let max_bigint = null;
+let min_bigint = null;
+
+// https://caniuse.com/bigint
+// https://caniuse.com/mdn-javascript_builtins_bigint64array
+const bigint_supported = typeof BigInt === 'function' && typeof BigInt64Array === 'function';
+
+if (bigint_supported === true) {
+  bigint64_array = new BigInt64Array(1);
+  uint8_bigint64_array = new Uint8Array(bigint64_array.buffer);
+
+  max_bigint = (2n ** 63n) - 1n;
+  min_bigint = max_bigint * -1n;
+}
+
 
 const encode = (data) => {
   switch (typeof data) {
@@ -93,7 +108,7 @@ const encode = (data) => {
         buffer.set(data_buffer, 5);
         return buffer;
       }
-      throw new Error('encoder: max str length is (2 ** 32) - 1');
+      throw new Error('encoder: max str length is (2^32) - 1');
     }
     case 'number': {
       if (Number.isNaN(data) === true) { // NaN
@@ -135,20 +150,20 @@ const encode = (data) => {
       }
       const is_gte_zero = data >= 0;
       const absolute_value = Math.abs(data);
-      if (absolute_value < 256) { // 2 ** 8 = 256
+      if (absolute_value < 256) { // (2^8) - 1
         if (absolute_value < 128 && is_gte_zero === true) {
           const buffer = new Uint8Array(1);
           buffer[0] = absolute_value;
           return buffer;
         }
-        const key = is_gte_zero ? uint8_type : int8_type;
+        const key = is_gte_zero ? uint8_type : negative_uint8_type;
         const buffer = new Uint8Array(2);
         buffer[0] = key;
         buffer[1] = absolute_value;
         return buffer;
       }
-      if (absolute_value < 65536) { // 2 ** 16 = 65536
-        const key = is_gte_zero ? uint16_type : int16_type;
+      if (absolute_value < 65536) { // (2^16) - 1
+        const key = is_gte_zero ? uint16_type : negative_uint16_type;
         const buffer = new Uint8Array(3);
         uint16_array[0] = absolute_value;
         buffer[0] = key;
@@ -156,8 +171,8 @@ const encode = (data) => {
         buffer[2] = uint8_uint16_array[1];
         return buffer;
       }
-      if (absolute_value < 4294967296) { // 2 ** 32 = 4294967296
-        const key = is_gte_zero ? uint32_type : int32_type;
+      if (absolute_value < 4294967296) { // (2^32) - 1
+        const key = is_gte_zero ? uint32_type : negative_uint32_type;
         const buffer = new Uint8Array(5);
         uint32_array[0] = absolute_value;
         buffer[0] = key;
@@ -167,40 +182,43 @@ const encode = (data) => {
         buffer[4] = uint8_uint32_array[3];
         return buffer;
       }
-      if (absolute_value <= Number.MAX_SAFE_INTEGER) { // 2 ** 53 - 1
-        const key = is_gte_zero ? uint53_type : int53_type;
+      if (absolute_value <= Number.MAX_SAFE_INTEGER) { // (2^53) - 1
+        if (bigint_supported === false) {
+          throw new Error('encoder: BigInt & BigInt64Array support missing, please update your browser.');
+        }
+        const key = is_gte_zero ? uint53_type : negative_uint53_type;
         const buffer = new Uint8Array(9);
         bigint64_array[0] = BigInt(absolute_value);
         buffer[0] = key;
-        buffer[1] = uint8_biguint64_array[0];
-        buffer[2] = uint8_biguint64_array[1];
-        buffer[3] = uint8_biguint64_array[2];
-        buffer[4] = uint8_biguint64_array[3];
-        buffer[5] = uint8_biguint64_array[4];
-        buffer[6] = uint8_biguint64_array[5];
-        buffer[7] = uint8_biguint64_array[6];
-        buffer[8] = uint8_biguint64_array[7];
+        buffer[1] = uint8_bigint64_array[0];
+        buffer[2] = uint8_bigint64_array[1];
+        buffer[3] = uint8_bigint64_array[2];
+        buffer[4] = uint8_bigint64_array[3];
+        buffer[5] = uint8_bigint64_array[4];
+        buffer[6] = uint8_bigint64_array[5];
+        buffer[7] = uint8_bigint64_array[6];
+        buffer[8] = uint8_bigint64_array[7];
         return buffer;
       }
-      throw new Error('encoder: min and max safe integer is capped at 2^53 - 1.');
+      throw new Error('encoder: min and max safe integer is capped at (2^53) - 1.');
     }
     case 'bigint': {
-      if (data >= min_bigint && data <= max_bigint) { // 2 ** 63 - 1
+      if (data >= min_bigint && data <= max_bigint) { // (2^63) - 1
         const key = bigint_type;
         const buffer = new Uint8Array(9);
         bigint64_array[0] = BigInt(data);
         buffer[0] = key;
-        buffer[1] = uint8_biguint64_array[0];
-        buffer[2] = uint8_biguint64_array[1];
-        buffer[3] = uint8_biguint64_array[2];
-        buffer[4] = uint8_biguint64_array[3];
-        buffer[5] = uint8_biguint64_array[4];
-        buffer[6] = uint8_biguint64_array[5];
-        buffer[7] = uint8_biguint64_array[6];
-        buffer[8] = uint8_biguint64_array[7];
+        buffer[1] = uint8_bigint64_array[0];
+        buffer[2] = uint8_bigint64_array[1];
+        buffer[3] = uint8_bigint64_array[2];
+        buffer[4] = uint8_bigint64_array[3];
+        buffer[5] = uint8_bigint64_array[4];
+        buffer[6] = uint8_bigint64_array[5];
+        buffer[7] = uint8_bigint64_array[6];
+        buffer[8] = uint8_bigint64_array[7];
         return buffer;
       }
-      throw new Error('encoder: min and max bigint is capped at 2^63 - 1.');
+      throw new Error('encoder: min and max bigint is capped at (2^63) - 1.');
     }
     case 'object': {
       if (data === null) { // null
@@ -210,25 +228,25 @@ const encode = (data) => {
         return buffer;
       }
       if (data instanceof Uint8Array) {
-        if (data.length < 258) {
+        if (data.byteLength < 258) {
           const buffer = new Uint8Array(data.byteLength + 2);
           buffer[0] = bin8_type;
-          buffer[1] = data.length;
+          buffer[1] = data.byteLength;
           buffer.set(data, 2);
           return buffer;
         }
-        if (data.length < 65536) {
+        if (data.byteLength < 65536) {
           const buffer = new Uint8Array(data.byteLength + 3);
-          uint16_array[0] = data.length;
+          uint16_array[0] = data.byteLength;
           buffer[0] = bin16_type;
           buffer[1] = uint8_uint16_array[0];
           buffer[2] = uint8_uint16_array[1];
           buffer.set(data, 3);
           return buffer;
         }
-        if (data.length < 4294967296) {
+        if (data.byteLength < 4294967296) {
           const buffer = new Uint8Array(data.byteLength + 5);
-          uint32_array[0] = data.length;
+          uint32_array[0] = data.byteLength;
           buffer[0] = bin32_type;
           buffer[1] = uint8_uint32_array[0];
           buffer[2] = uint8_uint32_array[1];
@@ -237,7 +255,7 @@ const encode = (data) => {
           buffer.set(data, 5);
           return buffer;
         }
-        throw new Error('encoder: max bin length is (2 ** 32) - 1');
+        throw new Error('encoder: max bin length is (2^32) - 1');
       }
       if (data instanceof Array) {
 
@@ -272,7 +290,7 @@ const encode = (data) => {
           buffer[offset += 1] = uint8_uint32_array[2];
           buffer[offset += 1] = uint8_uint32_array[3];
         } else {
-          throw new Error('encoder: max array length is (2 ** 32) - 1');
+          throw new Error('encoder: max array length is (2^32) - 1');
         }
 
         value_buffers.map((value_buffer) => {
@@ -320,7 +338,7 @@ const encode = (data) => {
           buffer[offset += 1] = uint8_uint32_array[2];
           buffer[offset += 1] = uint8_uint32_array[3];
         } else {
-          throw new Error('encoder: max map length is (2 ** 32) - 1');
+          throw new Error('encoder: max map length is (2^32) - 1');
         }
 
         entry_buffers.map((entry_buffer) => {
@@ -332,7 +350,7 @@ const encode = (data) => {
       throw new Error('encoder: unknown object type.');
     }
     default: {
-      break;
+      throw new Error('encoder: unknown data type.');
     }
   }
 };
@@ -382,48 +400,51 @@ const decode = (buffer) => {
       buffer._offset += bytelength - 1;
       return value;
     }
-    case int8_type:
-    case uint8_type: {
+    case uint8_type:
+    case negative_uint8_type: {
       let value = buffer[buffer._offset += 1];
-      if (type === int8_type) {
+      if (type === negative_uint8_type) {
         value *= -1;
       }
       return value;
     }
-    case int16_type:
-    case uint16_type: {
+    case uint16_type:
+    case negative_uint16_type: {
       uint8_uint16_array[0] = buffer[buffer._offset += 1];
       uint8_uint16_array[1] = buffer[buffer._offset += 1];
       let value = uint16_array[0];
-      if (type === int16_type) {
+      if (type === negative_uint16_type) {
         value *= -1;
       }
       return value;
     }
-    case int32_type:
-    case uint32_type: {
+    case uint32_type:
+    case negative_uint32_type: {
       uint8_uint32_array[0] = buffer[buffer._offset += 1];
       uint8_uint32_array[1] = buffer[buffer._offset += 1];
       uint8_uint32_array[2] = buffer[buffer._offset += 1];
       uint8_uint32_array[3] = buffer[buffer._offset += 1];
       let value = uint32_array[0];
-      if (type === int32_type) {
+      if (type === negative_uint32_type) {
         value *= -1;
       }
       return value;
     }
-    case int53_type:
-    case uint53_type: {
-      uint8_biguint64_array[0] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[1] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[2] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[3] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[4] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[5] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[6] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[7] = buffer[buffer._offset += 1];
+    case uint53_type:
+    case negative_uint53_type: {
+      if (bigint_supported === false) {
+        throw new Error('decoder: BigInt & BigInt64Array support missing, please update your browser.');
+      }
+      uint8_bigint64_array[0] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[1] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[2] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[3] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[4] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[5] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[6] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[7] = buffer[buffer._offset += 1];
       let value = Number(bigint64_array[0]);
-      if (type === int53_type) {
+      if (type === negative_uint53_type) {
         value *= -1;
       }
       return value;
@@ -449,14 +470,17 @@ const decode = (buffer) => {
       return value;
     }
     case bigint_type: {
-      uint8_biguint64_array[0] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[1] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[2] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[3] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[4] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[5] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[6] = buffer[buffer._offset += 1];
-      uint8_biguint64_array[7] = buffer[buffer._offset += 1];
+      if (bigint_supported === false) {
+        throw new Error('decoder: BigInt & BigInt64Array support missing, please update your browser.');
+      }
+      uint8_bigint64_array[0] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[1] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[2] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[3] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[4] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[5] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[6] = buffer[buffer._offset += 1];
+      uint8_bigint64_array[7] = buffer[buffer._offset += 1];
       const value = bigint64_array[0];
       return value;
     }
@@ -533,6 +557,6 @@ const decode = (buffer) => {
   }
 };
 
-const bytearray = { encode, decode, min_bigint, max_bigint };
+const bytearray = { encode, decode, min_bigint, max_bigint, bigint_supported };
 
 module.exports = bytearray;
