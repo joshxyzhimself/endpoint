@@ -5,16 +5,21 @@ const emitter = require('../common/emitter');
 function localstorage_client() {
   const events = new emitter();
   window.onstorage = (event) => {
-    if (event.key === 'broadcast') {
-      const encoded_message = event.newValue;
-      const message = JSON.parse(encoded_message);
-      events.emit('broadcast', message);
+    const key = event.key;
+    const new_value = event.newValue;
+    if (typeof new_value === 'string') {
+      try {
+        const value = JSON.parse(new_value);
+        events.emit(key, value);
+        events.emit('update', key, value);
+        return;
+      } catch (e) {
+        events.emit('error', e);
+        return;
+      }
     }
-  };
-  const broadcast = (message) => {
-    assert(message instanceof Object);
-    const encoded_message = JSON.stringify(message);
-    localStorage.setItem('broadcast', encoded_message);
+    events.emit(key, null);
+    events.emit('update', key, null);
   };
   const set = (key, value) => {
     assert(typeof key === 'string');
@@ -34,7 +39,6 @@ function localstorage_client() {
     assert(typeof key === 'string');
     localStorage.removeItem(key);
   };
-  this.broadcast = broadcast;
   this.on = events.on.bind(events);
   this.off = events.off.bind(events);
   this.set = set;

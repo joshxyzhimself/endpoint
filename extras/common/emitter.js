@@ -6,37 +6,37 @@ function emitter () {
   /**
    * @type {Map<String, Set<Function>>}
    */
-  const listener_sets = new Map();
+  const namespaces = new Map();
 
   /**
    * @param {String} name
    * @param {Function} listener
    */
-  this.on = (name, listener) => {
+  const on = (name, listener) => {
     assert(typeof name === 'string');
     assert(listener instanceof Function);
-    if (listener_sets.has(name) === false) {
-      listener_sets.set(name, new Set());
+    if (namespaces.has(name) === false) {
+      namespaces.set(name, new Set());
     }
-    const listener_set = listener_sets.get(name);
-    assert(listener_set instanceof Set);
-    listener_set.add(listener);
+    const namespace = namespaces.get(name);
+    assert(namespace instanceof Set);
+    namespace.add(listener);
   };
 
   /**
    * @param {String} name
    * @param {Function} listener
    */
-  this.off = (name, listener) => {
+  const off = (name, listener) => {
     assert(typeof name === 'string');
     assert(listener instanceof Function);
-    assert(listener_sets.has(name) === true);
-    const listener_set = listener_sets.get(name);
-    assert(listener_set instanceof Set);
-    assert(listener_set.has(listener) === true);
-    listener_set.delete(listener);
-    if (listener_set.size === 0) {
-      listener_sets.delete(name);
+    assert(namespaces.has(name) === true);
+    const namespace = namespaces.get(name);
+    assert(namespace instanceof Set);
+    assert(namespace.has(listener) === true);
+    namespace.delete(listener);
+    if (namespace.size === 0) {
+      namespaces.delete(name);
     }
   };
 
@@ -44,15 +44,19 @@ function emitter () {
    * @param {String} name
    * @param  {...any} args
    */
-  this.emit = (name, ...args) => {
+  const emit = (name, ...args) => {
     assert(typeof name === 'string');
-    if (listener_sets.has(name) == true) {
-      const listener_set = listener_sets.get(name);
-      listener_set.forEach((listener) => {
+    if (namespaces.has(name) == true) {
+      const namespace = namespaces.get(name);
+      namespace.forEach((listener) => {
         listener(...args);
       });
     }
   };
+
+  this.on = on;
+  this.off = off;
+  this.emit = emit;
 }
 
 module.exports = emitter;
