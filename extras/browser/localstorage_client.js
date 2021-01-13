@@ -2,7 +2,7 @@
 const assert = require('../common/assert');
 const emitter = require('../common/emitter');
 
-function localstorage_client() {
+function localstorage_client () {
   const events = new emitter();
   window.onstorage = (event) => {
     const key = event.key;

@@ -34,7 +34,8 @@
       "no-catch-shadow": "error",
       "array-bracket-spacing": "error",
       "func-call-spacing": "error",
-      "space-in-parens": "error"
-
+      "space-in-parens": "error",
+      "space-before-function-paren": "error",
+      "no-irregular-whitespace": "error"
     }
   }

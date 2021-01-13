@@ -1,33 +1,42 @@
 
-import { useState, useEffect } from 'react';
+// updated: 01-13-2021
 
-function use_history() {
+import { useState, useEffect, useCallback } from 'react';
+import assert from './assert';
+
+function useHistory () {
+
   const [pathname, set_pathname] = useState(window.location.pathname);
-  const popstate_listener = () => {
-    set_pathname(window.location.pathname);
-  };
-  const history = {
-    pathname,
-    push: (next_pathname) => {
-      if (pathname !== next_pathname) {
-        window.history.pushState(null, null, next_pathname);
-        set_pathname(next_pathname);
-      }
-    },
-    replace: (next_pathname) => {
-      if (pathname !== next_pathname) {
-        window.history.replaceState(null, null, next_pathname);
-        set_pathname(next_pathname);
-      }
-    },
-  };
+
+  const push = useCallback((next_pathname) => {
+    assert(typeof next_pathname === 'string');
+    if (pathname !== next_pathname) {
+      window.history.pushState(null, null, next_pathname);
+      set_pathname(next_pathname);
+    }
+  }, [pathname]);
+
+  const replace = useCallback((next_pathname) => {
+    assert(typeof next_pathname === 'string');
+    if (pathname !== next_pathname) {
+      window.history.replaceState(null, null, next_pathname);
+      set_pathname(next_pathname);
+    }
+  }, [pathname]);
+
   useEffect(() => {
+    const popstate_listener = () => {
+      set_pathname(window.location.pathname);
+    };
     window.addEventListener('popstate', popstate_listener);
     return () => {
       window.removeEventListener('popstate', popstate_listener);
     };
   }, []);
+
+  const history = { pathname, push, replace };
+
   return history;
 }
 
-export default use_history;
+export default useHistory;
