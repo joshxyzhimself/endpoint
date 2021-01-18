@@ -183,26 +183,30 @@ const encode = (data) => {
         return buffer;
       }
       if (absolute_value <= Number.MAX_SAFE_INTEGER) { // (2^53) - 1
-        if (bigint_supported === false) {
-          throw new Error('encoder: BigInt & BigInt64Array support missing, please update your browser.');
-        }
         const key = is_gte_zero ? uint53_type : negative_uint53_type;
         const buffer = new Uint8Array(9);
-        bigint64_array[0] = BigInt(absolute_value);
+
+        let L = (absolute_value % 0x0100000000);
+        buffer[8] = L;
+        buffer[7] = L = L >>> 8;
+        buffer[6] = L = L >>> 8;
+        buffer[5] = L = L >>> 8;
+
+        let H = ~~(absolute_value / 0x0100000000);
+        buffer[4] = H;
+        buffer[3] = H = H >>> 8;
+        buffer[2] = H = H >>> 8;
+        buffer[1] = H = H >>> 8;
         buffer[0] = key;
-        buffer[1] = uint8_bigint64_array[0];
-        buffer[2] = uint8_bigint64_array[1];
-        buffer[3] = uint8_bigint64_array[2];
-        buffer[4] = uint8_bigint64_array[3];
-        buffer[5] = uint8_bigint64_array[4];
-        buffer[6] = uint8_bigint64_array[5];
-        buffer[7] = uint8_bigint64_array[6];
-        buffer[8] = uint8_bigint64_array[7];
+
         return buffer;
       }
       throw new Error('encoder: min and max safe integer is capped at (2^53) - 1.');
     }
     case 'bigint': {
+      if (bigint_supported === false) {
+        throw new Error('encoder: BigInt & BigInt64Array support missing, please update your browser.');
+      }
       if (data >= min_bigint && data <= max_bigint) { // (2^63) - 1
         const key = bigint_type;
         const buffer = new Uint8Array(9);
@@ -355,6 +359,11 @@ const encode = (data) => {
   }
 };
 
+const buffer_to_hex = (buffer) => Array.from(buffer).map((b) => b.toString(16).padStart(2, '0')).join('');
+
+/**
+ * @param {Uint8Array} buffer
+ */
 const decode = (buffer) => {
   assert(buffer instanceof Uint8Array);
 
@@ -432,18 +441,10 @@ const decode = (buffer) => {
     }
     case uint53_type:
     case negative_uint53_type: {
-      if (bigint_supported === false) {
-        throw new Error('decoder: BigInt & BigInt64Array support missing, please update your browser.');
-      }
-      uint8_bigint64_array[0] = buffer[buffer._offset += 1];
-      uint8_bigint64_array[1] = buffer[buffer._offset += 1];
-      uint8_bigint64_array[2] = buffer[buffer._offset += 1];
-      uint8_bigint64_array[3] = buffer[buffer._offset += 1];
-      uint8_bigint64_array[4] = buffer[buffer._offset += 1];
-      uint8_bigint64_array[5] = buffer[buffer._offset += 1];
-      uint8_bigint64_array[6] = buffer[buffer._offset += 1];
-      uint8_bigint64_array[7] = buffer[buffer._offset += 1];
-      let value = Number(bigint64_array[0]);
+      const bytelength = 8;
+      const sliced_buffer = buffer.slice(buffer._offset += 1, buffer._offset + bytelength);
+      buffer._offset += bytelength - 1;
+      let value = parseInt(buffer_to_hex(sliced_buffer), 16);
       if (type === negative_uint53_type) {
         value *= -1;
       }

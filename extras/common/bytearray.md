@@ -17,14 +17,14 @@ websocket.send(encoded.buffer);
 #### benchmarks
 
 ```
-JSON stringify x 2,008,272 ops/sec ±1.26% (86 runs sampled)
-bytearray encode x 158,736 ops/sec ±2.03% (80 runs sampled)
+JSON stringify x 739,678 ops/sec ±1.77% (85 runs sampled)
+bytearray encode x 86,433 ops/sec ±1.98% (81 runs sampled)
 
-JSON stringify test_data_2 x 357,996 ops/sec ±0.81% (90 runs sampled)
-bytearray encode test_data_2 x 31,720 ops/sec ±2.51% (79 runs sampled)
+JSON stringify test_data_2 x 342,004 ops/sec ±0.97% (90 runs sampled)
+bytearray encode test_data_2 x 28,487 ops/sec ±3.66% (73 runs sampled)
 
-JSON stringify parse x 643,944 ops/sec ±1.09% (90 runs sampled)
-bytearray encode decode x 50,761 ops/sec ±5.09% (63 runs sampled)
+JSON stringify parse x 311,198 ops/sec ±0.85% (90 runs sampled)
+bytearray encode decode x 23,513 ops/sec ±5.37% (72 runs sampled)
 ```
 
 #### not supported

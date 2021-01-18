@@ -4,7 +4,7 @@ const suite = new Benchmark.Suite;
 
 const bytearray = require('./bytearray');
 
-const test_data = { foo: 1, bar: 'abc' };
+const test_data = { foo: 1, bar: 'abc', max_int: Number.MAX_SAFE_INTEGER, min_int: Number.MIN_SAFE_INTEGER };
 
 const test_data_2 = {
   foo: 'bar',
