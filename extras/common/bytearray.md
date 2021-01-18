@@ -5,7 +5,11 @@
 - primitives: null, boolean, uint8, uint16, uint32, int8, int16, int32, float, double, bigint, str8, str16, str32
 - containers: array8, array16, array32, map8, map16, map32
 - binary: bin8, bin16, bin32
-- requires bigint, https://caniuse.com/bigint
+- requires TextEncoder & TextDecoder
+  - https://caniuse.com/textencoder
+- requires BigInt & BigInt64Array
+  - https://caniuse.com/bigint
+  - https://caniuse.com/mdn-javascript_builtins_bigint64array_bigint64array
 
 #### using with websockets
 
