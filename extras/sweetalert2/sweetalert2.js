@@ -1,8 +1,8 @@
 
 // updated: 01-13-2021
 
-const Swal = require('sweetalert2/src/sweetalert2.js');
-const assert = require('../common/assert');
+import Swal from 'sweetalert2/src/sweetalert2.js';
+import assert from '../common/assert';
 
 const default_properties = {
   customClass: {
@@ -26,6 +26,8 @@ const restricted_properties = {
   allowEscapeKey: false,
   allowOutsideClick: false,
 };
+
+Swal.close();
 
 const sweetalert2 = {
   close: Swal.close.bind(Swal),
@@ -127,4 +129,4 @@ const sweetalert2 = {
   },
 };
 
-module.exports = sweetalert2;
+export default sweetalert2;
