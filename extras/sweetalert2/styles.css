@@ -3,11 +3,11 @@
   z-index: 9999 !important;
 }
 .swal2-title {
-  font-family: "Roboto" !important;
+  font-family: "Open Sans", "Roboto" !important;
   font-weight: 500 !important;
 }
 .swal2-content {
-  font-family: "Roboto" !important;
+  font-family: "Open Sans", "Roboto" !important;
   font-weight: 400 !important;
 }
 .swal2-confirm, .swal2-cancel {
