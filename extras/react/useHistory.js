@@ -2,7 +2,7 @@
 // updated: 01-13-2021
 
 import { useState, useEffect, useCallback } from 'react';
-import assert from './assert';
+import assert from '../common/assert';
 
 function useHistory () {
 

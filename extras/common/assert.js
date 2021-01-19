@@ -17,12 +17,7 @@ class AssertionError extends Error {
   }
 
   toJSON () {
-    return {
-      name: this.name,
-      message: this.message,
-      code: this.code,
-      stack: this.stack,
-    };
+    return { name: this.name, message: this.message, code: this.code, stack: this.stack };
   }
 }
 

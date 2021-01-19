@@ -1,0 +1,22 @@
+
+.swal2-container {
+  z-index: 9999 !important;
+}
+.swal2-title {
+  font-family: "Roboto" !important;
+  font-weight: 500 !important;
+}
+.swal2-content {
+  font-family: "Roboto" !important;
+  font-weight: 400 !important;
+}
+.swal2-confirm, .swal2-cancel {
+  color: #FAFAFA !important;
+  background-color: #212121 !important;
+}
+.swal2-actions.swal2-loading {
+  margin-top: unset !important;
+}
+.swal2-html-container {
+  padding-bottom: 1em !important;
+}

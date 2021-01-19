@@ -1,20 +1,13 @@
-/* eslint-disable no-console */
 
 const fs = require('fs');
 const path = require('path');
-const process = require('process');
+const assert = require('assert');
 
-const process_cwd = process.cwd();
+const config_filename = path.join(process.cwd(), '.config.json');
 
-const config_path = path.join(process_cwd, '/.config.json');
+assert(fs.existsSync(config_filename) === true);
 
-if (fs.existsSync(config_path) === false) {
-  throw new Error('/.config.json not found.');
-}
+const raw_config = fs.readFileSync(config_filename);
+const parsed_config = JSON.parse(raw_config);
 
-const config = JSON.parse(fs.readFileSync(config_path, 'utf-8'));
-
-console.log('@', new Date().toUTCString());
-console.log({ config });
-
-module.exports = config;
+module.exports = parsed_config;

@@ -8,9 +8,9 @@
   "license": "MIT",
   "devDependencies": {
     "ava": "^3.14.0",
+    "benchmark": "^2.1.4",
     "eslint": "^7.15.0",
-    "form-data": "^3.0.0",
-    "benchmark": "^2.1.4"
+    "form-data": "^3.0.0"
   },
   "dependencies": {
     "@stablelib/base64": "^1.0.0",
@@ -31,6 +31,7 @@
     "query-string": "^6.13.7",
     "react": "^17.0.1",
     "statuses": "^2.0.0",
+    "sweetalert2": "^10.13.0",
     "utf-8-validate": "^5.0.3",
     "ws": "^7.4.1"
   }

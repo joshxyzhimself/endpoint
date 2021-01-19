@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 
-function use_mounted() {
+function useMounted () {
   const mounted = useRef();
   useEffect(() => {
     mounted.current = true;
@@ -11,4 +11,4 @@ function use_mounted() {
   return mounted;
 }
 
-export default use_mounted;
+export default useMounted;
