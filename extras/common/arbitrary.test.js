@@ -1,7 +1,7 @@
 
 const arbitrary = require('./arbitrary');
 
-arbitrary.set_precision(2);
+arbitrary.set_precision(15);
 const add = arbitrary.add;
 const subtract = arbitrary.subtract;
 const multiply = arbitrary.multiply;
@@ -15,6 +15,7 @@ console.log(divide(125, 5, 5)); // 5
 console.log(divide(1000, 10, 10)); // 10
 console.log(divide(1000, 8.86)); // 112.86681715
 console.log(add(Number.MAX_SAFE_INTEGER, 0)); // 9007199254740991
+console.log(add(Number.MIN_SAFE_INTEGER, 0)); // 9007199254740991
 console.log(subtract(Number.MAX_SAFE_INTEGER, 1)); // 9007199254740990
 console.log(multiply(Number.MAX_SAFE_INTEGER, 0.5)); // 4503599627370495.5
 console.log(divide(Number.MAX_SAFE_INTEGER, 2)); // 4503599627370495.5
@@ -32,3 +33,4 @@ console.log(divide(0, -1)); // 0
 console.log(divide(-1, 1)); // -1
 console.log(multiply(5, 5, 5, 5)); // 625
 console.log(multiply(5, 5, 5, 123, 123, 5)); // 9455625
+console.log(multiply(1.1, 1.28485, 1.3347, 1.4, 1.52, 1.62)); // 6.50302483601232 instead of 6.5030248360123215
