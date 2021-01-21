@@ -12,6 +12,7 @@ const set_precision = (value) => {
   AssertionError.assert(typeof value === 'number');
   AssertionError.assert(Number.isFinite(value) === true);
   AssertionError.assert(Number.isInteger(value) === true);
+  AssertionError.assert(value >= 0 === true);
   precision = value;
   precision_multiplier = 10n ** BigInt(precision);
   max_safe_integer = BigInt(Number.MAX_SAFE_INTEGER) * precision_multiplier;

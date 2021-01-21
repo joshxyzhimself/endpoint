@@ -1,7 +1,7 @@
 
 const arbitrary = require('./arbitrary');
 
-arbitrary.set_precision(8);
+arbitrary.set_precision(2);
 const add = arbitrary.add;
 const subtract = arbitrary.subtract;
 const multiply = arbitrary.multiply;
