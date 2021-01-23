@@ -36,7 +36,9 @@ const scale = (value) => {
 const unscale = (value) => {
   AssertionError.assert(typeof value === 'bigint');
   AssertionError.assert(value <= max_safe_integer && value >= min_safe_integer);
-  const value_string = value.toString().padStart(2 + precision, '0');
+  const value_string = value >= 0
+    ? value.toString().padStart(2 + precision, '0')
+    : '-'.concat(value.toString().replace('-', '').padStart(2 + precision, '0'));
   const whole = value_string.substring(0, value_string.length - precision);
   const decimal = value_string.substring(value_string.length - precision, value_string.length);
   const result = Number(`${whole}.${decimal}`);

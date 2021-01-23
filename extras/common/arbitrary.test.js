@@ -2,10 +2,7 @@
 const arbitrary = require('./arbitrary');
 
 arbitrary.set_precision(15);
-const add = arbitrary.add;
-const subtract = arbitrary.subtract;
-const multiply = arbitrary.multiply;
-const divide = arbitrary.divide;
+const { add, subtract, multiply, divide } = arbitrary;
 
 console.log(add(75, 25, 25)); // 125
 console.log(subtract(75, 25, 25)); // 25
@@ -35,8 +32,11 @@ console.log(multiply(5, 5, 5, 5)); // 625
 console.log(multiply(5, 5, 5, 123, 123, 5)); // 9455625
 console.log(multiply(1.1, 1.28485, 1.3347, 1.4, 1.52, 1.62)); // 6.50302483601232
 console.log(divide(1.1, 1.28485, 1.3347, 1.4, 1.52, 1.62)); // 0.186067258008809
-console.log('asociative property:');
 console.log(multiply(100, 20, 5)); // 10000
 console.log(multiply(100, multiply(20, 5))); // 10000
 console.log(divide(100, 20, 5)); // 1
 console.log(divide(100, divide(20, 5))); // 25
+console.log(multiply(0.100, -10)); // -1
+console.log(divide(1, -45)); // -0.022222222222222
+console.log(divide(100, -101)); // -0.99009900990099
+console.log(divide(-0.01, 0.01)); // -1
