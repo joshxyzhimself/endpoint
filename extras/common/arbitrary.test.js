@@ -33,7 +33,8 @@ console.log(divide(0, -1)); // 0
 console.log(divide(-1, 1)); // -1
 console.log(multiply(5, 5, 5, 5)); // 625
 console.log(multiply(5, 5, 5, 123, 123, 5)); // 9455625
-console.log(multiply(1.1, 1.28485, 1.3347, 1.4, 1.52, 1.62)); // 6.50302483601232 instead of 6.5030248360123215
+console.log(multiply(1.1, 1.28485, 1.3347, 1.4, 1.52, 1.62)); // 6.50302483601232
+console.log(divide(1.1, 1.28485, 1.3347, 1.4, 1.52, 1.62)); // 0.186067258008809
 console.log('asociative property:');
 console.log(multiply(100, 20, 5)); // 10000
 console.log(multiply(100, multiply(20, 5))); // 10000
