@@ -119,10 +119,6 @@ const sweetalert2 = {
       },
       inputValue: input_value,
       inputOptions: input_options,
-      didOpen: () => {
-        const swal_input = Swal.getInput();
-        swal_input.setSelectionRange(0, swal_input.value.length);
-      },
       ...restricted_properties,
     });
     return response.value;
