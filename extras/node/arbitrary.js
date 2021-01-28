@@ -10,12 +10,13 @@ const precision_multiplier = 10n ** BigInt(precision);
  * @returns {String}
  */
 const fix = (value, decimal_places) => {
-  assert(typeof value === 'string');
+  assert(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value) === true));
   assert(typeof decimal_places === 'number');
   assert(Number.isFinite(decimal_places) === true);
   assert(Number.isInteger(decimal_places) === true);
   assert(decimal_places >= 0 && decimal_places <= precision);
-  const values = value.split('.');
+  const value2 = value === 'string' ? value : String(value);
+  const values = value2.split('.');
   const whole = values[0] || '0';
   const decimal = values[1] || '0';
   assert(Number.isFinite(Number(whole)) === true);
@@ -32,8 +33,9 @@ const fix = (value, decimal_places) => {
  * @param {String} value
  */
 const scale = (value) => {
-  assert(typeof value === 'string');
-  const values = value.split('.');
+  assert(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value) === true));
+  const value2 = value === 'string' ? value : String(value);
+  const values = value2.split('.');
   const whole = values[0] || '0';
   const decimal = values[1] || '0';
   assert(Number.isFinite(Number(whole)) === true);
