@@ -3,38 +3,32 @@ class AssertionError extends Error {
 
   /**
    * @param {String|void} message
-   * @param {String|void} code
    */
-  constructor (message, code) {
+  constructor (message) {
     super(message);
     this.name = 'AssertionError';
-    this.code = code;
     if (Error.captureStackTrace instanceof Function) {
       Error.captureStackTrace(this, AssertionError);
     }
   }
 
   toJSON () {
-    return { name: this.name, message: this.message, code: this.code, stack: this.stack };
+    return { name: this.name, message: this.message, stack: this.stack };
   }
 
   /**
    * @param {Boolean} value
    * @param {String|void} message
-   * @param {String|void} code
    */
-  static assert (value, message, code) {
+  static assert (value, message) {
     if (typeof value !== 'boolean') {
-      throw new Error('assert(value, message?, code?), "value" must be a boolean.');
+      throw new Error('assert(value, message?), "value" must be a boolean.');
     }
     if (message !== undefined && typeof message !== 'string') {
-      throw new Error('assert(value, message?, code?), "message" must be a string.');
-    }
-    if (code !== undefined && typeof code !== 'string' && typeof code !== 'number') {
-      throw new Error('assert(value, message?, code?), "code" must be a string or number.');
+      throw new Error('assert(value, message?), "message" must be a string.');
     }
     if (value === false) {
-      throw new AssertionError(message, code);
+      throw new AssertionError(message);
     }
   }
 }
