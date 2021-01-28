@@ -5,7 +5,7 @@ const precision = 32;
 const precision_multiplier = 10n ** BigInt(precision);
 
 /**
- * @param {String} value
+ * @param {String|Number} value
  * @param {Number} decimal_places
  * @returns {String}
  */
@@ -30,7 +30,7 @@ const fix = (value, decimal_places) => {
 };
 
 /**
- * @param {String} value
+ * @param {String|Number} value
  */
 const scale = (value) => {
   assert(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value) === true));
@@ -66,7 +66,7 @@ const unscale = (scaled) => {
 };
 
 /**
- * @param  {String[]} values
+ * @param  {(String|Number)[]} values
  */
 const add = (...values) => {
   let result = scale(values[0]);
@@ -79,7 +79,7 @@ const add = (...values) => {
 
 
 /**
- * @param  {String[]} values
+ * @param  {(String|Number)[]} values
  */
 const subtract = (...values) => {
   let result = scale(values[0]);
@@ -91,7 +91,7 @@ const subtract = (...values) => {
 };
 
 /**
- * @param  {String[]} values
+ * @param  {(String|Number)[]} values
  */
 const multiply = (...values) => {
   let result = scale(values[0]);
@@ -103,7 +103,7 @@ const multiply = (...values) => {
 };
 
 /**
- * @param  {String[]} values
+ * @param  {(String|Number)[]} values
  */
 const divide = (...values) => {
   let result = scale(values[0]);
