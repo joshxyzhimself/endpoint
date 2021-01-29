@@ -1,22 +1,6 @@
 const assert = require('assert');
 const got = require('got');
-
-const normalize_phone_number = (raw_phone_number) => {
-  assert(typeof raw_phone_number === 'string', 'Invalid parameter type for "raw_phone_number".');
-  let phone_number = raw_phone_number.trim();
-  for (let i = 0, l = phone_number.length; i < l; i += 1) {
-    assert(Number.isNaN(Number(phone_number.charAt(i))) === false, 'Phone number must only contain numbers.');
-  }
-  assert(phone_number.length === 11 || phone_number.length === 12, 'Phone number must be 11 or 12 characters.');
-  if (phone_number.length === 11) {
-    assert(phone_number.substring(0, 2) === '09', 'Phone number with 11 characters must start with "09"');
-  }
-  if (phone_number.length === 12) {
-    assert(phone_number.substring(0, 2) === '639', 'Phone number with 12 characters must start with "639"');
-    phone_number = '09'.concat(phone_number.substring(2));
-  }
-  return phone_number;
-};
+const normalize_phone_number = require('../common/normalize_phone_number');
 
 const queue = [];
 
