@@ -7,16 +7,17 @@ const queue = [];
 let sending = false;
 
 const send_next_message = async () => {
-  const [apikey, number, message, resolve, reject] = queue.shift();
+  const [apikey, number, message, sendername, resolve, reject] = queue.shift();
   assert(typeof apikey === 'string');
   assert(typeof number === 'string');
   assert(typeof message === 'string');
+  assert(sendername === undefined || typeof sendername === 'string');
   assert(resolve instanceof Function);
   assert(reject instanceof Function);
   try {
     const semaphore_endpoint = 'https://api.semaphore.co/api/v4/messages';
     const response = await got.post(semaphore_endpoint, {
-      json: { apikey, number, message },
+      json: { apikey, number, message, sendername },
     }).json();
     assert(response instanceof Object);
     resolve(response);
@@ -31,12 +32,13 @@ const send_next_message = async () => {
   }
 };
 
-const send_message = (apikey, raw_phone_number, message) => new Promise((resolve, reject) => {
+const send_message = (apikey, raw_phone_number, message, sendername) => new Promise((resolve, reject) => {
   assert(typeof apikey === 'string', 'Invalid parameter type for "apikey".');
   assert(typeof raw_phone_number === 'string', 'Invalid parameter type for "raw_phone_number".');
   assert(typeof message === 'string', 'Invalid parameter type for "message".');
+  assert(sendername === undefined || typeof sendername === 'string', 'Invalid parameter type for "sendername".');
   const number = normalize_phone_number(raw_phone_number);
-  queue.push([apikey, number, message, resolve, reject]);
+  queue.push([apikey, number, message, sendername, resolve, reject]);
   if (sending === false) {
     sending = true;
     process.nextTick(send_next_message);
