@@ -1,5 +1,5 @@
 
-const assert = require('../common/assert');
+const AssertionError = require('./AssertionError');
 const emitter = require('../common/emitter');
 
 function localstorage_client () {
@@ -22,12 +22,12 @@ function localstorage_client () {
     events.emit('update', key, null);
   };
   const set = (key, value) => {
-    assert(typeof key === 'string');
+    AssertionError.assert(typeof key === 'string');
     const encoded_value = JSON.stringify(value);
     localStorage.setItem(key, encoded_value);
   };
   const get = (key) => {
-    assert(typeof key === 'string');
+    AssertionError.assert(typeof key === 'string');
     const encoded_value = localStorage.getItem(key);
     if (typeof encoded_value === 'string') {
       const value = JSON.parse(encoded_value);
@@ -36,7 +36,7 @@ function localstorage_client () {
     return null;
   };
   const remove = (key) => {
-    assert(typeof key === 'string');
+    AssertionError.assert(typeof key === 'string');
     localStorage.removeItem(key);
   };
   this.on = events.on.bind(events);

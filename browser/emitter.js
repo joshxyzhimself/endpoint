@@ -1,5 +1,5 @@
 
-const assert = require('./assert');
+const AssertionError = require('./AssertionError');
 
 function emitter () {
 
@@ -13,13 +13,13 @@ function emitter () {
    * @param {Function} listener
    */
   const on = (name, listener) => {
-    assert(typeof name === 'string');
-    assert(listener instanceof Function);
+    AssertionError.assert(typeof name === 'string');
+    AssertionError.assert(listener instanceof Function);
     if (namespaces.has(name) === false) {
       namespaces.set(name, new Set());
     }
     const namespace = namespaces.get(name);
-    assert(namespace instanceof Set);
+    AssertionError.assert(namespace instanceof Set);
     namespace.add(listener);
   };
 
@@ -28,12 +28,12 @@ function emitter () {
    * @param {Function} listener
    */
   const off = (name, listener) => {
-    assert(typeof name === 'string');
-    assert(listener instanceof Function);
-    assert(namespaces.has(name) === true);
+    AssertionError.assert(typeof name === 'string');
+    AssertionError.assert(listener instanceof Function);
+    AssertionError.assert(namespaces.has(name) === true);
     const namespace = namespaces.get(name);
-    assert(namespace instanceof Set);
-    assert(namespace.has(listener) === true);
+    AssertionError.assert(namespace instanceof Set);
+    AssertionError.assert(namespace.has(listener) === true);
     namespace.delete(listener);
     if (namespace.size === 0) {
       namespaces.delete(name);
@@ -45,7 +45,7 @@ function emitter () {
    * @param  {...any} args
    */
   const emit = (name, ...args) => {
-    assert(typeof name === 'string');
+    AssertionError.assert(typeof name === 'string');
     if (namespaces.has(name) == true) {
       const namespace = namespaces.get(name);
       namespace.forEach((listener) => {

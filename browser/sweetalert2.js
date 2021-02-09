@@ -2,7 +2,7 @@
 // updated: 01-13-2021
 
 import Swal from 'sweetalert2/src/sweetalert2.js';
-import assert from '../common/assert';
+import AssertionError from './AssertionError';
 
 const default_properties = {
   customClass: {
@@ -32,7 +32,7 @@ Swal.close();
 const sweetalert2 = {
   close: Swal.close.bind(Swal),
   overlay: async (text) => {
-    assert(typeof text === 'string');
+    AssertionError.assert(typeof text === 'string');
     return Swal.fire({
       text,
       showConfirmButton: false,
@@ -41,22 +41,22 @@ const sweetalert2 = {
     });
   },
   info: (text, timer) => {
-    assert(typeof text === 'string');
-    assert(typeof timer === 'number' || timer === undefined);
+    AssertionError.assert(typeof text === 'string');
+    AssertionError.assert(typeof timer === 'number' || timer === undefined);
     return Swal.fire({ text, timer, icon: 'info', ...default_properties });
   },
   error: (text, timer) => {
-    assert(typeof text === 'string');
-    assert(typeof timer === 'number' || timer === undefined);
+    AssertionError.assert(typeof text === 'string');
+    AssertionError.assert(typeof timer === 'number' || timer === undefined);
     return Swal.fire({ text, timer, icon: 'error', ...default_properties });
   },
   success: (text, timer) => {
-    assert(typeof text === 'string');
-    assert(typeof timer === 'number' || timer === undefined);
+    AssertionError.assert(typeof text === 'string');
+    AssertionError.assert(typeof timer === 'number' || timer === undefined);
     return Swal.fire({ text, timer, icon: 'success', ...default_properties });
   },
   warning: async (text) => {
-    assert(typeof text === 'string');
+    AssertionError.assert(typeof text === 'string');
     const response = await Swal.fire({
       text,
       icon: 'warning',
@@ -67,7 +67,7 @@ const sweetalert2 = {
     return response.value === true;
   },
   question: async (text) => {
-    assert(typeof text === 'string');
+    AssertionError.assert(typeof text === 'string');
     const response = await Swal.fire({
       text,
       icon: 'question',
@@ -78,8 +78,8 @@ const sweetalert2 = {
     return response.value === true;
   },
   prompt_text: async (text, input_value) => {
-    assert(typeof text === 'string');
-    assert(typeof input_value === 'string');
+    AssertionError.assert(typeof text === 'string');
+    AssertionError.assert(typeof input_value === 'string');
     const response = await Swal.fire({
       text,
       input: 'text',
@@ -102,9 +102,9 @@ const sweetalert2 = {
     return response.value;
   },
   prompt_select: async (text, input_value, input_options) => {
-    assert(typeof text === 'string');
-    assert(typeof input_value === 'string');
-    assert(input_options instanceof Object);
+    AssertionError.assert(typeof text === 'string');
+    AssertionError.assert(typeof input_value === 'string');
+    AssertionError.assert(input_options instanceof Object);
     const response = await Swal.fire({
       text,
       input: 'select',

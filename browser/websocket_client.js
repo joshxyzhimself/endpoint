@@ -1,5 +1,5 @@
 
-const assert = require('../common/assert');
+const AssertionError = require('./AssertionError');
 const emitter = require('../common/emitter');
 
 const errors = {
@@ -19,9 +19,9 @@ function websocket_client () {
     await new Promise((resolve) => setTimeout(resolve, backoff));
   };
   const send = (data) => {
-    assert(data instanceof Object, errors.ERR_INVALID_PARAMETER_TYPE);
-    assert(client instanceof WebSocket, errors.ERR_WEBSOCKET_DISCONNECTED);
-    assert(client.readyState === 1, errors.ERR_WEBSOCKET_DISCONNECTED);
+    AssertionError.assert(data instanceof Object, errors.ERR_INVALID_PARAMETER_TYPE);
+    AssertionError.assert(client instanceof WebSocket, errors.ERR_WEBSOCKET_DISCONNECTED);
+    AssertionError.assert(client.readyState === 1, errors.ERR_WEBSOCKET_DISCONNECTED);
     const raw_data = JSON.stringify(data);
     client.send(raw_data);
   };
@@ -36,7 +36,7 @@ function websocket_client () {
       }
     };
     client.onmessage = (event) => {
-      assert(typeof event.data === 'string', errors.ERR_INVALID_PARAMETER_TYPE);
+      AssertionError.assert(typeof event.data === 'string', errors.ERR_INVALID_PARAMETER_TYPE);
       const message = JSON.parse(event.data);
       events.emit('message', message);
     };

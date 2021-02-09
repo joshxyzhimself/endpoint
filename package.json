@@ -7,34 +7,18 @@
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "ava": "^3.14.0",
     "benchmark": "^2.1.4",
-    "eslint": "^7.15.0",
-    "form-data": "^3.0.0"
+    "eslint": "^7.15.0"
   },
   "dependencies": {
-    "@stablelib/base64": "^1.0.0",
-    "@stablelib/hex": "^1.0.0",
-    "@stablelib/hmac": "^1.0.0",
-    "@stablelib/scrypt": "^1.0.0",
-    "@stablelib/sha256": "^1.0.0",
-    "@stablelib/utf8": "^1.0.0",
+    "@elastic/elasticsearch": "^7.10.0",
     "@sweetalert2/theme-minimal": "^4.0.1",
-    "bufferutil": "^4.0.2",
-    "busboy": "^0.3.1",
-    "cookie": "^0.4.1",
     "got": "^11.8.1",
-    "hi-base32": "^0.5.0",
-    "is-ip": "^3.1.0",
-    "jose": "^3.3.2",
+    "hi-base32": "^0.5.0", 
     "luxon": "^1.25.0",
-    "mime-types": "^2.1.27",
     "multi-part": "^3.0.0",
-    "query-string": "^6.13.7",
+    "postgres": "^2.0.0-beta.3",
     "react": "^17.0.1",
-    "statuses": "^2.0.0",
-    "sweetalert2": "^10.13.0",
-    "utf-8-validate": "^5.0.3",
-    "ws": "^7.4.1"
+    "sweetalert2": "^10.13.0"
   }
 }
