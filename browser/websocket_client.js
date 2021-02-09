@@ -1,6 +1,6 @@
 
 const AssertionError = require('./AssertionError');
-const emitter = require('../common/emitter');
+const emitter = require('./emitter');
 
 const errors = {
   ERR_INVALID_PARAMETER_TYPE: 'ERR_INVALID_PARAMETER_TYPE',

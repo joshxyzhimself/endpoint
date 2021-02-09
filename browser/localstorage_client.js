@@ -1,6 +1,6 @@
 
 const AssertionError = require('./AssertionError');
-const emitter = require('../common/emitter');
+const emitter = require('./emitter');
 
 function localstorage_client () {
   const events = new emitter();
