@@ -8,7 +8,7 @@ const process = require('process');
 const child_process = require('child_process');
 const postgres = require('postgres');
 const luxon = require('luxon');
-const config = require('../core/config');
+const config = require('../config');
 const environment_types = require('../environment_types');
 const readline_question = require('../readline_question');
 
