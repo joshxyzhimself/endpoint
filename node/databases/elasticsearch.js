@@ -30,7 +30,7 @@ const client = new ElasticSearch.Client({
  */
 const format_index = (index) => {
   assert(typeof index === 'string');
-  const formatted_index = [namespace, index, environment].join('_');
+  const formatted_index = [namespace, environment, index].join('_');
   return formatted_index;
 };
 
@@ -83,51 +83,50 @@ function bulk_operation () {
    * @param {object} document
    * @param {string} operation
    */
-  const create_action = (document, operation) => {
-    assert(document instanceof Object);
-    if (document._datasource instanceof Object) {
-      assert(typeof document._datasource._index === 'string');
-      document._index = format_index(document._datasource._index);
-    } else {
-      assert(typeof document._index === 'string');
-      document._index = format_index(document._index);
-    }
-    assert(document._source instanceof Object);
-
+  const create_action = (operation, datasource, document, document_id) => {
     assert(typeof operation === 'string');
     assert(operation_types.has(operation) === true);
+    assert(datasource instanceof Object);
+    assert(typeof datasource.index === 'string');
+    assert(document instanceof Object);
 
-    // optional document._id on INDEX operation
+    // optional document_id on INDEX operation
     if (operation === 'index') {
-      assert(document._id === undefined || typeof document._id === 'string');
+      assert(document_id === undefined || typeof document_id === 'string');
     }
 
-    // require document._id on CREATE and UPDATE operations
+    // require document_id on CREATE and UPDATE operations
     if (operation === 'create' || operation === 'update') {
-      assert(typeof document._id === 'string');
+      assert(typeof document_id === 'string');
     }
 
     operations.push(operation);
-    request_body.push({ [operation]: { _index: document._index, _id: document._id } });
-    request_body.push(document._source);
+    request_body.push({ [operation]: { _index: format_index(datasource.index), _id: document_id } });
+    request_body.push(document);
     documents.push(document);
     return document;
   };
 
   /**
    * @param {object} document
+   * @param {object} datasource
+   * @param {string|void} document_id
    */
-  this.index = (document) => create_action(document, 'index');
+  this.index = (datasource, document, document_id) => create_action('index', datasource, document, document_id);
 
   /**
    * @param {object} document
+   * @param {object} datasource
+   * @param {string|void} document_id
    */
-  this.create = (document) => create_action(document, 'create');
+  this.create = (datasource, document, document_id) => create_action('create', datasource, document, document_id);
 
   /**
    * @param {object} document
+   * @param {object} datasource
+   * @param {string|void} document_id
    */
-  this.update = (document) => create_action(document, 'update');
+  this.update = (datasource, document, document_id) => create_action('update', datasource, document, document_id);
 
   /**
    * @param  {string[]} error_types
