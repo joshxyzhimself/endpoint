@@ -89,6 +89,8 @@ function bulk_operation () {
     assert(datasource instanceof Object);
     assert(typeof datasource.index === 'string');
     assert(document instanceof Object);
+    assert(document._id === undefined);
+    assert(document._index === undefined);
 
     // optional document_id on INDEX operation
     if (operation === 'index') {
@@ -167,9 +169,11 @@ function bulk_operation () {
         assert(item instanceof Object);
         const item_operation = item[operations[item_index]];
         assert(typeof item_operation._id === 'string');
+        assert(typeof item_operation._index === 'string');
         const document = documents[item_index];
         if (documents[item_index]._id === undefined) {
           document._id = item_operation._id;
+          document._index = item_operation._index;
         }
       });
     }
