@@ -253,6 +253,8 @@ const search_by_text = async (query_string, limit, offset, ...indices) => {
 };
 
 const elasticsearch = {
+  namespace,
+  environment,
   client,
   format_index,
   create_index,

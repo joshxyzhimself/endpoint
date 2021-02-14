@@ -221,6 +221,8 @@ function bulk_operation (table) {
 }
 
 module.exports = {
+  namespace,
+  environment,
   database,
   query_text,
   query_json,
