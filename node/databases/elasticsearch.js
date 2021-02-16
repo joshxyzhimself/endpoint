@@ -252,6 +252,18 @@ const search_by_text = async (query_string, limit, offset, ...indices) => {
   return results;
 };
 
+/**
+ * @param {string} index
+ * @param {string} id
+ */
+const get_document = async (index, id) => {
+  assert(typeof index === 'string');
+  assert(typeof id === 'string');
+  const response = await client.get({ index, id });
+  assert(response.body instanceof Object);
+  return response.body;
+};
+
 const elasticsearch = {
   namespace,
   environment,
@@ -263,6 +275,7 @@ const elasticsearch = {
   bulk_operation,
   search_by_body,
   search_by_text,
+  get_document,
 };
 
 module.exports = elasticsearch;
