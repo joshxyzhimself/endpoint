@@ -25,6 +25,12 @@ function websocket_client () {
     const raw_data = JSON.stringify(data);
     client.send(raw_data);
   };
+  const send_arraybuffer = (raw_data) => {
+    AssertionError.assert(raw_data instanceof ArrayBuffer, errors.ERR_INVALID_PARAMETER_TYPE);
+    AssertionError.assert(client instanceof WebSocket, errors.ERR_WEBSOCKET_DISCONNECTED);
+    AssertionError.assert(client.readyState === 1, errors.ERR_WEBSOCKET_DISCONNECTED);
+    client.send(raw_data);
+  };
   const connect = () => {
     events.emit('connecting');
     const websocket_protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -67,6 +73,7 @@ function websocket_client () {
     return null;
   };
   this.send = send;
+  this.send_arraybuffer = send_arraybuffer;
   this.connect = connect;
   this.disconnect = disconnect;
   this.state = state;
