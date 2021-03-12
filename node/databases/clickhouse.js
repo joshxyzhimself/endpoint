@@ -4,7 +4,7 @@ const assert = require('assert');
 const querystring = require('querystring');
 const got = require('got');
 const config = require('../config');
-const units = require('../units');
+const units = require('../../core/units');
 const environment_types = require('../environment_types');
 
 assert(typeof config.namespace === 'string');
