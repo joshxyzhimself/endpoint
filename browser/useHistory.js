@@ -2,7 +2,7 @@
 // updated: 01-13-2021
 
 import { useState, useEffect, useCallback } from 'react';
-import AssertionError from './AssertionError';
+import AssertionError from '../core/AssertionError';
 
 function useHistory () {
 

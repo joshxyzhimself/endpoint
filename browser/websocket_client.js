@@ -1,6 +1,6 @@
 
-const AssertionError = require('./AssertionError');
-const emitter = require('./emitter');
+const AssertionError = require('../core/AssertionError');
+const emitter = require('../core/emitter');
 
 const errors = {
   ERR_INVALID_PARAMETER_TYPE: 'ERR_INVALID_PARAMETER_TYPE',
@@ -18,18 +18,26 @@ function websocket_client () {
     }
     await new Promise((resolve) => setTimeout(resolve, backoff));
   };
+
+  /**
+   * @param {object} data
+   */
   const send = (data) => {
     AssertionError.assert(data instanceof Object, errors.ERR_INVALID_PARAMETER_TYPE);
     AssertionError.assert(client instanceof WebSocket, errors.ERR_WEBSOCKET_DISCONNECTED);
     AssertionError.assert(client.readyState === 1, errors.ERR_WEBSOCKET_DISCONNECTED);
-    const raw_data = JSON.stringify(data);
-    client.send(raw_data);
+    const data2 = JSON.stringify(data);
+    client.send(data2);
   };
-  const send_arraybuffer = (raw_data) => {
-    AssertionError.assert(raw_data instanceof ArrayBuffer, errors.ERR_INVALID_PARAMETER_TYPE);
+
+  /**
+   * @param {ArrayBuffer} data
+   */
+  const send_arraybuffer = (data) => {
+    AssertionError.assert(data instanceof ArrayBuffer, errors.ERR_INVALID_PARAMETER_TYPE);
     AssertionError.assert(client instanceof WebSocket, errors.ERR_WEBSOCKET_DISCONNECTED);
     AssertionError.assert(client.readyState === 1, errors.ERR_WEBSOCKET_DISCONNECTED);
-    client.send(raw_data);
+    client.send(data);
   };
   const connect = () => {
     events.emit('connecting');
@@ -79,6 +87,7 @@ function websocket_client () {
   this.state = state;
   this.on = events.on.bind(events);
   this.off = events.off.bind(events);
+  this.errors = errors;
 }
 
 module.exports = websocket_client;

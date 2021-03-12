@@ -2,7 +2,7 @@
 // updated: 01-13-2021
 
 import Swal from 'sweetalert2/src/sweetalert2.js';
-import AssertionError from './AssertionError';
+import AssertionError from '../core/AssertionError';
 
 const default_properties = {
   customClass: {

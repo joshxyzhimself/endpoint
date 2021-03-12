@@ -10,6 +10,11 @@ const base32 = require('hi-base32');
 
 const hotp_create_key = () => base32.encode(crypto.randomBytes(32)).replace(/=/g, '');
 
+/**
+ * @param {string} key
+ * @param {number} counter
+ * @returns {string}
+ */
 const hotp_derive_code = (key, counter) => {
   assert(typeof key === 'string');
   assert(typeof counter === 'number');
@@ -26,6 +31,13 @@ const hotp_derive_code = (key, counter) => {
 
 const totp_get_counter = () => Math.floor(Math.round(Date.now() / 1000) / 30);
 
+/**
+ *
+ * @param {string} key
+ * @param {string} code
+ * @param {number} valid_windows
+ * @returns
+ */
 const totp_verify_code = (key, code, valid_windows) => {
   assert(typeof key === 'string');
   assert(typeof code === 'string');
