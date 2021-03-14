@@ -174,6 +174,19 @@ const psql = (...commands) => new Promise((resolve, reject) => {
   }
 });
 
-const postgresql = { namespace, environment, database, client, drop_table, pg_dump, pg_restore, psql };
+assert(client.array instanceof Function);
+const array = client.array;
+
+const postgresql = {
+  namespace,
+  environment,
+  database,
+  client,
+  drop_table,
+  pg_dump,
+  pg_restore,
+  psql,
+  array,
+};
 
 module.exports = postgresql;
