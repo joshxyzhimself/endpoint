@@ -6,7 +6,7 @@ function emitter () {
   /**
    * @type {Map<String, Set<Function>>}
    */
-  const namespaces = new Map();
+  const events = new Map();
 
   /**
    * @param {String} event_name
@@ -15,12 +15,12 @@ function emitter () {
   const on = (event_name, event_listener) => {
     AssertionError.assert(typeof event_name === 'string');
     AssertionError.assert(event_listener instanceof Function);
-    if (namespaces.has(event_name) === false) {
-      namespaces.set(event_name, new Set());
+    if (events.has(event_name) === false) {
+      events.set(event_name, new Set());
     }
-    const namespace = namespaces.get(event_name);
-    AssertionError.assert(namespace instanceof Set);
-    namespace.add(event_listener);
+    const event_listeners = events.get(event_name);
+    AssertionError.assert(event_listeners instanceof Set);
+    event_listeners.add(event_listener);
   };
 
   /**
@@ -30,13 +30,13 @@ function emitter () {
   const off = (event_name, event_listener) => {
     AssertionError.assert(typeof event_name === 'string');
     AssertionError.assert(event_listener instanceof Function);
-    AssertionError.assert(namespaces.has(event_name) === true);
-    const namespace = namespaces.get(event_name);
-    AssertionError.assert(namespace instanceof Set);
-    AssertionError.assert(namespace.has(event_listener) === true);
-    namespace.delete(event_listener);
-    if (namespace.size === 0) {
-      namespaces.delete(event_name);
+    AssertionError.assert(events.has(event_name) === true);
+    const event_listeners = events.get(event_name);
+    AssertionError.assert(event_listeners instanceof Set);
+    AssertionError.assert(event_listeners.has(event_listener) === true);
+    event_listeners.delete(event_listener);
+    if (event_listeners.size === 0) {
+      events.delete(event_name);
     }
   };
 
@@ -46,9 +46,9 @@ function emitter () {
    */
   const emit = (event_name, ...args) => {
     AssertionError.assert(typeof event_name === 'string');
-    if (namespaces.has(event_name) == true) {
-      const namespace = namespaces.get(event_name);
-      namespace.forEach((event_listener) => {
+    if (events.has(event_name) == true) {
+      const event_listeners = events.get(event_name);
+      event_listeners.forEach((event_listener) => {
         event_listener(...args);
       });
     }

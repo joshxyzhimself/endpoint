@@ -8,12 +8,12 @@ process.nextTick(async () => {
 
   events.on('test-event', listener_1);
   events.on('test-event', listener_2);
-  events.emit('test-event', 'foo', 'bar', 123);
-  events.emit('test-event', 'foo', 'bar', 456);
+  events.emit('test-event', 'foo1', 'bar1', 123);
+  events.emit('test-event', 'foo2', 'bar2', 456);
 
   events.off('test-event', listener_1);
-  events.emit('test-event', 'foo', 'bar', 789);
+  events.emit('test-event', 'foo3', 'bar3', 789);
 
   events.off('test-event', listener_2);
-  events.emit('test-event', 'foo', 'bar', 0);
+  events.emit('test-event', 'foo4', 'bar4', 0);
 });
