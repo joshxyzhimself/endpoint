@@ -6,26 +6,26 @@ const emitter = require('./emitter');
  *
  * Note that task processing still continues even after the first error.
  *
- * This is intentional, you must handle your task failures within your callback.
+ * This is intentional, you must handle your task failures within your event callbacks.
  *
  * @param {number} concurrency - queue concurrency
  * @param {Function} callback
  *
  * @example
  *
- * const queue = queue(3, async (value) => {
+ * const q = queue(3, async (value) => {
  *   assert(typeof value === 'number');
  *   await new Promise((resolve) => setTimeout(resolve, value));
  *   return value;
  * });
  *
- * queue.on('result', console.log);
- * queue.on('drain', console.log);
- * queue.on('error', console.log);
+ * q.events.on('result', console.log);
+ * q.events.on('drain', console.log);
+ * q.events.on('error', console.log);
  *
  * await new Promise((resolve, reject) => {
- *   queue.on('drain', resolve);
- *   queue.on('error', reject);
+ *   q.events.on('drain', resolve);
+ *   q.events.on('error', reject);
  * });
  */
 const queue = (concurrency, callback) => {
