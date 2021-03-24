@@ -6,13 +6,24 @@ const values = [100, 200, 300, 400, 500];
 
 const q = queue(2, async (value) => {
   AssertionError.assert(typeof value === 'number');
-  if (value === 500) {
-    throw new Error('Error on 500.');
+
+  if (value === 200) {
+    q.pause();
+    setTimeout(() => {
+      q.resume();
+    }, 1000);
   }
+
+  // Error test:
+  // if (value === 500) {
+  //   throw new Error('Error on 500.');
+  // }
+
   await new Promise((resolve) => setTimeout(resolve, value));
   return value;
 });
 
+q.events.on('pause', (...args) => console.log('pause', ...args));
 q.events.on('resume', (...args) => console.log('resume', ...args));
 q.events.on('result', (...args) => console.log('result', ...args));
 q.events.on('error', (...args) => console.log('error', ...args));

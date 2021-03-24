@@ -37,10 +37,14 @@ const queue = (concurrency, callback) => {
   AssertionError.assert(callback instanceof Function);
 
   let active = 0;
+  let paused = false;
   const values = [];
   const events = new emitter();
 
   const resume = () => {
+    if (paused === true) {
+      paused = false;
+    }
     while (active < concurrency && values.length > 0) {
       if (active === 0) {
         events.emit('resume');
@@ -60,7 +64,9 @@ const queue = (concurrency, callback) => {
     }
     active -= 1;
     if (values.length > 0) {
-      resume();
+      if (paused === false) {
+        resume();
+      }
     } else {
       if (active === 0) {
         events.emit('drain');
@@ -70,10 +76,17 @@ const queue = (concurrency, callback) => {
 
   const push = (value) => {
     values.push(value);
-    resume();
+    if (paused === false) {
+      resume();
+    }
   };
 
-  return { events, push };
+  const pause = () => {
+    paused = true;
+    events.emit('pause');
+  };
+
+  return { events, push, pause, resume };
 };
 
 
