@@ -1,0 +1,81 @@
+
+const AssertionError = require('./AssertionError');
+const emitter = require('./emitter');
+
+/**
+ *
+ * Note that task processing still continues even after the first error.
+ *
+ * This is intentional, you must handle your task failures within your callback.
+ *
+ * @param {number} concurrency - queue concurrency
+ * @param {Function} callback
+ *
+ * @example
+ *
+ * const queue = queue(3, async (value) => {
+ *   assert(typeof value === 'number');
+ *   await new Promise((resolve) => setTimeout(resolve, value));
+ *   return value;
+ * });
+ *
+ * queue.on('result', console.log);
+ * queue.on('drain', console.log);
+ * queue.on('error', console.log);
+ *
+ * await new Promise((resolve, reject) => {
+ *   queue.on('drain', resolve);
+ *   queue.on('error', reject);
+ * });
+ */
+const queue = (concurrency, callback) => {
+
+  AssertionError.assert(typeof concurrency === 'number');
+  AssertionError.assert(Number.isFinite(concurrency) === true);
+  AssertionError.assert(Number.isInteger(concurrency) === true);
+  AssertionError.assert(concurrency > 0);
+  AssertionError.assert(callback instanceof Function);
+
+  let active = 0;
+  const values = [];
+  const events = new emitter();
+
+  const resume = () => {
+    while (active < concurrency && values.length > 0) {
+      if (active === 0) {
+        events.emit('resume');
+      }
+      active += 1;
+      const next = values.shift();
+      process.nextTick(process_next, next);
+    }
+  };
+
+  const process_next = async (value) => {
+    try {
+      const result = await callback(value);
+      events.emit('result', result, value);
+    } catch (error) {
+      events.emit('error', error, value);
+    }
+    active -= 1;
+    if (values.length > 0) {
+      resume();
+    } else {
+      if (active === 0) {
+        events.emit('drain');
+      }
+    }
+  };
+
+  const push = (value) => {
+    values.push(value);
+    resume();
+  };
+
+  return { events, push };
+};
+
+
+
+module.exports = queue;
