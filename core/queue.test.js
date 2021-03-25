@@ -12,9 +12,12 @@ const q = queue(2, async (value) => {
     setTimeout(() => {
       q.resume();
       setTimeout(() => {
-        q.push(600, 700);
-      }, 2000);
-    }, 2000);
+        q.pause();
+        q.push(700, 800);
+        q.unshift(600);
+        q.resume();
+      }, 1000);
+    }, 1000);
   }
 
   // Error test:

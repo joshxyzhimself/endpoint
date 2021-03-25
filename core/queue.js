@@ -74,6 +74,13 @@ const queue = (concurrency, callback) => {
     }
   };
 
+  const unshift = (...new_values) => {
+    values.unshift(...new_values);
+    if (paused === false && active === 0) {
+      resume();
+    }
+  };
+
   const push = (...new_values) => {
     values.push(...new_values);
     if (paused === false && active === 0) {
@@ -86,7 +93,7 @@ const queue = (concurrency, callback) => {
     events.emit('pause');
   };
 
-  return { events, push, pause, resume };
+  return { events, unshift, push, pause, resume };
 };
 
 
