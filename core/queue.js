@@ -74,9 +74,9 @@ const queue = (concurrency, callback) => {
     }
   };
 
-  const push = (value) => {
-    values.push(value);
-    if (paused === false) {
+  const push = (...new_values) => {
+    values.push(...new_values);
+    if (paused === false && active === 0) {
       resume();
     }
   };

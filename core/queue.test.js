@@ -11,7 +11,10 @@ const q = queue(2, async (value) => {
     q.pause();
     setTimeout(() => {
       q.resume();
-    }, 1000);
+      setTimeout(() => {
+        q.push(600, 700);
+      }, 2000);
+    }, 2000);
   }
 
   // Error test:
@@ -29,4 +32,4 @@ q.events.on('result', (...args) => console.log('result', ...args));
 q.events.on('error', (...args) => console.log('error', ...args));
 q.events.on('drain', (...args) => console.log('drain', ...args));
 
-values.forEach(q.push);
+q.push(...values);
