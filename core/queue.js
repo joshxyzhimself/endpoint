@@ -41,6 +41,12 @@ const queue = (concurrency, callback) => {
   const values = [];
   const events = new emitter();
 
+  const next = () => {
+    active += 1;
+    const next_value = values.shift();
+    process.nextTick(process_next, next_value);
+  };
+
   const resume = () => {
     if (paused === true) {
       paused = false;
@@ -49,9 +55,7 @@ const queue = (concurrency, callback) => {
       if (active === 0) {
         events.emit('resume');
       }
-      active += 1;
-      const next = values.shift();
-      process.nextTick(process_next, next);
+      next();
     }
   };
 
@@ -65,7 +69,7 @@ const queue = (concurrency, callback) => {
     active -= 1;
     if (values.length > 0) {
       if (paused === false) {
-        resume();
+        next();
       }
     } else {
       if (active === 0) {
@@ -77,20 +81,22 @@ const queue = (concurrency, callback) => {
   const unshift = (...new_values) => {
     values.unshift(...new_values);
     if (paused === false && active === 0) {
-      resume();
+      next();
     }
   };
 
   const push = (...new_values) => {
     values.push(...new_values);
     if (paused === false && active === 0) {
-      resume();
+      next();
     }
   };
 
   const pause = () => {
-    paused = true;
-    events.emit('pause');
+    if (paused === false) {
+      paused = true;
+      events.emit('pause');
+    }
   };
 
   const q = {

@@ -4,7 +4,8 @@ const queue = require('./queue');
 
 let index_counter = 0;
 
-const q = queue(1, async (index) => {
+const q = queue(5, async (index) => {
+  console.log({ values: q.values });
   AssertionError.assert(typeof index === 'number');
   AssertionError.assert(Number.isInteger(index) === true);
   try {
@@ -17,7 +18,6 @@ const q = queue(1, async (index) => {
     console.error(`queue :: index ${index} :: error ${e.message}`);
     q.push(index);
   }
-  console.log({ values: q.values });
 });
 
 q.pause();
