@@ -93,7 +93,18 @@ const queue = (concurrency, callback) => {
     events.emit('pause');
   };
 
-  return { values, events, unshift, push, pause, resume };
+  const q = {
+    values,
+    events,
+    unshift,
+    push,
+    pause,
+    resume,
+    active: () => active,
+    paused: () => paused,
+  };
+
+  return q;
 };
 
 
