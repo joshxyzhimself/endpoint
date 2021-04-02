@@ -99,9 +99,13 @@ const get_updates = async (token, body) => {
   return updates;
 };
 
-const sleep = async (timeout) => {
-  assert(typeof timeout === 'number');
-  await new Promise((resolve) => setTimeout(resolve, timeout));
+const get_me = async (token) => {
+  assert(typeof token === 'string');
+  const response = await post_json(create_endpoint(token, 'getMe'), {});
+  assert(response instanceof Object);
+  assert(response.result instanceof Object);
+  const me = response.result;
+  return me;
 };
 
 module.exports = {
@@ -116,5 +120,5 @@ module.exports = {
   delete_webhook,
   set_webhook,
   get_updates,
-  sleep,
+  get_me,
 };

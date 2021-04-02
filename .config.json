@@ -1,4 +1,6 @@
 {
+  "environment": "development",
+  "domain_name": "test.xyz",
   "mailgun_domain": "mg.techies.pw",
   "mailgun_password": "4a184448fc1fb3f66ed073b5ef29a082-52b6835e-29a677cf",
   "mailgun_from": "No Reply <noreply@mg.techies.pw>",

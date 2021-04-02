@@ -72,3 +72,8 @@ if (worker_threads.isMainThread === true) {
     });
   }
 }
+
+process.nextTick(async () => {
+  const me = await telegram.get_me(telegram_token);
+  console.log({ me });
+});
