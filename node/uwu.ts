@@ -1,5 +1,4 @@
 
-
 export type response = {
   aborted: boolean
   cache_files: boolean
@@ -41,3 +40,24 @@ export type request = {
 }
 
 export type handler = (response: response, request: request) => void;
+
+export type internal_handler_2 = (res: object, handler: handler, response: response, request: request) => void;
+
+export type internal_handler = (res: object, req: object) => void;
+
+export type serve_handler = (handler: handler) => internal_handler;
+
+export type serve_static = (app: object, route_path: string, local_path: string, cache_control_type: string) => void;
+
+export type cache_control_types = {
+  no_store: string
+  no_cache: string
+  private_cached: string
+  public_cached: string
+}
+
+export type uwu = {
+  cache_control_types: cache_control_types
+  serve_handler: serve_handler
+  serve_static: serve_static
+}

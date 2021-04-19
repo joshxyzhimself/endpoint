@@ -7,6 +7,11 @@
  * @typedef {import('./uwu').response} response
  * @typedef {import('./uwu').request} request
  * @typedef {import('./uwu').handler} handler
+ * @typedef {import('./uwu').internal_handler_2} internal_handler_2
+ * @typedef {import('./uwu').internal_handler} internal_handler
+ * @typedef {import('./uwu').serve_handler} serve_handler
+ * @typedef {import('./uwu').serve_static} serve_static
+ * @typedef {import('./uwu').uwu} uwu
  */
 
 const fs = require('fs');
@@ -30,11 +35,7 @@ const cache_control_types = {
 const cached_files = new Map();
 
 /**
- * @param {object} res
- * @param {handler} handler
- * @param {response} response
- * @param {request} request
- * @returns
+ * @type {internal_handler_2}
  */
 const internal_handler_2 = async (res, handler, response, request) => {
   assert(typeof res === 'object');
@@ -188,17 +189,13 @@ const internal_handler_2 = async (res, handler, response, request) => {
 };
 
 /**
-  * @param {handler} handler
-  * @returns
+  * @type {serve_handler}
   */
 const serve_handler = (handler) => {
   assert(typeof handler === 'function');
 
   /**
-    *
-    * @param {uws.HttpResponse} res
-    * @param {uws.HttpRequest} req
-    * @returns {void}
+    * @type {internal_handler}
     */
   const internal_handler = (res, req) => {
 
@@ -271,11 +268,7 @@ const serve_handler = (handler) => {
 };
 
 /**
-  * @param {uws.TemplatedApp} app
-  * @param {string} route_path
-  * @param {string} local_path
-  * @param {string} cache_control_type
-  * @returns {void}
+  * @type {serve_static}
   */
 const serve_static = (app, route_path, local_path, cache_control_type) => {
   assert(app instanceof Object);
@@ -308,6 +301,13 @@ const serve_static = (app, route_path, local_path, cache_control_type) => {
   }));
 };
 
-const uwu = { cache_control_types, serve_handler, serve_static };
+/**
+ * @type {uwu}
+ */
+const uwu = {
+  cache_control_types,
+  serve_handler,
+  serve_static,
+};
 
 module.exports = uwu;
