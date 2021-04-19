@@ -3,6 +3,50 @@
  * uwu: uWebSockets utilities
  */
 
+/**
+ * @typedef {object} response
+ * @property {boolean} aborted
+ * @property {boolean} cache_files
+ * @property {number} cache_files_max_age_ms
+ * @property {boolean} compress
+ * @property {boolean} dispose
+ * @property {number} status
+ * @property {string} headers
+ * @property {string} file_path
+ * @property {string} file_name
+ * @property {string} file_content_type
+ * @property {string} text
+ * @property {string} html
+ * @property {object} json
+ * @property {Buffer} buffer
+ * @property {string} buffer_hash
+ * @property {Buffer} brotli_buffer
+ * @property {string} brotli_buffer_hash
+ * @property {Buffer} gzip_buffer
+ * @property {string} gzip_buffer_hash
+ * @property {number} timestamp
+ * @property {number} start
+ * @property {number} end
+ * @property {took} end
+ */
+
+/**
+ * @typedef {object} headers
+ * @property {string} accept
+ * @property {string} accept_encoding
+ * @property {string} content_type
+ * @property {string} if_none_match
+ * @property {string} user_agent
+ */
+
+/**
+ * @typedef {object} request
+ * @property {string} url
+ * @property {string} query
+ * @property {headers} headers
+ * @property {object} json
+ */
+
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
@@ -23,6 +67,13 @@ const cache_control_types = {
 
 const cached_files = new Map();
 
+/**
+ * @param {object} res
+ * @param {Function} handler
+ * @param {response} response
+ * @param {request} request
+ * @returns
+ */
 const internal_handler_2 = async (res, handler, response, request) => {
   assert(typeof res === 'object');
   assert(typeof handler === 'function');
@@ -43,6 +94,7 @@ const internal_handler_2 = async (res, handler, response, request) => {
   assert(typeof response.compress === 'boolean');
   assert(typeof response.status === 'number');
   assert(typeof response.headers === 'object');
+  const etag_required = typeof response.headers['Cache-Control'] === 'string' && response.headers['Cache-Control'].includes('no-store') === false;
   if (typeof response.file_path === 'string') {
     assert(path.isAbsolute(response.file_path) === true);
     if (response.cache_files === true) {
@@ -120,30 +172,36 @@ const internal_handler_2 = async (res, handler, response, request) => {
         if (response.brotli_buffer === undefined) {
           response.brotli_buffer = await zlib_brotli(response.buffer);
         }
-        if (response.brotli_buffer_hash === undefined) {
-          response.brotli_buffer_hash = crypto.createHash('sha256').update(response.brotli_buffer).digest('hex');
-        }
         response.buffer = response.brotli_buffer;
-        response.buffer_hash = response.brotli_buffer_hash;
+        if (etag_required === true) {
+          if (response.brotli_buffer_hash === undefined) {
+            response.brotli_buffer_hash = crypto.createHash('sha256').update(response.brotli_buffer).digest('hex');
+          }
+          response.buffer_hash = response.brotli_buffer_hash;
+        }
         response.headers['Content-Encoding'] = 'br';
       } else if (request.headers.accept_encoding.includes('gzip') === true) {
         if (response.gzip_buffer === undefined) {
           response.gzip_buffer = await zlib_gzip(response.buffer);
         }
-        if (response.gzip_buffer_hash === undefined) {
-          response.gzip_buffer_hash = crypto.createHash('sha256').update(response.gzip_buffer).digest('hex');
-        }
         response.buffer = response.gzip_buffer;
-        response.buffer_hash = response.gzip_buffer_hash;
+        if (etag_required === true) {
+          if (response.gzip_buffer_hash === undefined) {
+            response.gzip_buffer_hash = crypto.createHash('sha256').update(response.gzip_buffer).digest('hex');
+          }
+          response.buffer_hash = response.gzip_buffer_hash;
+        }
         response.headers['Content-Encoding'] = 'gzip';
       }
     }
-    if (response.buffer_hash === undefined) {
-      response.buffer_hash = crypto.createHash('sha256').update(response.buffer).digest('hex');
-    }
-    response.headers['ETag'] = response.buffer_hash;
-    if (request.headers.if_none_match === response.buffer_hash) {
-      response.status = 304;
+    if (etag_required === true) {
+      if (response.buffer_hash === undefined) {
+        response.buffer_hash = crypto.createHash('sha256').update(response.buffer).digest('hex');
+      }
+      response.headers['ETag'] = response.buffer_hash;
+      if (request.headers.if_none_match === response.buffer_hash) {
+        response.status = 304;
+      }
     }
   }
   if (response.dispose === true && typeof response.file_name === 'string') {
@@ -181,6 +239,10 @@ const serve_handler = (handler) => {
     * @returns {void}
     */
   const internal_handler = (res, req) => {
+
+    /**
+     * @type {request}
+     */
     const request = {
       url: req.getUrl(),
       query: req.getQuery(),
@@ -193,6 +255,10 @@ const serve_handler = (handler) => {
       },
       json: undefined,
     };
+
+    /**
+     * @type {response}
+     */
     const response = {
       aborted: false,
       cache_files: false,
@@ -216,6 +282,7 @@ const serve_handler = (handler) => {
       timestamp: undefined,
       start: Date.now(),
       end: undefined,
+      took: undefined,
     };
     let buffer;
     res.onData((chunk, is_last) => {
@@ -243,9 +310,10 @@ const serve_handler = (handler) => {
   * @param {uws.TemplatedApp} app
   * @param {string} route_path
   * @param {string} local_path
+  * @param {string} cache_control_type
   * @returns {void}
   */
-const serve_static = (app, route_path, local_path) => {
+const serve_static = (app, route_path, local_path, cache_control_type) => {
   assert(app instanceof Object);
   assert(app.get instanceof Function);
 
@@ -257,6 +325,8 @@ const serve_static = (app, route_path, local_path) => {
   assert(local_path.substring(0, 1) === '/');
   assert(local_path.substring(local_path.length - 1, local_path.length) === '/');
 
+  assert(cache_control_type === undefined || typeof cache_control_type === 'string');
+
   app.get(`${route_path}*`, serve_handler(async (response, request) => {
     const url_basename = path.basename(request.url);
     const url_extname = path.extname(request.url);
@@ -264,8 +334,13 @@ const serve_static = (app, route_path, local_path) => {
       response.status = 404;
       return;
     }
+    response.cache_files = true;
     response.file_path = path.join(process.cwd(), request.url.replace(route_path, local_path));
-    response.headers['Cache-Control'] = cache_control_types.no_store;
+    if (typeof cache_control_type === 'string') {
+      response.headers['Cache-Control'] = cache_control_type;
+    } else {
+      response.headers['Cache-Control'] = cache_control_types.no_store;
+    }
   }));
 };
 
