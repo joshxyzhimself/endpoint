@@ -4,47 +4,9 @@
  */
 
 /**
- * @typedef {object} response
- * @property {boolean} aborted
- * @property {boolean} cache_files
- * @property {number} cache_files_max_age_ms
- * @property {boolean} compress
- * @property {boolean} dispose
- * @property {number} status
- * @property {string} headers
- * @property {string} file_path
- * @property {string} file_name
- * @property {string} file_content_type
- * @property {string} text
- * @property {string} html
- * @property {object} json
- * @property {Buffer} buffer
- * @property {string} buffer_hash
- * @property {Buffer} brotli_buffer
- * @property {string} brotli_buffer_hash
- * @property {Buffer} gzip_buffer
- * @property {string} gzip_buffer_hash
- * @property {number} timestamp
- * @property {number} start
- * @property {number} end
- * @property {took} end
- */
-
-/**
- * @typedef {object} headers
- * @property {string} accept
- * @property {string} accept_encoding
- * @property {string} content_type
- * @property {string} if_none_match
- * @property {string} user_agent
- */
-
-/**
- * @typedef {object} request
- * @property {string} url
- * @property {string} query
- * @property {headers} headers
- * @property {object} json
+ * @typedef {import('./uwu').response} response
+ * @typedef {import('./uwu').request} request
+ * @typedef {import('./uwu').handler} handler
  */
 
 const fs = require('fs');
@@ -69,7 +31,7 @@ const cached_files = new Map();
 
 /**
  * @param {object} res
- * @param {Function} handler
+ * @param {handler} handler
  * @param {response} response
  * @param {request} request
  * @returns
@@ -226,7 +188,7 @@ const internal_handler_2 = async (res, handler, response, request) => {
 };
 
 /**
-  * @param {Function} handler
+  * @param {handler} handler
   * @returns
   */
 const serve_handler = (handler) => {
@@ -288,9 +250,11 @@ const serve_handler = (handler) => {
     res.onData((chunk, is_last) => {
       if (chunk.byteLength > 0) {
         const chunk_buffer = Buffer.from(chunk);
-        buffer = buffer === undefined
-          ? chunk_buffer
-          : Buffer.concat([buffer, chunk_buffer]);
+        if (buffer === undefined) {
+          buffer = chunk_buffer;
+        } else {
+          buffer = Buffer.concat([buffer, chunk_buffer]);
+        }
       }
       if (is_last === true) {
         if (request.headers.content_type.includes('application/json') === true) {
