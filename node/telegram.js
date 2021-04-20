@@ -83,7 +83,7 @@ const set_webhook = async (token, body) => {
   assert(typeof body.url === 'string');
   assert(typeof body.max_connections === 'number');
   assert(body.allowed_updates instanceof Array);
-  const response = await post_json(create_endpoint(token, 'deleteWebhook'), body);
+  const response = await post_json(create_endpoint(token, 'setWebhook'), body);
   return response;
 };
 
