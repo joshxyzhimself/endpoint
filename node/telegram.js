@@ -61,6 +61,15 @@ const send_message = async (token, body) => {
   return response;
 };
 
+const delete_message = async (token, body) => {
+  assert(typeof token === 'string');
+  assert(body instanceof Object);
+  assert(typeof body.chat_id === 'string' || typeof body.chat_id === 'number');
+  assert(typeof body.message_id === 'number');
+  const response = await post_json(create_endpoint(token, 'deleteMessage'), body);
+  return response;
+};
+
 const send_photo = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
@@ -116,6 +125,7 @@ module.exports = {
   get_text,
   create_endpoint,
   send_message,
+  delete_message,
   send_photo,
   delete_webhook,
   set_webhook,
