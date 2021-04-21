@@ -198,7 +198,6 @@ const internal_handler_2 = async (res, handler, response, request) => {
         response.ended = true;
       }
     }
-    console.log({ response });
   }
 };
 
