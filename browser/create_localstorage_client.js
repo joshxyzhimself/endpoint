@@ -1,6 +1,6 @@
 
 const AssertionError = require('../core/AssertionError');
-const create_emitter = require('./create_emitter');
+const create_emitter = require('../core/create_emitter');
 
 const create_localstorage_client = () => {
   const emitter = create_emitter();

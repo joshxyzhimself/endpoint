@@ -1,5 +1,5 @@
 const AssertionError = require('./AssertionError');
-const create_emitter = require('./create_emitter');
+const create_emitter = require('../core/create_emitter');
 
 const error_types = {
   ERR_INVALID_PARAMETER_TYPE: 'ERR_INVALID_PARAMETER_TYPE',
