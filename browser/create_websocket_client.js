@@ -1,4 +1,4 @@
-const AssertionError = require('./AssertionError');
+const AssertionError = require('../core/AssertionError');
 const create_emitter = require('../core/create_emitter');
 
 const error_types = {
