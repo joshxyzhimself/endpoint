@@ -1,6 +1,8 @@
 
 export type response = {
   aborted: boolean
+  ended: boolean
+  error: Error
   cache_files: boolean
   cache_files_max_age_ms: number
   compress: boolean

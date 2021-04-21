@@ -38,154 +38,168 @@ const cached_files = new Map();
  * @type {internal_handler_2}
  */
 const internal_handler_2 = async (res, handler, response, request) => {
-  assert(typeof res === 'object');
-  assert(typeof handler === 'function');
-  assert(typeof response === 'object');
-  assert(typeof request === 'object');
   try {
+    assert(typeof res === 'object');
+    assert(typeof res.writeStatus === 'function');
+    assert(typeof res.writeHeader === 'function');
+    assert(typeof res.end === 'function');
+    assert(typeof handler === 'function');
+    assert(typeof response === 'object');
+    assert(typeof request === 'object');
     await handler(response, request);
-  } catch (e) {
-    console.error(e);
-    response.status = 500;
-  }
-  assert(typeof response.aborted === 'boolean');
-  if (response.aborted === true) {
-    return;
-  }
-  assert(typeof response.cache_files === 'boolean');
-  assert(typeof response.cache_files_max_age_ms === 'number');
-  assert(typeof response.compress === 'boolean');
-  assert(typeof response.status === 'number');
-  assert(typeof response.headers === 'object');
-  const etag_required = typeof response.headers['Cache-Control'] === 'string' && response.headers['Cache-Control'].includes('no-store') === false;
-  if (typeof response.file_path === 'string') {
-    assert(path.isAbsolute(response.file_path) === true);
-    if (response.cache_files === true) {
-      if (cached_files.has(response.file_path) === true) {
-        const cached_file = cached_files.get(response.file_path);
-        if (Date.now() - cached_file.timestamp > response.cache_files_max_age_ms) {
-          cached_files.delete(response.file_path);
+    assert(typeof response.aborted === 'boolean');
+    assert(typeof response.ended === 'boolean');
+    if (response.aborted === true) {
+      return;
+    }
+    assert(typeof response.cache_files === 'boolean');
+    assert(typeof response.cache_files_max_age_ms === 'number');
+    assert(typeof response.compress === 'boolean');
+    assert(typeof response.status === 'number');
+    assert(typeof response.headers === 'object');
+    const etag_required = typeof response.headers['Cache-Control'] === 'string' && response.headers['Cache-Control'].includes('no-store') === false;
+    if (typeof response.file_path === 'string') {
+      assert(path.isAbsolute(response.file_path) === true);
+      if (response.cache_files === true) {
+        if (cached_files.has(response.file_path) === true) {
+          const cached_file = cached_files.get(response.file_path);
+          if (Date.now() - cached_file.timestamp > response.cache_files_max_age_ms) {
+            cached_files.delete(response.file_path);
+          }
         }
-      }
-      if (cached_files.has(response.file_path) === false) {
+        if (cached_files.has(response.file_path) === false) {
+          await fs.promises.access(response.file_path);
+          const file_name = path.basename(response.file_path);
+          const file_content_type = mime_types.contentType(file_name) || undefined;
+          const buffer = await fs.promises.readFile(response.file_path);
+          const buffer_hash = crypto.createHash('sha256').update(buffer).digest('hex');
+          const brotli_buffer = await zlib_brotli(buffer);
+          const brotli_buffer_hash = crypto.createHash('sha256').update(brotli_buffer).digest('hex');
+          const gzip_buffer = await zlib_gzip(buffer);
+          const gzip_buffer_hash = crypto.createHash('sha256').update(gzip_buffer).digest('hex');
+          const timestamp = Date.now();
+          const cached_file = {
+            file_name,
+            file_content_type,
+            buffer,
+            buffer_hash,
+            brotli_buffer,
+            brotli_buffer_hash,
+            gzip_buffer,
+            gzip_buffer_hash,
+            timestamp,
+          };
+          cached_files.set(response.file_path, cached_file);
+        }
+        const cached_file = cached_files.get(response.file_path);
+        response.file_name = cached_file.file_name;
+        response.file_content_type = cached_file.file_content_type;
+        response.buffer = cached_file.buffer;
+        response.buffer_hash = cached_file.buffer_hash;
+        response.brotli_buffer = cached_file.brotli_buffer;
+        response.brotli_buffer_hash = cached_file.brotli_buffer_hash;
+        response.gzip_buffer = cached_file.gzip_buffer;
+        response.gzip_buffer_hash = cached_file.gzip_buffer_hash;
+        response.timestamp = cached_file.timestamp;
+      } else {
         await fs.promises.access(response.file_path);
         const file_name = path.basename(response.file_path);
         const file_content_type = mime_types.contentType(file_name) || undefined;
         const buffer = await fs.promises.readFile(response.file_path);
         const buffer_hash = crypto.createHash('sha256').update(buffer).digest('hex');
-        const brotli_buffer = await zlib_brotli(buffer);
-        const brotli_buffer_hash = crypto.createHash('sha256').update(brotli_buffer).digest('hex');
-        const gzip_buffer = await zlib_gzip(buffer);
-        const gzip_buffer_hash = crypto.createHash('sha256').update(gzip_buffer).digest('hex');
-        const timestamp = Date.now();
-        const cached_file = {
-          file_name,
-          file_content_type,
-          buffer,
-          buffer_hash,
-          brotli_buffer,
-          brotli_buffer_hash,
-          gzip_buffer,
-          gzip_buffer_hash,
-          timestamp,
-        };
-        cached_files.set(response.file_path, cached_file);
+        response.file_name = file_name;
+        response.file_content_type = file_content_type;
+        response.buffer = buffer;
+        response.buffer_hash = buffer_hash;
       }
-      const cached_file = cached_files.get(response.file_path);
-      response.file_name = cached_file.file_name;
-      response.file_content_type = cached_file.file_content_type;
-      response.buffer = cached_file.buffer;
-      response.buffer_hash = cached_file.buffer_hash;
-      response.brotli_buffer = cached_file.brotli_buffer;
-      response.brotli_buffer_hash = cached_file.brotli_buffer_hash;
-      response.gzip_buffer = cached_file.gzip_buffer;
-      response.gzip_buffer_hash = cached_file.gzip_buffer_hash;
-      response.timestamp = cached_file.timestamp;
+      if (typeof response.file_content_type === 'string') {
+        response.headers['Content-Type'] = response.file_content_type;
+      }
+    } else if (typeof response.text === 'string') {
+      response.headers['Content-Type'] = 'text/plain';
+      response.buffer = Buffer.from(response.text);
+    } else if (typeof response.html === 'string') {
+      response.headers['Content-Type'] = 'text/html';
+      response.buffer = Buffer.from(response.html);
+    } else if (typeof response.json === 'object') {
+      response.headers['Content-Type'] = 'application/json';
+      response.buffer = Buffer.from(JSON.stringify(response.json));
+    } else if (response.buffer instanceof Buffer) {
+      if (response.headers['Content-Type'] === undefined) {
+        response.headers['Content-Type'] = 'application/octet-stream';
+      }
+    }
+    if (response.buffer instanceof Buffer) {
+      if (response.compress === true && response.headers['Content-Encoding'] === undefined) {
+        if (request.headers.accept_encoding.includes('br') === true) {
+          if (response.brotli_buffer === undefined) {
+            response.brotli_buffer = await zlib_brotli(response.buffer);
+          }
+          response.buffer = response.brotli_buffer;
+          if (etag_required === true) {
+            if (response.brotli_buffer_hash === undefined) {
+              response.brotli_buffer_hash = crypto.createHash('sha256').update(response.brotli_buffer).digest('hex');
+            }
+            response.buffer_hash = response.brotli_buffer_hash;
+          }
+          response.headers['Content-Encoding'] = 'br';
+        } else if (request.headers.accept_encoding.includes('gzip') === true) {
+          if (response.gzip_buffer === undefined) {
+            response.gzip_buffer = await zlib_gzip(response.buffer);
+          }
+          response.buffer = response.gzip_buffer;
+          if (etag_required === true) {
+            if (response.gzip_buffer_hash === undefined) {
+              response.gzip_buffer_hash = crypto.createHash('sha256').update(response.gzip_buffer).digest('hex');
+            }
+            response.buffer_hash = response.gzip_buffer_hash;
+          }
+          response.headers['Content-Encoding'] = 'gzip';
+        }
+      }
+      if (etag_required === true) {
+        if (response.buffer_hash === undefined) {
+          response.buffer_hash = crypto.createHash('sha256').update(response.buffer).digest('hex');
+        }
+        response.headers['ETag'] = response.buffer_hash;
+        if (request.headers.if_none_match === response.buffer_hash) {
+          response.status = 304;
+        }
+      }
+    }
+    if (response.dispose === true && typeof response.file_name === 'string') {
+      if (response.headers['Content-Disposition'] === undefined) {
+        response.headers['Content-Disposition'] = `attachment; filename="${response.file_name}"`;
+      }
+    }
+    res.writeStatus(String(response.status));
+    Object.entries(response.headers).forEach((entry) => {
+      const [key, value] = entry;
+      assert(typeof key === 'string');
+      assert(typeof value === 'string');
+      res.writeHeader(key, value);
+    });
+    if (response.status === 304 || response.buffer === undefined) {
+      res.end();
+      response.ended = true;
     } else {
-      await fs.promises.access(response.file_path);
-      const file_name = path.basename(response.file_path);
-      const file_content_type = mime_types.contentType(file_name) || undefined;
-      const buffer = await fs.promises.readFile(response.file_path);
-      const buffer_hash = crypto.createHash('sha256').update(buffer).digest('hex');
-      response.file_name = file_name;
-      response.file_content_type = file_content_type;
-      response.buffer = buffer;
-      response.buffer_hash = buffer_hash;
+      res.end(response.buffer);
+      response.ended = true;
     }
-    if (typeof response.file_content_type === 'string') {
-      response.headers['Content-Type'] = response.file_content_type;
-    }
-  } else if (typeof response.text === 'string') {
-    response.headers['Content-Type'] = 'text/plain';
-    response.buffer = Buffer.from(response.text);
-  } else if (typeof response.html === 'string') {
-    response.headers['Content-Type'] = 'text/html';
-    response.buffer = Buffer.from(response.html);
-  } else if (typeof response.json === 'object') {
-    response.headers['Content-Type'] = 'application/json';
-    response.buffer = Buffer.from(JSON.stringify(response.json));
-  } else if (response.buffer instanceof Buffer) {
-    if (response.headers['Content-Type'] === undefined) {
-      response.headers['Content-Type'] = 'application/octet-stream';
-    }
-  }
-  if (response.buffer instanceof Buffer) {
-    if (response.compress === true && response.headers['Content-Encoding'] === undefined) {
-      if (request.headers.accept_encoding.includes('br') === true) {
-        if (response.brotli_buffer === undefined) {
-          response.brotli_buffer = await zlib_brotli(response.buffer);
-        }
-        response.buffer = response.brotli_buffer;
-        if (etag_required === true) {
-          if (response.brotli_buffer_hash === undefined) {
-            response.brotli_buffer_hash = crypto.createHash('sha256').update(response.brotli_buffer).digest('hex');
-          }
-          response.buffer_hash = response.brotli_buffer_hash;
-        }
-        response.headers['Content-Encoding'] = 'br';
-      } else if (request.headers.accept_encoding.includes('gzip') === true) {
-        if (response.gzip_buffer === undefined) {
-          response.gzip_buffer = await zlib_gzip(response.buffer);
-        }
-        response.buffer = response.gzip_buffer;
-        if (etag_required === true) {
-          if (response.gzip_buffer_hash === undefined) {
-            response.gzip_buffer_hash = crypto.createHash('sha256').update(response.gzip_buffer).digest('hex');
-          }
-          response.buffer_hash = response.gzip_buffer_hash;
-        }
-        response.headers['Content-Encoding'] = 'gzip';
+    response.end = Date.now();
+    response.took = response.end - response.start;
+  } catch (e) {
+    console.error(e);
+    response.error = e;
+    if (response.aborted === false) {
+      if (response.ended === false) {
+        res.writeStatus('500');
+        res.end();
+        response.ended = true;
       }
     }
-    if (etag_required === true) {
-      if (response.buffer_hash === undefined) {
-        response.buffer_hash = crypto.createHash('sha256').update(response.buffer).digest('hex');
-      }
-      response.headers['ETag'] = response.buffer_hash;
-      if (request.headers.if_none_match === response.buffer_hash) {
-        response.status = 304;
-      }
-    }
+    console.log({ response });
   }
-  if (response.dispose === true && typeof response.file_name === 'string') {
-    if (response.headers['Content-Disposition'] === undefined) {
-      response.headers['Content-Disposition'] = `attachment; filename="${response.file_name}"`;
-    }
-  }
-  res.writeStatus(String(response.status));
-  Object.entries(response.headers).forEach((entry) => {
-    const [key, value] = entry;
-    assert(typeof key === 'string');
-    assert(typeof value === 'string');
-    res.writeHeader(key, value);
-  });
-  if (response.status === 304 || response.buffer === undefined) {
-    res.end();
-  } else {
-    res.end(response.buffer);
-  }
-  response.end = Date.now();
-  response.took = response.end - response.start;
 };
 
 /**
@@ -198,6 +212,13 @@ const serve_handler = (handler) => {
     * @type {internal_handler}
     */
   const internal_handler = (res, req) => {
+    assert(typeof res === 'object');
+    assert(typeof res.onData === 'function');
+    assert(typeof res.onAborted === 'function');
+    assert(typeof req === 'object');
+    assert(typeof req.getUrl === 'function');
+    assert(typeof req.getQuery === 'function');
+    assert(typeof req.getHeader === 'function');
 
     /**
      * @type {request}
@@ -220,6 +241,8 @@ const serve_handler = (handler) => {
      */
     const response = {
       aborted: false,
+      ended: false,
+      error: undefined,
       cache_files: false,
       cache_files_max_age_ms: Infinity,
       compress: false,
@@ -271,8 +294,8 @@ const serve_handler = (handler) => {
   * @type {serve_static}
   */
 const serve_static = (app, route_path, local_path, cache_control_type) => {
-  assert(app instanceof Object);
-  assert(app.get instanceof Function);
+  assert(typeof app === 'object');
+  assert(typeof app.get === 'function');
 
   assert(typeof route_path === 'string');
   assert(route_path.substring(0, 1) === '/');
@@ -284,13 +307,7 @@ const serve_static = (app, route_path, local_path, cache_control_type) => {
 
   assert(cache_control_type === undefined || typeof cache_control_type === 'string');
 
-  app.get(`${route_path}*`, serve_handler(async (response, request) => {
-    const url_basename = path.basename(request.url);
-    const url_extname = path.extname(request.url);
-    if (url_basename === '' || url_extname === '') {
-      response.status = 404;
-      return;
-    }
+  const serve_static_handler = serve_handler(async (response, request) => {
     response.cache_files = true;
     response.file_path = path.join(process.cwd(), request.url.replace(route_path, local_path));
     if (typeof cache_control_type === 'string') {
@@ -298,7 +315,19 @@ const serve_static = (app, route_path, local_path, cache_control_type) => {
     } else {
       response.headers['Cache-Control'] = cache_control_types.no_store;
     }
-  }));
+  });
+
+  app.get(`${route_path}*`, (res, req) => {
+    assert(typeof req === 'object');
+    assert(typeof req.getUrl === 'function');
+    const request_url = req.getUrl();
+    const request_url_extname = path.extname(request_url);
+    if (request_url_extname === '') {
+      req.setYield(true);
+      return;
+    }
+    serve_static_handler(res, req);
+  });
 };
 
 /**

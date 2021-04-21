@@ -1,5 +1,10 @@
 ```js
 
+uwu.serve_static(app, '/', '/server/static/');
+app.get('/*', uwu.serve_handler(async (response) => {
+  response.html = render_html();
+}));
+
 uwu.serve_static(app, '/charting_library/', '/node_modules/charting_library/');
 
 app.get('/test', uwu.serve_handler(async (response, request) => {
