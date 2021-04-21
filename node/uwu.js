@@ -292,7 +292,7 @@ const serve_handler = (handler) => {
 /**
   * @type {serve_static}
   */
-const serve_static = (app, route_path, local_path, cache_control_type) => {
+const serve_static = (app, route_path, local_path, response_override) => {
   assert(typeof app === 'object');
   assert(typeof app.get === 'function');
 
@@ -304,14 +304,16 @@ const serve_static = (app, route_path, local_path, cache_control_type) => {
   assert(local_path.substring(0, 1) === '/');
   assert(local_path.substring(local_path.length - 1, local_path.length) === '/');
 
-  assert(cache_control_type === undefined || typeof cache_control_type === 'string');
+  assert(response_override === undefined || typeof response_override === 'object');
 
   const serve_static_handler = serve_handler(async (response, request) => {
     response.cache_files = true;
     response.file_path = path.join(process.cwd(), request.url.replace(route_path, local_path));
-    if (typeof cache_control_type === 'string') {
-      response.headers['Cache-Control'] = cache_control_type;
+    if (typeof response_override === 'object') {
+      Object.assign(response, response_override);
     } else {
+      response.compress = false;
+      response.cache_files = false;
       response.headers['Cache-Control'] = cache_control_types.no_store;
     }
   });

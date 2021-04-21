@@ -49,7 +49,11 @@ export type internal_handler = (res: object, req: object) => void;
 
 export type serve_handler = (handler: handler) => internal_handler;
 
-export type serve_static = (app: object, route_path: string, local_path: string, cache_control_type: string) => void;
+export type serve_static_options = {
+  cache_files: boolean
+}
+
+export type serve_static = (app: object, route_path: string, local_path: string, response_override: response) => void;
 
 export type cache_control_types = {
   no_store: string
