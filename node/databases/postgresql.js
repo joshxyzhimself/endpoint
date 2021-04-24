@@ -33,6 +33,16 @@ const postgres_config = {
   password: config.postgres_password,
   max: 16,
   idle_timeout: 2,
+
+  // https://github.com/porsager/postgres/issues/161#issuecomment-801031062
+  types: {
+    date: {
+      to: 1184,
+      from: [1082, 1083, 1114, 1184],
+      serialize: x => x,
+      parse: x => x,
+    },
+  },
 };
 const client = postgres(postgres_config);
 
