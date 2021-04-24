@@ -39,8 +39,8 @@ const postgres_config = {
     date: {
       to: 1184,
       from: [1082, 1083, 1114, 1184],
-      serialize: x => x,
-      parse: x => x,
+      serialize: (value) => value,
+      parse: (value) => luxon.DateTime.fromSQL(value).toISO(),
     },
   },
 };
