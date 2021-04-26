@@ -6,11 +6,6 @@ const error_types = {
   ERR_WEBSOCKET_DISCONNECTED: 'ERR_WEBSOCKET_DISCONNECTED',
 };
 
-// remove 'connecting', event_types.CONNECTING
-// remove 'connect', event_types.CONNECTED
-// remove 'disconnect', event_types.DISCONNECTED
-// remove 'message', event_types.MESSAGE
-
 const event_types = {
   CONNECTING: 0,
 
@@ -36,6 +31,7 @@ const create_websocket_client = (url) => {
   let client = null;
   let backoff = 125;
   const emitter = create_emitter();
+
   const await_backoff = async () => {
     backoff *= 2;
     if (backoff > 4000) {
@@ -43,6 +39,7 @@ const create_websocket_client = (url) => {
     }
     await new Promise((resolve) => setTimeout(resolve, backoff));
   };
+
   /**
    * @param {object} data
    */
@@ -63,6 +60,7 @@ const create_websocket_client = (url) => {
     AssertionError.assert(client.readyState === 1, error_types.ERR_WEBSOCKET_DISCONNECTED);
     client.send(data);
   };
+
   const connect = () => {
     emitter.emit(event_types.CONNECTING);
     emitter.emit(event_types.STATE, event_types.CONNECTING);
@@ -76,10 +74,10 @@ const create_websocket_client = (url) => {
     client.onmessage = (event) => {
       AssertionError.assert(typeof event.data === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
       const message = JSON.parse(event.data);
-      emitter.emit('message', message);
+      emitter.emit(event_types.MESSAGE, message);
     };
     client.onerror = async (event) => {
-      emitter.emit('error', event);
+      emitter.emit(event_types.ERROR, event);
     };
     client.onclose = async (event) => {
       emitter.emit(event_types.DISCONNECTED, event.code, event.reason);
@@ -92,6 +90,7 @@ const create_websocket_client = (url) => {
       connect();
     };
   };
+
   const disconnect = () => {
     if (client instanceof WebSocket) {
       if (client.readyState === 1) {
@@ -101,12 +100,14 @@ const create_websocket_client = (url) => {
       }
     }
   };
+
   const get_state = () => {
     if (client instanceof WebSocket) {
       return client.readyState;
     }
     return null;
   };
+
   const websocket_client = {
     send,
     send_arraybuffer,
@@ -118,6 +119,7 @@ const create_websocket_client = (url) => {
     event_types,
     error_types,
   };
+
   return websocket_client;
 };
 
