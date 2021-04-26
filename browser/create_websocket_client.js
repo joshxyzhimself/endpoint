@@ -6,11 +6,25 @@ const error_types = {
   ERR_WEBSOCKET_DISCONNECTED: 'ERR_WEBSOCKET_DISCONNECTED',
 };
 
-const state_types = {
+// remove 'connecting', event_types.CONNECTING
+// remove 'connect', event_types.CONNECTED
+// remove 'disconnect', event_types.DISCONNECTED
+// remove 'message', event_types.MESSAGE
+
+const event_types = {
   CONNECTING: 0,
+
   OPEN: 1,
   CLOSING: 2,
   CLOSED: 3,
+
+  CONNECTED: 1,
+  DISCONNECTING: 2,
+  DISCONNECTED: 3,
+
+  MESSAGE: 4,
+  ERROR: 5,
+  STATE: 6,
 };
 
 /**
@@ -50,11 +64,13 @@ const create_websocket_client = (url) => {
     client.send(data);
   };
   const connect = () => {
-    emitter.emit('connecting');
+    emitter.emit(event_types.CONNECTING);
+    emitter.emit(event_types.STATE, event_types.CONNECTING);
     client = new WebSocket(url);
     client.onopen = () => {
       if (client.readyState === 1) {
-        emitter.emit('connect');
+        emitter.emit(event_types.CONNECTED);
+        emitter.emit(event_types.STATE, event_types.CONNECTED);
       }
     };
     client.onmessage = (event) => {
@@ -66,7 +82,8 @@ const create_websocket_client = (url) => {
       emitter.emit('error', event);
     };
     client.onclose = async (event) => {
-      emitter.emit('disconnect', event.code, event.reason);
+      emitter.emit(event_types.DISCONNECTED, event.code, event.reason);
+      emitter.emit(event_types.STATE, event_types.DISCONNECTED, event.code, event.reason);
       client = null;
       if (event.code === 1000) {
         return;
@@ -78,6 +95,8 @@ const create_websocket_client = (url) => {
   const disconnect = () => {
     if (client instanceof WebSocket) {
       if (client.readyState === 1) {
+        emitter.emit(event_types.DISCONNECTING);
+        emitter.emit(event_types.STATE, event_types.DISCONNECTING);
         client.close(1000);
       }
     }
@@ -96,8 +115,8 @@ const create_websocket_client = (url) => {
     get_state,
     on: emitter.on,
     off: emitter.off,
+    event_types,
     error_types,
-    state_types,
   };
   return websocket_client;
 };

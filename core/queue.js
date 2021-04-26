@@ -1,6 +1,6 @@
 
 const AssertionError = require('./AssertionError');
-const emitter = require('./emitter');
+const create_emitter = require('./create_emitter');
 
 /**
  *
@@ -39,7 +39,7 @@ const queue = (concurrency, callback) => {
   let active = 0;
   let paused = false;
   const values = [];
-  const events = new emitter();
+  const events = create_emitter();
 
   const next = () => {
     active += 1;
