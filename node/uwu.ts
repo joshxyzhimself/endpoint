@@ -1,4 +1,6 @@
 
+import * as uws from 'uWebSockets.js';
+
 export type response = {
   aborted: boolean
   ended: boolean
@@ -43,9 +45,9 @@ export type request = {
 
 export type handler = (response: response, request: request) => void;
 
-export type internal_handler_2 = (res: object, handler: handler, response: response, request: request) => void;
+export type internal_handler_2 = (res: uws.HttpResponse, handler: handler, response: response, request: request) => void;
 
-export type internal_handler = (res: object, req: object) => void;
+export type internal_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
 
 export type serve_handler = (handler: handler) => internal_handler;
 
@@ -53,7 +55,7 @@ export type serve_static_options = {
   cache_files: boolean
 }
 
-export type serve_static = (app: object, route_path: string, local_path: string, response_override: response) => void;
+export type serve_static = (app: uws.TemplatedApp, route_path: string, local_path: string, response_override: response) => void;
 
 export type cache_control_types = {
   no_store: string
@@ -66,4 +68,5 @@ export type uwu = {
   cache_control_types: cache_control_types
   serve_handler: serve_handler
   serve_static: serve_static
+  uws: typeof uws
 }

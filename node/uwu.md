@@ -15,7 +15,6 @@ const uwu = require('endpoint/node/uwu');
 - Notes
   - Compatible with `uws.get`, `uws.post`
   - `handler` function has `response` and `request` parameters
-  - `response.compress` is currently broken
 - Parameters
   - `handler` - `Function`, async function for handling request
 - `response` properties
@@ -28,16 +27,18 @@ const uwu = require('endpoint/node/uwu');
   - `response.compress` - Boolean, compresses response, defaults to `false`
   - `response.dispose` - Boolean, uses `content-disposition`
   - `response.file_name` - String, file name for `content-disposition`
+  - `response.cache_files` - Boolean, cache static files in memory, defaults to `false`
+  - `response.cache_files_max_age_ms` - Number, cached static files max age in ms, defaults to `Infinity`
 - `request` properties
-  - `response.url` - String
-  - `response.query` - String
-  - `response.headers` - Object, HTTP headers
-  - `response.headers.accept` - String
-  - `response.headers.accept_encoding` - String
-  - `response.headers.content_type` - String
-  - `response.headers.if_none_match` - String
-  - `response.headers.user_agent` - String
-  - `response.json` - Object, received `application/json`
+  - `request.url` - String
+  - `request.query` - String
+  - `request.headers` - Object, HTTP headers
+  - `request.headers.accept` - String
+  - `request.headers.accept_encoding` - String
+  - `request.headers.content_type` - String
+  - `request.headers.if_none_match` - String
+  - `request.headers.user_agent` - String
+  - `request.json` - Object, received `application/json`
 
 ```js
 // Logging request; serving HTML

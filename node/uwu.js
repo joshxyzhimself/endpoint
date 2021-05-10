@@ -21,9 +21,9 @@ const zlib = require('zlib');
 const crypto = require('crypto');
 const assert = require('assert');
 const mime_types = require('mime-types');
-
 const zlib_brotli = util.promisify(zlib.brotliCompress);
 const zlib_gzip = util.promisify(zlib.gzip);
+const uws = require('uWebSockets.js');
 
 const cache_control_types = {
   // For sensitive data
@@ -345,6 +345,7 @@ const uwu = {
   cache_control_types,
   serve_handler,
   serve_static,
+  uws,
 };
 
 module.exports = uwu;

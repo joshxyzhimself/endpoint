@@ -1,4 +1,4 @@
-const AssertionError = require('./AssertionError');
+const AssertionError = require('../core/AssertionError');
 
 /**
  * @typedef json_request_options
