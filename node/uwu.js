@@ -26,10 +26,17 @@ const zlib_brotli = util.promisify(zlib.brotliCompress);
 const zlib_gzip = util.promisify(zlib.gzip);
 
 const cache_control_types = {
-  no_store: 'no-store, max-age=0', // For sensitive data
-  no_cache: 'no-cache', // For dynamic data
-  private_cached: 'private, max-age=3600, s-maxage=3600', // For private static data
-  public_cached: 'public, max-age=86400, s-maxage=86400', // For public static data
+  // For sensitive data
+  no_store: 'no-store, max-age=0',
+
+  // For dynamic data
+  no_cache: 'no-cache',
+
+  // For private static data
+  private_cached: 'private, max-age=3600, s-maxage=3600',
+
+  // For public static data
+  public_cached: 'public, max-age=86400, s-maxage=86400',
 };
 
 const cached_files = new Map();
