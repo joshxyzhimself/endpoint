@@ -62,7 +62,12 @@ const log = (id, severity_type, message, data) => {
   emitter.emit('*', id, severity_type, message, data);
 };
 
-const console_logs_listener = (id, severity_type, message, data) => {
+/**
+ * @type {Map<string, Function>}
+ */
+const listeners = new Map();
+
+const catch_all_listener = (id, severity_type, message, data) => {
   AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
@@ -74,11 +79,39 @@ const console_logs_listener = (id, severity_type, message, data) => {
   }
 };
 
-const enable_console_logs = () => {
-  emitter.on('*', console_logs_listener);
+/**
+ * @param {string} id
+ */
+const enable_console_logs = (id) => {
+  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
+  if (id === '*') {
+    emitter.on(id, catch_all_listener);
+    listeners.set(id, catch_all_listener);
+    return;
+  }
+  const listener = (severity_type, message, data) => {
+    AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+    AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+    AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
+    const severity_code = severity_codes[severity_type];
+    console.log(`${id}: ${severity_type} (${severity_code}): ${message}`);
+    if (data instanceof Object) {
+      console.log(JSON.stringify(data, null, 2));
+    }
+  };
+  emitter.on(id, listener);
+  listeners.set(id, listener);
 };
-const disable_console_logs = () => {
-  emitter.off('*', console_logs_listener);
+
+/**
+ * @param {string} id
+ */
+const disable_console_logs = (id) => {
+  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(listeners.has(id) === true, error_types.ERR_INVALID_PARAMETER_TYPE);
+  const listener = listeners.get(id);
+  emitter.off(id, listener);
+  listeners.delete(id);
 };
 
 const logger = {
