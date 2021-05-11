@@ -24,14 +24,12 @@ const event_types = {
 };
 
 /**
- * @param {string} label
+ * @param {string} id
  * @param {string} url
- * @param {boolean} debug
  */
-const create_websocket_client = (label, url, debug) => {
-  AssertionError.assert(typeof label === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+const create_websocket_client = (id, url) => {
+  AssertionError.assert(typeof id === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof url === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(typeof debug === 'boolean', error_types.ERR_INVALID_PARAMETER_TYPE);
 
   let client = null;
   let backoff = 125;
@@ -67,12 +65,12 @@ const create_websocket_client = (label, url, debug) => {
   };
 
   const connect = () => {
-    logger.log(debug, label, logger.severity_types.INFO, 'CONNECTING');
+    logger.log(id, logger.severity_types.INFO, 'CONNECTING');
     emitter.emit(event_types.CONNECTING);
     emitter.emit(event_types.STATE, event_types.CONNECTING);
     client = new WebSocket(url);
     client.onopen = () => {
-      logger.log(debug, label, logger.severity_types.INFO, 'CONNECTED');
+      logger.log(id, logger.severity_types.INFO, 'CONNECTED');
       if (client.readyState === 1) {
         emitter.emit(event_types.CONNECTED);
         emitter.emit(event_types.STATE, event_types.CONNECTED);
@@ -81,15 +79,15 @@ const create_websocket_client = (label, url, debug) => {
     client.onmessage = (event) => {
       AssertionError.assert(typeof event.data === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
       const message = JSON.parse(event.data);
-      logger.log(debug, label, logger.severity_types.INFO, 'MESSAGE', { message });
+      logger.log(id, logger.severity_types.INFO, 'MESSAGE', { message });
       emitter.emit(event_types.MESSAGE, message);
     };
     client.onerror = async (event) => {
-      logger.log(debug, label, logger.severity_types.ERROR, 'ERROR', { event });
+      logger.log(id, logger.severity_types.ERROR, 'ERROR', { event });
       emitter.emit(event_types.ERROR, event);
     };
     client.onclose = async (event) => {
-      logger.log(debug, label, logger.severity_types.INFO, 'DISCONNECTED');
+      logger.log(id, logger.severity_types.INFO, 'DISCONNECTED');
       emitter.emit(event_types.DISCONNECTED, event.code, event.reason);
       emitter.emit(event_types.STATE, event_types.DISCONNECTED, event.code, event.reason);
       client = null;
@@ -104,7 +102,7 @@ const create_websocket_client = (label, url, debug) => {
   const disconnect = () => {
     if (client instanceof WebSocket) {
       if (client.readyState === 1) {
-        logger.log(debug, label, logger.severity_types.INFO, 'DISCONNECTING');
+        logger.log(id, logger.severity_types.INFO, 'DISCONNECTING');
         emitter.emit(event_types.DISCONNECTING);
         emitter.emit(event_types.STATE, event_types.DISCONNECTING);
         client.close(1000);

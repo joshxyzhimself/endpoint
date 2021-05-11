@@ -47,14 +47,12 @@ const severity_type_values = new Set(Object.values(severity_types));
 const emitter = create_emitter();
 
 /**
- * @param {boolean} debug - required
  * @param {string|number} id - required
  * @param {string} severity_type - required
  * @param {string} message - required
  * @param {object} data - optional
  */
-const log = (debug, id, severity_type, message, data) => {
-  AssertionError.assert(typeof debug === 'boolean', error_types.ERR_INVALID_PARAMETER_TYPE);
+const log = (id, severity_type, message, data) => {
   AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
@@ -62,17 +60,31 @@ const log = (debug, id, severity_type, message, data) => {
   AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
   emitter.emit(id, severity_type, message, data);
   emitter.emit('*', id, severity_type, message, data);
-  if (debug === true) {
-    const severity_code = severity_codes[severity_type];
-    console.log(`${id}: ${severity_type} (${severity_code}): ${message}`);
-    if (data instanceof Object) {
-      console.log(JSON.stringify(data, null, 2));
-    }
+};
+
+const console_logs_listener = (id, severity_type, message, data) => {
+  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
+  const severity_code = severity_codes[severity_type];
+  console.log(`${id}: ${severity_type} (${severity_code}): ${message}`);
+  if (data instanceof Object) {
+    console.log(JSON.stringify(data, null, 2));
   }
+};
+
+const enable_console_logs = () => {
+  emitter.on('*', console_logs_listener);
+};
+const disable_console_logs = () => {
+  emitter.off('*', console_logs_listener);
 };
 
 const logger = {
   log,
+  enable_console_logs,
+  disable_console_logs,
   severity_types,
   error_types,
   on: emitter.on,

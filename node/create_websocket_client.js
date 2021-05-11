@@ -25,14 +25,12 @@ const event_types = {
 };
 
 /**
- * @param {string} label
+ * @param {string} id
  * @param {string} url
- * @param {boolean} debug
  */
-const create_websocket_client = (label, url, debug) => {
-  AssertionError.assert(typeof label === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+const create_websocket_client = (id, url) => {
+  AssertionError.assert(typeof id === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof url === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(typeof debug === 'boolean', error_types.ERR_INVALID_PARAMETER_TYPE);
 
   let client = null;
   let ping_interval = null;
@@ -86,7 +84,7 @@ const create_websocket_client = (label, url, debug) => {
   };
 
   const connect = () => {
-    logger.log(debug, label, logger.severity_types.INFO, 'CONNECTING');
+    logger.log(id, logger.severity_types.INFO, 'CONNECTING');
     emitter.emit(event_types.CONNECTING);
     emitter.emit(event_types.STATE, event_types.CONNECTING);
     client = new WebSocket(url);
@@ -103,13 +101,13 @@ const create_websocket_client = (label, url, debug) => {
     }, 1000);
 
     client.on('pong', () => {
-      logger.log(debug, label, logger.severity_types.INFO, 'PONG');
+      logger.log(id, logger.severity_types.INFO, 'PONG');
       ping_latency = Date.now() - ping_timestamp_ms;
       ping_heartbeat();
     });
 
     client.on('open', () => {
-      logger.log(debug, label, logger.severity_types.INFO, 'CONNECTED');
+      logger.log(id, logger.severity_types.INFO, 'CONNECTED');
       if (client.readyState === event_types.CONNECTED) {
         emitter.emit(event_types.CONNECTED);
         emitter.emit(event_types.STATE, event_types.CONNECTED);
@@ -118,15 +116,15 @@ const create_websocket_client = (label, url, debug) => {
     client.on('message', (data) => {
       AssertionError.assert(typeof data === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
       const message = JSON.parse(data);
-      logger.log(debug, label, logger.severity_types.INFO, 'MESSAGE', { message });
+      logger.log(id, logger.severity_types.INFO, 'MESSAGE', { message });
       emitter.emit(event_types.MESSAGE, message);
     });
     client.on('error', (error) => {
-      logger.log(debug, label, logger.severity_types.ERROR, 'ERROR', { error });
+      logger.log(id, logger.severity_types.ERROR, 'ERROR', { error });
       emitter.emit(event_types.ERROR, error);
     });
     client.on('close', async (code, reason) => {
-      logger.log(debug, label, logger.severity_types.INFO, 'DISCONNECTED');
+      logger.log(id, logger.severity_types.INFO, 'DISCONNECTED');
       emitter.emit(event_types.DISCONNECTED, code, reason);
       emitter.emit(event_types.STATE, event_types.DISCONNECTED, code, reason);
       clearInterval(ping_interval);
@@ -146,7 +144,7 @@ const create_websocket_client = (label, url, debug) => {
   const disconnect = () => {
     if (client instanceof WebSocket) {
       if (client.readyState === event_types.CONNECTED) {
-        logger.log(debug, label, logger.severity_types.INFO, 'DISCONNECTING');
+        logger.log(id, logger.severity_types.INFO, 'DISCONNECTING');
         emitter.emit(event_types.DISCONNECTING);
         emitter.emit(event_types.STATE, event_types.DISCONNECTING);
         client.close(1000);
