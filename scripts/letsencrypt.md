@@ -1,18 +1,10 @@
 
-## Notes
-
-- Installs stable HAProxy branch by default
-- HAProxy config path: nano /etc/haproxy/haproxy.cfg
-
 ## Flow
 
-- Installs certbot (if needed)
-- Installs haproxy (if needed)
-- Stops haproxy service
-- Creates haproxy tls dir
+- Installs certbot
+- Creates tls dir
 - Creates tls ceritifate files for domains
-- Creates tls dhparam file (if needed)
-- Starts haproxy service
+- Creates tls dhparam file
 
 ## Usage
 
