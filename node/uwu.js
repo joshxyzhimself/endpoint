@@ -232,7 +232,9 @@ const serve_handler = (handler) => {
     const request = {
       url: req.getUrl(),
       query: req.getQuery(),
+      method: req.getMethod(),
       headers: {
+        host: req.getHeader('host'),
         accept: req.getHeader('accept'),
         accept_encoding: req.getHeader('accept-encoding'),
         content_type: req.getHeader('content-type'),

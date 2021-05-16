@@ -27,13 +27,16 @@ uwu.serve_static(app, '/test-compressed-static/', '/', { cache_files: false, com
 uwu.serve_static(app, '/test-cached-static/', '/', { cache_files: true, compress: false });
 uwu.serve_static(app, '/test-compressed-cached-static/', '/', { cache_files: true, compress: true });
 
-app.get('/test-html', uwu.serve_handler(async (response, request) => {
+app.get('/test-html', uwu.serve_handler(async (response) => {
   response.html = test_html;
 }));
 
-app.get('/test-compressed-html', uwu.serve_handler(async (response, request) => {
+app.get('/test-compressed-html', uwu.serve_handler(async (response) => {
   response.html = test_html;
   response.compress = true;
+}));
+app.get('/test-headers', uwu.serve_handler(async (response, request) => {
+  response.json = request;
 }));
 
 app.listen(port, async () => {
@@ -86,6 +89,13 @@ app.listen(port, async () => {
   const response12 = await got.get(`${origin}/test-compressed-cached-static/node/uwu.test.js`).text();
   assert(response12 === test_file);
   console.log('test 12 OK');
+
+  const response13 = await got.get(`${origin}/test-headers`).json();
+  assert(response13 instanceof Object);
+  assert(response13.method === 'get');
+  assert(response13.headers instanceof Object);
+  assert(response13.headers.host === 'localhost:8080');
+  console.log('test 13 OK');
 
   process.exit();
 });

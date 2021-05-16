@@ -29,6 +29,7 @@ export type response = {
 }
 
 export type headers = {
+  host: string
   accept: string
   accept_encoding: string
   content_type: string
@@ -39,6 +40,7 @@ export type headers = {
 export type request = {
   url: string
   query: string
+  method: string
   headers: headers
   json: object
 }
