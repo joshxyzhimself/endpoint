@@ -275,14 +275,12 @@ const serve_handler = (handler) => {
       took: undefined,
     };
     let buffer;
-    res.onData((chunk, is_last) => {
-      if (chunk.byteLength > 0) {
-        const chunk_buffer = Buffer.from(chunk);
-        if (buffer === undefined) {
-          buffer = chunk_buffer;
-        } else {
-          buffer = Buffer.concat([buffer, chunk_buffer]);
-        }
+    res.onData((chunk_arraybuffer, is_last) => {
+      const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
+      if (buffer === undefined) {
+        buffer = chunk_buffer;
+      } else {
+        buffer = Buffer.concat([buffer, chunk_buffer]);
       }
       if (is_last === true) {
         if (request.headers.content_type.includes('application/json') === true) {

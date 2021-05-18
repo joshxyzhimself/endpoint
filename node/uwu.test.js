@@ -38,6 +38,9 @@ app.get('/test-compressed-html', uwu.serve_handler(async (response) => {
 app.get('/test-headers', uwu.serve_handler(async (response, request) => {
   response.json = request;
 }));
+app.post('/test-json-post', uwu.serve_handler(async (response, request) => {
+  response.json = request;
+}));
 
 app.listen(port, async () => {
   console.log(`Listening at port "${port}".`);
@@ -84,7 +87,7 @@ app.listen(port, async () => {
 
   const response11 = await got.get(`${origin}/test-compressed-cached-static/node/uwu.test.js`);
   assert(response11.headers['content-encoding'] === 'br');
-  console.log('test 11  OK');
+  console.log('test 11 OK');
 
   const response12 = await got.get(`${origin}/test-compressed-cached-static/node/uwu.test.js`).text();
   assert(response12 === test_file);
@@ -96,6 +99,13 @@ app.listen(port, async () => {
   assert(response13.headers instanceof Object);
   assert(response13.headers.host === 'localhost:8080');
   console.log('test 13 OK');
+
+  const response14 = await got.post({ url: `${origin}/test-json-post`, json: { foo: 'bar' } }).json();
+  assert(response14 instanceof Object);
+  assert(response14.method === 'post');
+  assert(response14.json instanceof Object);
+  assert(response14.json.foo === 'bar');
+  console.log('test 14 OK');
 
   process.exit();
 });
