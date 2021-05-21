@@ -1,28 +1,15 @@
+// @ts-check
 
 /**
  * uwu: uWebSockets utilities
  */
 
-/**
- * @typedef {import('./uwu').response} response
- * @typedef {import('./uwu').request} request
- * @typedef {import('./uwu').handler} handler
- * @typedef {import('./uwu').internal_handler_2} internal_handler_2
- * @typedef {import('./uwu').internal_handler} internal_handler
- * @typedef {import('./uwu').serve_handler} serve_handler
- * @typedef {import('./uwu').serve_static} serve_static
- * @typedef {import('./uwu').uwu} uwu
- */
-
 const fs = require('fs');
 const path = require('path');
-const util = require('util');
 const zlib = require('zlib');
 const crypto = require('crypto');
 const assert = require('assert');
 const mime_types = require('mime-types');
-const zlib_brotli = util.promisify(zlib.brotliCompress);
-const zlib_gzip = util.promisify(zlib.gzip);
 const uws = require('uWebSockets.js');
 
 const cache_control_types = {
@@ -42,7 +29,7 @@ const cache_control_types = {
 const cached_files = new Map();
 
 /**
- * @type {internal_handler_2}
+ * @type {import('./uwu').internal_handler_2}
  */
 const internal_handler_2 = async (res, handler, response, request) => {
   try {
@@ -59,31 +46,30 @@ const internal_handler_2 = async (res, handler, response, request) => {
     if (response.aborted === true) {
       return;
     }
-    assert(typeof response.cache_files === 'boolean');
-    assert(typeof response.cache_files_max_age_ms === 'number');
+    assert(typeof response.file_cache === 'boolean');
+    assert(typeof response.file_cache_max_age_ms === 'number');
     assert(typeof response.compress === 'boolean');
     assert(typeof response.status === 'number');
     assert(typeof response.headers === 'object');
-    const etag_required = typeof response.headers['Cache-Control'] === 'string' && response.headers['Cache-Control'].includes('no-store') === false;
     if (typeof response.file_path === 'string') {
       assert(path.isAbsolute(response.file_path) === true);
-      if (response.cache_files === true) {
+      if (response.file_cache === true) {
         if (cached_files.has(response.file_path) === true) {
           const cached_file = cached_files.get(response.file_path);
-          if (Date.now() - cached_file.timestamp > response.cache_files_max_age_ms) {
+          if (Date.now() - cached_file.timestamp > response.file_cache_max_age_ms) {
             cached_files.delete(response.file_path);
           }
         }
         if (cached_files.has(response.file_path) === false) {
-          await fs.promises.access(response.file_path);
+          fs.accessSync(response.file_path);
           const file_name = path.basename(response.file_path);
           const file_content_type = mime_types.contentType(file_name) || undefined;
-          const buffer = await fs.promises.readFile(response.file_path);
-          const buffer_hash = crypto.createHash('sha256').update(buffer).digest('hex');
-          const brotli_buffer = await zlib_brotli(buffer);
-          const brotli_buffer_hash = crypto.createHash('sha256').update(brotli_buffer).digest('hex');
-          const gzip_buffer = await zlib_gzip(buffer);
-          const gzip_buffer_hash = crypto.createHash('sha256').update(gzip_buffer).digest('hex');
+          const buffer = fs.readFileSync(response.file_path);
+          const buffer_hash = crypto.createHash('sha224').update(buffer).digest('hex');
+          const brotli_buffer = zlib.brotliCompressSync(buffer);
+          const brotli_buffer_hash = crypto.createHash('sha224').update(brotli_buffer).digest('hex');
+          const gzip_buffer = zlib.gzipSync(buffer);
+          const gzip_buffer_hash = crypto.createHash('sha224').update(gzip_buffer).digest('hex');
           const timestamp = Date.now();
           const cached_file = {
             file_name,
@@ -109,11 +95,11 @@ const internal_handler_2 = async (res, handler, response, request) => {
         response.gzip_buffer_hash = cached_file.gzip_buffer_hash;
         response.timestamp = cached_file.timestamp;
       } else {
-        await fs.promises.access(response.file_path);
+        fs.accessSync(response.file_path);
         const file_name = path.basename(response.file_path);
         const file_content_type = mime_types.contentType(file_name) || undefined;
-        const buffer = await fs.promises.readFile(response.file_path);
-        const buffer_hash = crypto.createHash('sha256').update(buffer).digest('hex');
+        const buffer = fs.readFileSync(response.file_path);
+        const buffer_hash = crypto.createHash('sha224').update(buffer).digest('hex');
         response.file_name = file_name;
         response.file_content_type = file_content_type;
         response.buffer = buffer;
@@ -137,44 +123,46 @@ const internal_handler_2 = async (res, handler, response, request) => {
       }
     }
     if (response.buffer instanceof Buffer) {
-      if (response.compress === true && response.headers['Content-Encoding'] === undefined) {
+      if (response.buffer_hash === undefined) {
+        response.buffer_hash = crypto.createHash('sha224').update(response.buffer).digest('hex');
+      }
+      if (response.compress === true) {
         if (request.headers.accept_encoding.includes('br') === true) {
           if (response.brotli_buffer === undefined) {
-            response.brotli_buffer = await zlib_brotli(response.buffer);
-          }
-          response.buffer = response.brotli_buffer;
-          if (etag_required === true) {
-            if (response.brotli_buffer_hash === undefined) {
-              response.brotli_buffer_hash = crypto.createHash('sha256').update(response.brotli_buffer).digest('hex');
-            }
-            response.buffer_hash = response.brotli_buffer_hash;
+            response.brotli_buffer = zlib.brotliCompressSync(response.buffer);
+            response.brotli_buffer_hash = crypto.createHash('sha224').update(response.brotli_buffer).digest('hex');
           }
           response.headers['Content-Encoding'] = 'br';
-        } else if (request.headers.accept_encoding.includes('gzip') === true) {
+          response.compressed = true;
+        }
+        if (request.headers.accept_encoding.includes('gzip') === true) {
           if (response.gzip_buffer === undefined) {
-            response.gzip_buffer = await zlib_gzip(response.buffer);
-          }
-          response.buffer = response.gzip_buffer;
-          if (etag_required === true) {
-            if (response.gzip_buffer_hash === undefined) {
-              response.gzip_buffer_hash = crypto.createHash('sha256').update(response.gzip_buffer).digest('hex');
-            }
-            response.buffer_hash = response.gzip_buffer_hash;
+            response.gzip_buffer = zlib.gzipSync(response.buffer);
+            response.gzip_buffer_hash = crypto.createHash('sha224').update(response.gzip_buffer).digest('hex');
           }
           response.headers['Content-Encoding'] = 'gzip';
+          response.compressed = true;
         }
       }
-      if (etag_required === true) {
-        if (response.buffer_hash === undefined) {
-          response.buffer_hash = crypto.createHash('sha256').update(response.buffer).digest('hex');
+      switch (response.headers['Content-Encoding']) {
+        case 'br': {
+          response.headers['ETag'] = response.brotli_buffer_hash;
+          break;
         }
-        response.headers['ETag'] = response.buffer_hash;
-        if (request.headers.if_none_match === response.buffer_hash) {
-          response.status = 304;
+        case 'gzip': {
+          response.headers['ETag'] = response.gzip_buffer_hash;
+          break;
         }
+        default: {
+          response.headers['ETag'] = response.buffer_hash;
+          break;
+        }
+      }
+      if (request.headers.if_none_match === response.headers['ETag']) {
+        response.status = 304;
       }
     }
-    if (response.dispose === true && typeof response.file_name === 'string') {
+    if (typeof response.file_name === 'string' && response.file_dispose === true) {
       if (response.headers['Content-Disposition'] === undefined) {
         response.headers['Content-Disposition'] = `attachment; filename="${response.file_name}"`;
       }
@@ -188,11 +176,23 @@ const internal_handler_2 = async (res, handler, response, request) => {
     });
     if (response.status === 304 || response.buffer === undefined) {
       res.end();
-      response.ended = true;
     } else {
-      res.end(response.buffer);
-      response.ended = true;
+      switch (response.headers['Content-Encoding']) {
+        case 'br': {
+          res.end(response.brotli_buffer);
+          break;
+        }
+        case 'gzip': {
+          res.end(response.gzip_buffer);
+          break;
+        }
+        default: {
+          res.end(response.buffer);
+          break;
+        }
+      }
     }
+    response.ended = true;
     response.end = Date.now();
     response.took = response.end - response.start;
   } catch (e) {
@@ -209,14 +209,14 @@ const internal_handler_2 = async (res, handler, response, request) => {
 };
 
 /**
-  * @type {serve_handler}
-  */
+ * @type {import('./uwu').serve_handler}
+ */
 const serve_handler = (handler) => {
   assert(typeof handler === 'function');
 
   /**
-    * @type {internal_handler}
-    */
+   * @type {import('./uwu').internal_handler}
+   */
   const internal_handler = (res, req) => {
     assert(typeof res === 'object');
     assert(typeof res.onData === 'function');
@@ -227,7 +227,7 @@ const serve_handler = (handler) => {
     assert(typeof req.getHeader === 'function');
 
     /**
-     * @type {request}
+     * @type {import('./uwu').request}
      */
     const request = {
       url: req.getUrl(),
@@ -245,16 +245,15 @@ const serve_handler = (handler) => {
     };
 
     /**
-     * @type {response}
+     * @type {import('./uwu').response}
      */
     const response = {
       aborted: false,
       ended: false,
       error: undefined,
-      cache_files: false,
-      cache_files_max_age_ms: Infinity,
-      compress: false,
-      dispose: false,
+      file_cache: false,
+      file_cache_max_age_ms: Infinity,
+      file_dispose: false,
       status: 200,
       headers: {},
       file_path: undefined,
@@ -265,26 +264,26 @@ const serve_handler = (handler) => {
       json: undefined,
       buffer: undefined,
       buffer_hash: undefined,
+
+      compress: false,
+      compressed: false,
       brotli_buffer: undefined,
       brotli_buffer_hash: undefined,
       gzip_buffer: undefined,
       gzip_buffer_hash: undefined,
+
       timestamp: undefined,
       start: Date.now(),
       end: undefined,
       took: undefined,
     };
-    let buffer;
+    let buffer = Buffer.from([]);
     res.onData((chunk_arraybuffer, is_last) => {
       const chunk_buffer = Buffer.from(chunk_arraybuffer.slice(0));
-      if (buffer === undefined) {
-        buffer = chunk_buffer;
-      } else {
-        buffer = Buffer.concat([buffer, chunk_buffer]);
-      }
+      buffer = Buffer.concat([buffer, chunk_buffer]);
       if (is_last === true) {
         if (request.headers.content_type.includes('application/json') === true) {
-          request.json = JSON.parse(buffer);
+          request.json = JSON.parse(buffer.toString());
         }
         process.nextTick(internal_handler_2, res, handler, response, request);
       }
@@ -297,8 +296,8 @@ const serve_handler = (handler) => {
 };
 
 /**
-  * @type {serve_static}
-  */
+ * @type {import('./uwu').serve_static}
+ */
 const serve_static = (app, route_path, local_path, response_override) => {
   assert(typeof app === 'object');
   assert(typeof app.get === 'function');
@@ -314,13 +313,13 @@ const serve_static = (app, route_path, local_path, response_override) => {
   assert(response_override === undefined || typeof response_override === 'object');
 
   const serve_static_handler = serve_handler(async (response, request) => {
-    response.cache_files = true;
+    response.file_cache = true;
     response.file_path = path.join(process.cwd(), request.url.replace(route_path, local_path));
     if (typeof response_override === 'object') {
       Object.assign(response, response_override);
     } else {
       response.compress = false;
-      response.cache_files = false;
+      response.file_cache = false;
       response.headers['Cache-Control'] = cache_control_types.no_store;
     }
   });
@@ -338,9 +337,6 @@ const serve_static = (app, route_path, local_path, response_override) => {
   });
 };
 
-/**
- * @type {uwu}
- */
 const uwu = {
   cache_control_types,
   serve_handler,

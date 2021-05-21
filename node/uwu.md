@@ -4,9 +4,6 @@
 ## usage
 
 ```js
-/**
- * @type {import('endpoint/node/uwu').uwu}
- */
 const uwu = require('endpoint/node/uwu');
 ```
 
@@ -24,11 +21,11 @@ const uwu = require('endpoint/node/uwu');
   - `response.html` - String, override if sending `text/html`
   - `response.json` - Object, override if sending `application/json`
   - `response.buffer` - Buffer, override if sending `application/octet-stream`
-  - `response.compress` - Boolean, compresses response, defaults to `false`
-  - `response.dispose` - Boolean, uses `content-disposition`
   - `response.file_name` - String, file name for `content-disposition`
-  - `response.cache_files` - Boolean, cache static files in memory, defaults to `false`
-  - `response.cache_files_max_age_ms` - Number, cached static files max age in ms, defaults to `Infinity`
+  - `response.file_dispose` - Boolean, uses `content-disposition`
+  - `response.file_cache` - Boolean, cache static files in memory, defaults to `false`
+  - `response.file_cache_max_age_ms` - Number, cached static files max age in ms, defaults to `Infinity`
+  - `response.compress` - Boolean, compresses response, defaults to `false`
 - `request` properties
   - `request.url` - String
   - `request.query` - String
@@ -64,9 +61,9 @@ app.get('/test3', uwu.serve_handler(async (response, request) => {
   console.log({ request });
   response.headers['Cache-Control'] = uwu.cache_control_types.no_cache;
   response.file_path = __filename;
-  response.cache_files = true;
+  response.file_cache = true;
   response.compress = true;
-  response.dispose = false;
+  response.file_dispose = false;
 }));
 ```
 

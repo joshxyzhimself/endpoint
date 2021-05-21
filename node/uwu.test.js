@@ -1,11 +1,9 @@
+// @ts-check
 
 const fs = require('fs');
 const assert = require('assert');
 const got = require('got');
 
-/**
- * @type {import('./uwu').uwu}
- */
 const uwu = require('./uwu');
 
 const port = 8080;
@@ -22,10 +20,10 @@ const test_html = `
 
 const test_file = fs.readFileSync(__filename, { encoding: 'utf-8' });
 
-uwu.serve_static(app, '/test-static/', '/', { cache_files: false, compress: false });
-uwu.serve_static(app, '/test-compressed-static/', '/', { cache_files: false, compress: true });
-uwu.serve_static(app, '/test-cached-static/', '/', { cache_files: true, compress: false });
-uwu.serve_static(app, '/test-compressed-cached-static/', '/', { cache_files: true, compress: true });
+uwu.serve_static(app, '/test-static/', '/', { file_cache: false, compress: false });
+uwu.serve_static(app, '/test-compressed-static/', '/', { file_cache: false, compress: true });
+uwu.serve_static(app, '/test-cached-static/', '/', { file_cache: true, compress: false });
+uwu.serve_static(app, '/test-compressed-cached-static/', '/', { file_cache: true, compress: true });
 
 app.get('/test-html', uwu.serve_handler(async (response) => {
   response.html = test_html;
