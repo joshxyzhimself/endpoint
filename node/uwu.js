@@ -134,8 +134,7 @@ const internal_handler_2 = async (res, handler, response, request) => {
           }
           response.headers['Content-Encoding'] = 'br';
           response.compressed = true;
-        }
-        if (request.headers.accept_encoding.includes('gzip') === true) {
+        } else if (request.headers.accept_encoding.includes('gzip') === true) {
           if (response.gzip_buffer === undefined) {
             response.gzip_buffer = zlib.gzipSync(response.buffer);
             response.gzip_buffer_hash = crypto.createHash('sha224').update(response.gzip_buffer).digest('hex');
