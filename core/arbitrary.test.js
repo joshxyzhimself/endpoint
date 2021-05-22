@@ -1,8 +1,8 @@
 
-const assert = require('assert');
-const arbitrary = require('./arbitrary');
+// @ts-check
 
-const { fix, add, subtract, multiply, divide } = arbitrary;
+const AssertionError = require('./AssertionError');
+const { fix, add, subtract, multiply, divide } = require('./arbitrary');
 
 const tests = [
   [add(75, 25, 25), '125'],
@@ -51,10 +51,10 @@ const tests = [
 
 
 tests.forEach((test, test_index) => {
-  assert(test instanceof Array);
+  AssertionError.assert(test instanceof Array);
   const [value, expected] = test;
-  assert(typeof value === 'string');
-  assert(typeof expected === 'string');
-  assert(value === expected, `# ${test_index}, FAIL: "${value}" !== "${expected}"`);
+  AssertionError.assert(typeof value === 'string');
+  AssertionError.assert(typeof expected === 'string');
+  AssertionError.assert(value === expected, `# ${test_index}, FAIL: "${value}" !== "${expected}"`);
   console.log(`# ${test_index}, PASS: "${value}" === "${expected}"`);
 });

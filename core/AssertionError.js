@@ -1,9 +1,10 @@
 
+
+/**
+ * @type {import('./AssertionError').AssertionError}
+ */
 class AssertionError extends Error {
 
-  /**
-   * @param {String|void} message
-   */
   constructor (message) {
     super(message);
     this.name = 'AssertionError';
@@ -16,10 +17,6 @@ class AssertionError extends Error {
     return { name: this.name, message: this.message, stack: this.stack };
   }
 
-  /**
-   * @param {Boolean} value
-   * @param {String|void} message
-   */
   static assert (value, message) {
     if (typeof value !== 'boolean') {
       throw new Error('assert(value, message?), "value" must be a boolean.');

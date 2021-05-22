@@ -1,13 +1,13 @@
 
+// @ts-check
+
 const assert = require('assert');
 
 const precision = 32;
 const precision_multiplier = 10n ** BigInt(precision);
 
 /**
- * @param {String|Number} value
- * @param {Number} decimal_places
- * @returns {String}
+ * @type {import('./arbitrary').fix}
  */
 const fix = (value, decimal_places) => {
   assert(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value) === true));
@@ -30,7 +30,7 @@ const fix = (value, decimal_places) => {
 };
 
 /**
- * @param {String|Number} value
+ * @type {import('./arbitrary').scale}
  */
 const scale = (value) => {
   assert(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value) === true));
@@ -46,7 +46,7 @@ const scale = (value) => {
 };
 
 /**
- * @param {BigInt} scaled
+ * @type {import('./arbitrary').unscale}
  */
 const unscale = (scaled) => {
   assert(typeof scaled === 'bigint');
@@ -66,52 +66,47 @@ const unscale = (scaled) => {
 };
 
 /**
- * @param  {(String|Number)[]} values
+ * @type {import('./arbitrary').add}
  */
 const add = (...values) => {
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result += scale(values[i]);
   }
-  result = unscale(result);
-  return result;
+  return unscale(result);
 };
 
-
 /**
- * @param  {(String|Number)[]} values
+ * @type {import('./arbitrary').subtract}
  */
 const subtract = (...values) => {
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result -= scale(values[i]);
   }
-  result = unscale(result);
-  return result;
+  return unscale(result);
 };
 
 /**
- * @param  {(String|Number)[]} values
+ * @type {import('./arbitrary').multiply}
  */
 const multiply = (...values) => {
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result = (result * scale(values[i])) / precision_multiplier;
   }
-  result = unscale(result);
-  return result;
+  return unscale(result);
 };
 
 /**
- * @param  {(String|Number)[]} values
+ * @type {import('./arbitrary').divide}
  */
 const divide = (...values) => {
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result = (result * precision_multiplier) / scale(values[i]);
   }
-  result = unscale(result);
-  return result;
+  return unscale(result);
 };
 
 const arbitrary = { fix, add, subtract, multiply, divide };
