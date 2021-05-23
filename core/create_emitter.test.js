@@ -8,12 +8,11 @@ process.nextTick(async () => {
 
   emitter.on('test-event', listener_1);
   emitter.on('test-event', listener_2);
-  emitter.emit('test-event', 'foo1', 'bar1', 123);
-  emitter.emit('test-event', 'foo2', 'bar2', 456);
+  emitter.emit('test-event', 'should be emitted by listener_1 & listener_2');
 
   emitter.off('test-event', listener_1);
-  emitter.emit('test-event', 'foo3', 'bar3', 789);
+  emitter.emit('test-event', 'should be emitted by listener_2');
 
   emitter.off('test-event', listener_2);
-  emitter.emit('test-event', 'foo4', 'bar4', 0);
+  emitter.emit('test-event', 'should be emitted by none');
 });

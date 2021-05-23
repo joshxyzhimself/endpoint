@@ -5,50 +5,50 @@ const create_emitter = () => {
   /**
    * @type {Map<string|number, Set<Function>>}
    */
-  const events = new Map();
+  const index = new Map();
 
   /**
-   * @param {string|number} event_id
-   * @param {Function} event_listener
+   * @param {string|number} id
+   * @param {Function} listener
    */
-  const on = (event_id, event_listener) => {
-    AssertionError.assert(typeof event_id === 'string' || typeof event_id === 'number');
-    AssertionError.assert(event_listener instanceof Function);
-    if (events.has(event_id) === false) {
-      events.set(event_id, new Set());
+  const on = (id, listener) => {
+    AssertionError.assert(typeof id === 'string' || typeof id === 'number');
+    AssertionError.assert(listener instanceof Function);
+    if (index.has(id) === false) {
+      index.set(id, new Set());
     }
-    const event_listeners = events.get(event_id);
-    AssertionError.assert(event_listeners instanceof Set);
-    event_listeners.add(event_listener);
+    const listeners = index.get(id);
+    AssertionError.assert(listeners instanceof Set);
+    listeners.add(listener);
   };
 
   /**
-   * @param {string|number} event_id
-   * @param {Function} event_listener
+   * @param {string|number} id
+   * @param {Function} listener
    */
-  const off = (event_id, event_listener) => {
-    AssertionError.assert(typeof event_id === 'string' || typeof event_id === 'number');
-    AssertionError.assert(event_listener instanceof Function);
-    AssertionError.assert(events.has(event_id) === true);
-    const event_listeners = events.get(event_id);
-    AssertionError.assert(event_listeners instanceof Set);
-    AssertionError.assert(event_listeners.has(event_listener) === true);
-    event_listeners.delete(event_listener);
-    if (event_listeners.size === 0) {
-      events.delete(event_id);
+  const off = (id, listener) => {
+    AssertionError.assert(typeof id === 'string' || typeof id === 'number');
+    AssertionError.assert(listener instanceof Function);
+    AssertionError.assert(index.has(id) === true);
+    const listeners = index.get(id);
+    AssertionError.assert(listeners instanceof Set);
+    AssertionError.assert(listeners.has(listener) === true);
+    listeners.delete(listener);
+    if (listeners.size === 0) {
+      index.delete(id);
     }
   };
 
   /**
-   * @param {string|number} event_id
+   * @param {string|number} id
    * @param  {...any} args
    */
-  const emit = (event_id, ...args) => {
-    AssertionError.assert(typeof event_id === 'string' || typeof event_id === 'number');
-    if (events.has(event_id) == true) {
-      const event_listeners = events.get(event_id);
-      event_listeners.forEach((event_listener) => {
-        event_listener(...args);
+  const emit = (id, ...args) => {
+    AssertionError.assert(typeof id === 'string' || typeof id === 'number');
+    if (index.has(id) == true) {
+      const listeners = index.get(id);
+      listeners.forEach((listener) => {
+        listener(...args);
       });
     }
   };

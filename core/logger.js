@@ -1,10 +1,11 @@
 
+// @ts-check
+
+const fs = require('fs');
+const path = require('path');
+const luxon = require('luxon');
 const AssertionError = require('./AssertionError');
 const create_emitter = require('./create_emitter');
-
-const error_types = {
-  ERR_INVALID_PARAMETER_TYPE: 'ERR_INVALID_PARAMETER_TYPE',
-};
 
 /**
  * - DEFAULT (0) The log entry has no assigned severity level.
@@ -42,15 +43,16 @@ const severity_codes = {
   EMERGENCY: 800,
 };
 
+const error_types = {
+  ERR_INVALID_PARAMETER_TYPE: 'ERR_INVALID_PARAMETER_TYPE',
+};
+
 const severity_type_values = new Set(Object.values(severity_types));
 
 const emitter = create_emitter();
 
 /**
- * @param {string|number} id - required
- * @param {string} severity_type - required
- * @param {string} message - required
- * @param {object} data - optional
+ * @type {import('./logger').log}
  */
 const log = (id, severity_type, message, data) => {
   AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
@@ -62,12 +64,15 @@ const log = (id, severity_type, message, data) => {
   emitter.emit('*', id, severity_type, message, data);
 };
 
-const catch_all_listener = (id, severity_type, message, data) => {
+const console_generic_listener = (id, severity_type, message, data) => {
   AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
   const severity_code = severity_codes[severity_type];
+  const local = luxon.DateTime.local();
+  const local_iso = local.toISO();
+  console.log(local_iso);
   console.log(`${id}: ${severity_type} (${severity_code}): ${message}`);
   if (data instanceof Object) {
     console.log(JSON.stringify(data, null, 2));
@@ -75,53 +80,82 @@ const catch_all_listener = (id, severity_type, message, data) => {
 };
 
 /**
- * @type {Map<string, Function>}
+ * @type {import('./logger').to_console}
  */
-const listeners = new Map();
-
-/**
- * @param {string} id
- */
-const enable_console_logs = (id) => {
+const to_console = (id) => {
   AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
   if (id === '*') {
-    emitter.on(id, catch_all_listener);
+    emitter.on(id, console_generic_listener);
     return;
   }
-  const listener = (severity_type, message, data) => {
+  const console_specific_listener = (severity_type, message, data) => {
     AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
     AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
     AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
     const severity_code = severity_codes[severity_type];
+    const local = luxon.DateTime.local();
+    const local_iso = local.toISO();
+    console.log(local_iso);
     console.log(`${id}: ${severity_type} (${severity_code}): ${message}`);
     if (data instanceof Object) {
       console.log(JSON.stringify(data, null, 2));
     }
   };
-  emitter.on(id, listener);
-  listeners.set(id, listener);
+  emitter.on(id, console_specific_listener);
+};
+
+fs.mkdirSync(path.join(process.cwd(), 'temp'), { recursive: true });
+
+const file_generic_listener = (id, severity_type, message, data) => {
+  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
+  const severity_code = severity_codes[severity_type];
+  const local = luxon.DateTime.local();
+  const local_iso = local.toISO();
+  const file_name = `${local.toFormat('LLL-dd-yyyy-ZZZZ')}.log`;
+  const file_path = path.join(process.cwd(), 'temp', file_name);
+  fs.appendFileSync(file_path, `\n${local_iso}`);
+  fs.appendFileSync(file_path, `\n${id}: ${severity_type} (${severity_code}): ${message}`);
+  if (data instanceof Object) {
+    fs.appendFileSync(file_path, `\n${JSON.stringify(data, null, 2)}`);
+  }
 };
 
 /**
- * @param {string} id
+ * @type {import('./logger').to_file}
  */
-const disable_console_logs = (id) => {
+const to_file = (id) => {
   AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
   if (id === '*') {
-    emitter.off(id, catch_all_listener);
+    emitter.on(id, file_generic_listener);
     return;
   }
-  AssertionError.assert(listeners.has(id) === true, error_types.ERR_INVALID_PARAMETER_TYPE);
-  const listener = listeners.get(id);
-  emitter.off(id, listener);
-  listeners.delete(id);
+  const file_specific_listener = (severity_type, message, data) => {
+    AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+    AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+    AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
+    const severity_code = severity_codes[severity_type];
+    const local = luxon.DateTime.local();
+    const local_iso = local.toISO();
+    const file_name = `${local.toFormat('LLL-dd-yyyy-ZZZZ')}.log`;
+    const file_path = path.join(process.cwd(), 'temp', file_name);
+    fs.appendFileSync(file_path, `\n${local_iso}`);
+    fs.appendFileSync(file_path, `\n${id}: ${severity_type} (${severity_code}): ${message}`);
+    if (data instanceof Object) {
+      fs.appendFileSync(file_path, `\n${JSON.stringify(data, null, 2)}`);
+    }
+  };
+  emitter.on(id, file_specific_listener);
 };
 
 const logger = {
   log,
-  enable_console_logs,
-  disable_console_logs,
+  to_console,
+  to_file,
   severity_types,
+  severity_codes,
   error_types,
   on: emitter.on,
   off: emitter.off,

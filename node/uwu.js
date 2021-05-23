@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const assert = require('assert');
 const mime_types = require('mime-types');
 const uws = require('uWebSockets.js');
+const logger = require('../core/logger');
 
 const cache_control_types = {
   // For sensitive data
@@ -195,7 +196,6 @@ const internal_handler_2 = async (res, handler, response, request) => {
     response.end = Date.now();
     response.took = response.end - response.start;
   } catch (e) {
-    console.error(e);
     response.error = e;
     if (response.aborted === false) {
       if (response.ended === false) {
@@ -204,6 +204,7 @@ const internal_handler_2 = async (res, handler, response, request) => {
         response.ended = true;
       }
     }
+    logger.log('uwu', logger.severity_types.ERROR, e.message, { e, response });
   }
 };
 
@@ -282,7 +283,12 @@ const serve_handler = (handler) => {
       buffer = Buffer.concat([buffer, chunk_buffer]);
       if (is_last === true) {
         if (request.headers.content_type.includes('application/json') === true) {
-          request.json = JSON.parse(buffer.toString());
+          const buffer_string = buffer.toString();
+          try {
+            request.json = JSON.parse(buffer_string);
+          } catch (e) {
+            logger.log('uwu', logger.severity_types.ERROR, e.message, { e, buffer_string });
+          }
         }
         process.nextTick(internal_handler_2, res, handler, response, request);
       }
