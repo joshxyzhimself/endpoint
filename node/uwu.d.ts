@@ -58,9 +58,14 @@ export interface request {
   json: object
 }
 
-export function handler (response: response, request: request) : void;
-export function internal_handler_2 (res: uws.HttpResponse, handler: handler, response: response, request: request) : void;
-export function internal_handler (res: uws.HttpResponse, req: uws.HttpRequest) : void;
-export function serve_handler (handler: handler) : internal_handler;
-export function serve_static (app: uws.TemplatedApp, route_path: string, local_path: string, response_override: response) : void;
+export type handler = (response: response, request: request) => void;
+export type internal_handler_2 = (res: uws.HttpResponse, handler: handler, response: response, request: request) => void;
+export type internal_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
+export type serve_handler = (handler: handler) => internal_handler;
+export type serve_static = (app: uws.TemplatedApp, route_path: string, local_path: string, response_override: response) => void;
+
+export const cache_control_types: cache_control_types;
+export const serve_handler: serve_handler;
+export const serve_static: serve_static;
+
 export * as uws from 'uWebSockets.js';
