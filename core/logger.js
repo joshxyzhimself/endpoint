@@ -60,8 +60,9 @@ const log = (id, severity_type, message, data) => {
   AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(severity_type_values.has(severity_type) === true, error_types.ERR_INVALID_PARAMETER_TYPE);
   AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
-  emitter.emit(id, severity_type, message, data);
   emitter.emit('*', id, severity_type, message, data);
+  emitter.emit(severity_type, id, message, data);
+  emitter.emit(id, severity_type, message, data);
 };
 
 const console_generic_listener = (id, severity_type, message, data) => {
