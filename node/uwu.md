@@ -29,7 +29,9 @@ const uwu = require('endpoint/node/uwu');
 - `request` properties
   - `request.url` - String
   - `request.query` - String
+  - `request.method` - String
   - `request.headers` - Object, HTTP headers
+  - `request.headers.host` - String
   - `request.headers.accept` - String
   - `request.headers.accept_encoding` - String
   - `request.headers.content_type` - String
