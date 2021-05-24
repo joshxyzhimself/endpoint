@@ -79,17 +79,18 @@ const create_websocket_client = (id, url) => {
     client.onmessage = (event) => {
       AssertionError.assert(typeof event.data === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
       const message = JSON.parse(event.data);
-      logger.log(id, logger.severity_types.INFO, 'MESSAGE', { message });
       emitter.emit(event_types.MESSAGE, message);
     };
-    client.onerror = async (event) => {
-      logger.log(id, logger.severity_types.ERROR, 'ERROR', { event });
-      emitter.emit(event_types.ERROR, event);
+    client.onerror = async () => {
+      logger.log(id, logger.severity_types.ERROR, 'ERROR');
+      emitter.emit(event_types.ERROR);
     };
     client.onclose = async (event) => {
-      logger.log(id, logger.severity_types.INFO, 'DISCONNECTED');
-      emitter.emit(event_types.DISCONNECTED, event.code, event.reason);
-      emitter.emit(event_types.STATE, event_types.DISCONNECTED, event.code, event.reason);
+      const code = event.code;
+      const reason = event.reason;
+      logger.log(id, logger.severity_types.INFO, 'DISCONNECTED', { code, reason });
+      emitter.emit(event_types.DISCONNECTED, code, reason);
+      emitter.emit(event_types.STATE, event_types.DISCONNECTED, code, reason);
       client = null;
       if (event.code === 1000) {
         return;
