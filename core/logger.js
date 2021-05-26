@@ -1,8 +1,6 @@
 
 // @ts-check
 
-const fs = require('fs');
-const path = require('path');
 const AssertionError = require('./AssertionError');
 const create_emitter = require('./create_emitter');
 
@@ -86,65 +84,10 @@ const log = (id, severity_type, message, data) => {
   }
 };
 
-/**
- * @type {import('./logger').generic_listener}
- */
-const console_generic_listener = (id, severity_type, message, data) => {
-  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(severity_codes.has(severity_type) === true, error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
-  const timestamp = Date.now();
-  const severity_code = severity_codes.get(severity_type);
-  const entry = { id, timestamp, severity_type, severity_code, message, data };
-  if (severity_type === severity_types.ERROR) {
-    console.error(JSON.stringify(entry, null, 2));
-  } else {
-    console.log(JSON.stringify(entry, null, 2));
-  }
-};
 
-/**
- * @type {import('./logger').to_console}
- */
-const to_console = (id) => {
-  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
-  emitter.on(id, console_generic_listener);
-};
-
-fs.mkdirSync(path.join(process.cwd(), 'temp'), { recursive: true });
-
-/**
- * @type {import('./logger').generic_listener}
- */
-const file_generic_listener = (id, severity_type, message, data) => {
-  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(typeof severity_type === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(typeof message === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(severity_codes.has(severity_type) === true, error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(data === undefined || data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
-  const timestamp = Date.now();
-  const severity_code = severity_codes.get(severity_type);
-  const entry = { id, timestamp, severity_type, severity_code, message, data };
-  const local = new Date(timestamp);
-  const file_name = `${local.getUTCMonth()}-${local.getUTCDate()}-${local.getUTCFullYear()}.log`;
-  const file_path = path.join(process.cwd(), 'temp', file_name);
-  fs.appendFileSync(file_path, `\n${JSON.stringify(entry)}`);
-};
-
-/**
- * @type {import('./logger').to_file}
- */
-const to_file = (id) => {
-  AssertionError.assert(typeof id === 'string' || typeof id === 'number', error_types.ERR_INVALID_PARAMETER_TYPE);
-  emitter.on(id, file_generic_listener);
-};
 
 const logger = {
   log,
-  to_console,
-  to_file,
   severity_types,
   severity_codes,
   error_types,
