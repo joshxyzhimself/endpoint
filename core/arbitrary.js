@@ -10,13 +10,12 @@ const precision_multiplier = 10n ** BigInt(precision);
  * @type {import('./arbitrary').fix}
  */
 const fix = (value, decimal_places) => {
-  assert(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value) === true));
+  assert(typeof value === 'string');
   assert(typeof decimal_places === 'number');
   assert(Number.isFinite(decimal_places) === true);
   assert(Number.isInteger(decimal_places) === true);
-  assert(decimal_places >= 0 && decimal_places <= precision);
-  const value2 = value === 'string' ? value : String(value);
-  const values = value2.split('.');
+  assert(0 <= decimal_places && decimal_places <= precision);
+  const values = value.split('.');
   const whole = values[0] || '0';
   const decimal = values[1] || '0';
   assert(Number.isFinite(Number(whole)) === true);
@@ -33,9 +32,8 @@ const fix = (value, decimal_places) => {
  * @type {import('./arbitrary').scale}
  */
 const scale = (value) => {
-  assert(typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value) === true));
-  const value2 = value === 'string' ? value : String(value);
-  const values = value2.split('.');
+  assert(typeof value === 'string');
+  const values = value.split('.');
   const whole = values[0] || '0';
   const decimal = values[1] || '0';
   assert(Number.isFinite(Number(whole)) === true);
@@ -50,7 +48,7 @@ const scale = (value) => {
  */
 const unscale = (scaled) => {
   assert(typeof scaled === 'bigint');
-  const scaled_string = scaled >= 0n ? scaled.toString().padStart(1 + precision, '0') : '-'.concat(scaled.toString().replace('-', '').padStart(1 + precision, '0'));
+  const scaled_string = 0n <= scaled ? scaled.toString().padStart(1 + precision, '0') : '-'.concat(scaled.toString().replace('-', '').padStart(1 + precision, '0'));
   const whole = scaled_string.substring(0, scaled_string.length - precision);
   const decimal = scaled_string.substring(scaled_string.length - precision, scaled_string.length);
   let decimal_length = decimal.length;

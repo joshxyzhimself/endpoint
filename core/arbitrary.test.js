@@ -5,7 +5,7 @@ const AssertionError = require('./AssertionError');
 const { fix, add, subtract, multiply, divide } = require('./arbitrary');
 
 const tests = [
-  [add(75, 25, 25), '125'],
+  [add('75', '25', '25'), '125'],
   [add('75', '25', '25'), '125'],
   [subtract('75', '25', '25'), '25'],
   [multiply('5', '5'), '25'],
