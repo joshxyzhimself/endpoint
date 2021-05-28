@@ -75,9 +75,9 @@ const add = (...values) => {
 };
 
 /**
- * @type {import('./arbitrary').subtract}
+ * @type {import('./arbitrary').sub}
  */
-const subtract = (...values) => {
+const sub = (...values) => {
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result -= scale(values[i]);
@@ -86,9 +86,9 @@ const subtract = (...values) => {
 };
 
 /**
- * @type {import('./arbitrary').multiply}
+ * @type {import('./arbitrary').mul}
  */
-const multiply = (...values) => {
+const mul = (...values) => {
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result = (result * scale(values[i])) / precision_multiplier;
@@ -97,9 +97,9 @@ const multiply = (...values) => {
 };
 
 /**
- * @type {import('./arbitrary').divide}
+ * @type {import('./arbitrary').div}
  */
-const divide = (...values) => {
+const div = (...values) => {
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result = (result * precision_multiplier) / scale(values[i]);
@@ -107,6 +107,61 @@ const divide = (...values) => {
   return unscale(result);
 };
 
-const arbitrary = { fix, add, subtract, multiply, divide };
+/**
+ * @type {import('./arbitrary').gt}
+ */
+const gt = (first, second) => {
+  return scale(first) > scale(second);
+};
+
+
+/**
+ * @type {import('./arbitrary').lt}
+ */
+const lt = (first, second) => {
+  return scale(first) < scale(second);
+};
+
+/**
+ * @type {import('./arbitrary').gte}
+ */
+const gte = (first, second) => {
+  return scale(first) >= scale(second);
+};
+
+/**
+ * @type {import('./arbitrary').lte}
+ */
+const lte = (first, second) => {
+  return scale(first) <= scale(second);
+};
+
+/**
+ * @type {import('./arbitrary').eq}
+ */
+const eq = (first, second) => {
+  return scale(first) === scale(second);
+};
+
+/**
+ * @type {import('./arbitrary').neq}
+ */
+const neq = (first, second) => {
+  return scale(first) !== scale(second);
+};
+
+const arbitrary = {
+  fix,
+  add,
+  sub,
+  mul,
+  div,
+  gt,
+  lt,
+  gte,
+  lte,
+  eq,
+  neq,
+};
 
 module.exports = arbitrary;
