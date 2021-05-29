@@ -1,7 +1,8 @@
 
 // @ts-check
 
-const assert = require('assert');
+const AssertionError = require('./AssertionError');
+const assert = AssertionError.assert;
 
 const precision = 32;
 const precision_multiplier = 10n ** BigInt(precision);
@@ -20,11 +21,11 @@ const fix = (value, decimal_places) => {
   const decimal = values[1] || '0';
   assert(Number.isFinite(Number(whole)) === true);
   assert(Number.isFinite(Number(decimal)) === true);
-  const decimal2 = decimal.substring(0, decimal_places).padEnd(decimal_places, '0');
-  if (decimal2 === '') {
+  const decimal_padded = decimal.substring(0, decimal_places).padEnd(decimal_places, '0');
+  if (decimal_padded === '') {
     return whole;
   }
-  const result = [whole, decimal2].join('.');
+  const result = `${whole}.${decimal_padded}`;
   return result;
 };
 
@@ -38,28 +39,30 @@ const scale = (value) => {
   const decimal = values[1] || '0';
   assert(Number.isFinite(Number(whole)) === true);
   assert(Number.isFinite(Number(decimal)) === true);
-  const decimal2 = decimal.substring(0, precision).padEnd(precision, '0');
-  const scaled = BigInt([whole, decimal2].join(''));
+  const decimal_padded = decimal.substring(0, precision).padEnd(precision, '0');
+  const scaled = BigInt(`${whole}${decimal_padded}`);
   return scaled;
 };
 
 /**
  * @type {import('./arbitrary').unscale}
  */
-const unscale = (scaled) => {
-  assert(typeof scaled === 'bigint');
-  const scaled_string = 0n <= scaled ? scaled.toString().padStart(1 + precision, '0') : '-'.concat(scaled.toString().replace('-', '').padStart(1 + precision, '0'));
-  const whole = scaled_string.substring(0, scaled_string.length - precision);
-  const decimal = scaled_string.substring(scaled_string.length - precision, scaled_string.length);
+const unscale = (value) => {
+  assert(typeof value === 'bigint');
+  const value_padded = 0n <= value
+    ? value.toString().padStart(1 + precision, '0')
+    : `-${value.toString().replace('-', '').padStart(1 + precision, '0')}`;
+  const whole = value_padded.substring(0, value_padded.length - precision);
+  const decimal = value_padded.substring(value_padded.length - precision, value_padded.length);
   let decimal_length = decimal.length;
   while (decimal.charAt(decimal_length - 1) === '0') {
     decimal_length -= 1;
   }
-  const decimal2 = decimal.substring(0, decimal_length);
-  if (decimal2 === '') {
+  const decimal_substring = decimal.substring(0, decimal_length);
+  if (decimal_substring === '') {
     return whole;
   }
-  const result = [whole, decimal2].join('.');
+  const result = `${whole}.${decimal_substring}`;
   return result;
 };
 
@@ -67,6 +70,9 @@ const unscale = (scaled) => {
  * @type {import('./arbitrary').add}
  */
 const add = (...values) => {
+  values.forEach((value) => {
+    assert(typeof value === 'string');
+  });
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result += scale(values[i]);
@@ -78,6 +84,9 @@ const add = (...values) => {
  * @type {import('./arbitrary').sub}
  */
 const sub = (...values) => {
+  values.forEach((value) => {
+    assert(typeof value === 'string');
+  });
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result -= scale(values[i]);
@@ -89,6 +98,9 @@ const sub = (...values) => {
  * @type {import('./arbitrary').mul}
  */
 const mul = (...values) => {
+  values.forEach((value) => {
+    assert(typeof value === 'string');
+  });
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result = (result * scale(values[i])) / precision_multiplier;
@@ -100,6 +112,9 @@ const mul = (...values) => {
  * @type {import('./arbitrary').div}
  */
 const div = (...values) => {
+  values.forEach((value) => {
+    assert(typeof value === 'string');
+  });
   let result = scale(values[0]);
   for (let i = 1, l = values.length; i < l; i += 1) {
     result = (result * precision_multiplier) / scale(values[i]);
@@ -110,45 +125,81 @@ const div = (...values) => {
 /**
  * @type {import('./arbitrary').gt}
  */
-const gt = (first, second) => {
-  return scale(first) > scale(second);
+const gt = (left, right) => {
+  assert(typeof left === 'string');
+  assert(typeof right === 'string');
+  return scale(left) > scale(right);
 };
 
 
 /**
  * @type {import('./arbitrary').lt}
  */
-const lt = (first, second) => {
-  return scale(first) < scale(second);
+const lt = (left, right) => {
+  assert(typeof left === 'string');
+  assert(typeof right === 'string');
+  return scale(left) < scale(right);
 };
 
 /**
  * @type {import('./arbitrary').gte}
  */
-const gte = (first, second) => {
-  return scale(first) >= scale(second);
+const gte = (left, right) => {
+  assert(typeof left === 'string');
+  assert(typeof right === 'string');
+  return scale(left) >= scale(right);
 };
 
 /**
  * @type {import('./arbitrary').lte}
  */
-const lte = (first, second) => {
-  return scale(first) <= scale(second);
+const lte = (left, right) => {
+  assert(typeof left === 'string');
+  assert(typeof right === 'string');
+  return scale(left) <= scale(right);
 };
 
 /**
  * @type {import('./arbitrary').eq}
  */
-const eq = (first, second) => {
-  return scale(first) === scale(second);
+const eq = (left, right) => {
+  assert(typeof left === 'string');
+  assert(typeof right === 'string');
+  return scale(left) === scale(right);
 };
 
 /**
  * @type {import('./arbitrary').neq}
  */
-const neq = (first, second) => {
-  return scale(first) !== scale(second);
+const neq = (left, right) => {
+  assert(typeof left === 'string');
+  assert(typeof right === 'string');
+  return scale(left) !== scale(right);
 };
+
+/**
+ * @type {import('./arbitrary').abs}
+ */
+const abs = (value) => {
+  assert(typeof value === 'string');
+  const scaled_value = scale(value);
+  return scaled_value < 0n
+    ? unscale(scaled_value * -1n)
+    : unscale(scaled_value);
+};
+
+/**
+ * @type {import('./arbitrary').pow}
+ */
+const pow = (value, exponent) => {
+  assert(typeof value === 'string');
+  assert(typeof exponent === 'number');
+  assert(Number.isFinite(exponent) === true);
+  assert(Number.isInteger(exponent) === true);
+  return unscale((scale(value) ** BigInt(exponent)) / ((precision_multiplier) ** BigInt(exponent - 1)));
+};
+
+// https://stackoverflow.com/a/64953280
 
 const arbitrary = {
   fix,
@@ -162,6 +213,8 @@ const arbitrary = {
   lte,
   eq,
   neq,
+  abs,
+  pow,
 };
 
 module.exports = arbitrary;

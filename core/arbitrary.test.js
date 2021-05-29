@@ -2,7 +2,9 @@
 // @ts-check
 
 const AssertionError = require('./AssertionError');
-const { fix, add, sub, mul, div, gt, lt, gte, lte, eq, neq } = require('./arbitrary');
+const assert = AssertionError.assert;
+
+const { fix, add, sub, mul, div, gt, lt, gte, lte, eq, neq, abs, pow } = require('./arbitrary');
 
 const tests = [
   [add('75', '25', '25'), '125'],
@@ -71,13 +73,20 @@ const tests = [
   [neq('1.0', '0.0'), true],
   [neq('0.0', '1.0'), true],
   [neq('0.0', '0.0'), false],
+
+  [abs('1.0'), '1'],
+  [abs('-1.0'), '1'],
+  [abs('0.0'), '0'],
+
+  [pow('2', 2), '4'],
+  [pow('20', 2), '400'],
+  [pow('2', 20), '1048576'],
+  [pow('123.456', 3), '1881640.295202816'],
 ];
 
-
 tests.forEach((test, test_index) => {
-  AssertionError.assert(test instanceof Array);
+  assert(test instanceof Array);
   const [value, expected] = test;
-  AssertionError.assert(value === expected, `# ${test_index}, FAIL: "${value}" !== "${expected}"`);
+  assert(value === expected, `# ${test_index}, FAIL: "${value}" !== "${expected}"`);
   console.log(`# ${test_index}, PASS: "${value}" === "${expected}"`);
-
 });
