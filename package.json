@@ -7,20 +7,20 @@
   "license": "MIT",
   "devDependencies": {
     "benchmark": "^2.1.4",
-    "eslint": "^7.26.0"
+    "eslint": "^7.28.0"
   },
   "dependencies": {
-    "@elastic/elasticsearch": "^7.12.0",
-    "@sweetalert2/theme-minimal": "^4.0.5",
+    "@elastic/elasticsearch": "^7.13.0",
+    "@sweetalert2/theme-minimal": "^5.0.0",
     "got": "^11.8.2",
     "hi-base32": "^0.5.1",
-    "luxon": "^1.26.0",
+    "luxon": "^1.27.0",
     "multi-part": "^3.0.0",
     "mysql2": "^2.2.5",
     "postgres": "^2.0.0-beta.5",
     "react": "^17.0.2",
-    "sweetalert2": "^10.16.7",
+    "sweetalert2": "^11.0.16",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v19.2.0",
-    "ws": "^7.4.5"
+    "ws": "^7.4.6"
   }
 }

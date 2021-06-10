@@ -5,10 +5,12 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
 const assert = require('assert');
+const worker_threads = require('worker_threads');
 const mime_types = require('mime-types');
 const uws = require('uWebSockets.js');
 const logger = require('../core/logger');
@@ -342,10 +344,81 @@ const serve_static = (app, route_path, local_path, response_override) => {
   });
 };
 
+/**
+ * @type {import('./uwu').serve_redirect}
+ */
+const serve_redirect = (app) => {
+  assert(app instanceof Object);
+  assert(app.get instanceof Function);
+  app.get('/*', uwu.serve_handler(async (response, request) => {
+    response.status = 308;
+    response.headers['Location'] = 'https://'.concat(request.headers.host, request.url);
+  }));
+};
+
+const port_access_types = {
+  SHARED: 0,
+  EXCLUSIVE: 1,
+};
+
+/**
+ * @type {import('./uwu').serve_http}
+ */
+const serve_http = (app, port_access_type, port) => new Promise((resolve, reject) => {
+  assert(app instanceof Object);
+  assert(app.listen instanceof Function);
+  assert(typeof port_access_type === 'number');
+  assert(typeof port === 'number');
+  app.listen(port, port_access_type, (token) => {
+    if (token) {
+      resolve(token);
+    } else {
+      reject(new Error('uws :: app.listen failed, invalid token'));
+    }
+  });
+});
+
+/**
+ * @type {import('./uwu').serve_https}
+ */
+const serve_https = (app, port_access_type, port) => new Promise((resolve, reject) => {
+  assert(app instanceof Object);
+  assert(app.listen instanceof Function);
+  assert(typeof port_access_type === 'number');
+  assert(typeof port === 'number');
+  app.listen(port, port_access_type, (token) => {
+    if (token) {
+      resolve(token);
+    } else {
+      reject(new Error('uws :: app.listen failed, invalid token'));
+    }
+  });
+});
+
+/**
+ * @param {string} entry_file_path
+ * @param {Function} callback
+ */
+const create_thread = (entry_file_path, callback) => {
+  assert(typeof entry_file_path === 'string');
+  assert(callback instanceof Function);
+  if (worker_threads.isMainThread === true) {
+    const workers = os.cpus().map(() => new worker_threads.Worker(entry_file_path));
+    return workers;
+  }
+  callback(worker_threads.threadId);
+  return;
+};
+
 const uwu = {
   cache_control_types,
   serve_handler,
   serve_static,
+  serve_redirect,
+  port_access_types,
+  serve_http,
+  serve_https,
+  create_thread,
   uws,
 };
 

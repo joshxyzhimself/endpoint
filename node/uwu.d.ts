@@ -7,6 +7,11 @@ export interface cache_control_types {
   public_cached: string
 }
 
+export interface port_access_types {
+  SHARED: number
+  EXCLUSIVE: number
+}
+
 export interface response {
   aborted?: boolean
   ended?: boolean
@@ -58,14 +63,29 @@ export interface request {
   json: object
 }
 
+export const cache_control_types: cache_control_types;
+export const port_access_types: port_access_types;
+
 export type handler = (response: response, request: request) => void;
 export type internal_handler_2 = (res: uws.HttpResponse, handler: handler, response: response, request: request) => void;
 export type internal_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => void;
 export type serve_handler = (handler: handler) => internal_handler;
-export type serve_static = (app: uws.TemplatedApp, route_path: string, local_path: string, response_override: response) => void;
-
-export const cache_control_types: cache_control_types;
 export const serve_handler: serve_handler;
+
+export type serve_static = (app: uws.TemplatedApp, route_path: string, local_path: string, response_override: response) => void;
 export const serve_static: serve_static;
+
+export type serve_redirect = (app: uws.TemplatedApp) => void;
+export const serve_redirect: serve_redirect;
+
+export type serve_http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
+export const serve_http: serve_http;
+
+export type serve_https = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
+export const serve_https: serve_https;
+
+export type create_thread_callback = (thread_id: number) => void;
+export type create_thread = (entry_file_path: string, callback: create_thread_callback) => Worker[];
+export const create_thread: create_thread;
 
 export * as uws from 'uWebSockets.js';

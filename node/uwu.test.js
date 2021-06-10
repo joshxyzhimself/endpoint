@@ -2,45 +2,49 @@
 
 const fs = require('fs');
 const assert = require('assert');
+const worker_threads = require('worker_threads');
 const got = require('got');
-
 const uwu = require('./uwu');
 
-const port = 8080;
-const origin = `http://localhost:${port}`;
-const app = uwu.uws.App({});
-
 const test_html = `
-<html>
-  <body>
-    <h4>Hello world!</h4>
-  </body>
-</html>
+  <html>
+    <body>
+      <h4>Hello world!</h4>
+    </body>
+  </html>
 `;
 
 const test_file = fs.readFileSync(__filename, { encoding: 'utf-8' });
 
-uwu.serve_static(app, '/test-static/', '/', { file_cache: false, compress: false });
-uwu.serve_static(app, '/test-compressed-static/', '/', { file_cache: false, compress: true });
-uwu.serve_static(app, '/test-cached-static/', '/', { file_cache: true, compress: false });
-uwu.serve_static(app, '/test-compressed-cached-static/', '/', { file_cache: true, compress: true });
+const workers = uwu.create_thread(__filename, async (thread_id) => {
 
-app.get('/test-html', uwu.serve_handler(async (response) => {
-  response.html = test_html;
-}));
+  console.log({ thread_id, is_main: worker_threads.isMainThread });
 
-app.get('/test-compressed-html', uwu.serve_handler(async (response) => {
-  response.html = test_html;
-  response.compress = true;
-}));
-app.get('/test-headers', uwu.serve_handler(async (response, request) => {
-  response.json = request;
-}));
-app.post('/test-json-post', uwu.serve_handler(async (response, request) => {
-  response.json = request;
-}));
+  const port = 8080;
+  const origin = `http://localhost:${port}`;
+  const app = uwu.uws.App({});
 
-app.listen(port, async () => {
+  uwu.serve_static(app, '/test-static/', '/', { file_cache: false, compress: false });
+  uwu.serve_static(app, '/test-compressed-static/', '/', { file_cache: false, compress: true });
+  uwu.serve_static(app, '/test-cached-static/', '/', { file_cache: true, compress: false });
+  uwu.serve_static(app, '/test-compressed-cached-static/', '/', { file_cache: true, compress: true });
+
+  app.get('/test-html', uwu.serve_handler(async (response) => {
+    response.html = test_html;
+  }));
+  app.get('/test-compressed-html', uwu.serve_handler(async (response) => {
+    response.html = test_html;
+    response.compress = true;
+  }));
+  app.get('/test-headers', uwu.serve_handler(async (response, request) => {
+    response.json = request;
+  }));
+  app.post('/test-json-post', uwu.serve_handler(async (response, request) => {
+    response.json = request;
+  }));
+
+  const token = await uwu.serve_http(app, uwu.port_access_types.SHARED, port);
+
   console.log(`Listening at port "${port}".`);
 
   const response = await got.get(`${origin}/test-html`);
@@ -105,5 +109,20 @@ app.listen(port, async () => {
   assert(response14.json.foo === 'bar');
   console.log('test 14 OK');
 
-  process.exit();
+  // graceful shutdown
+  worker_threads.parentPort.on('message', (message) => {
+    if (message === 'exit') {
+      uwu.uws.us_listen_socket_close(token);
+      process.exit(0);
+    }
+  });
 });
+
+// graceful shutdown
+if (worker_threads.isMainThread === true) {
+  setTimeout(() => {
+    workers.forEach((worker) => {
+      worker.postMessage('exit');
+    });
+  }, 2000);
+}
