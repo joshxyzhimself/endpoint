@@ -32,7 +32,7 @@ const postgres_config = {
   username: config.postgres_username,
   password: config.postgres_password,
   max: 16,
-  idle_timeout: 2,
+  idle_timeout: 0,
 
   // https://github.com/porsager/postgres/issues/161#issuecomment-801031062
   types: {
