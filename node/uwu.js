@@ -5,12 +5,10 @@
  */
 
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
 const assert = require('assert');
-const worker_threads = require('worker_threads');
 const mime_types = require('mime-types');
 const uws = require('uWebSockets.js');
 const logger = require('../core/logger');
@@ -395,21 +393,6 @@ const serve_https = (app, port_access_type, port) => new Promise((resolve, rejec
   });
 });
 
-/**
- * @param {string} entry_file_path
- * @param {Function} callback
- */
-const create_thread = (entry_file_path, callback) => {
-  assert(typeof entry_file_path === 'string');
-  assert(callback instanceof Function);
-  if (worker_threads.isMainThread === true) {
-    const workers = os.cpus().map(() => new worker_threads.Worker(entry_file_path));
-    return workers;
-  }
-  callback(worker_threads.threadId);
-  return;
-};
-
 const uwu = {
   cache_control_types,
   serve_handler,
@@ -418,7 +401,6 @@ const uwu = {
   port_access_types,
   serve_http,
   serve_https,
-  create_thread,
   uws,
 };
 

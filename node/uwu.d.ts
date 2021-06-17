@@ -1,4 +1,5 @@
 import * as uws from 'uWebSockets.js';
+import * as worker_threads from "worker_threads";
 
 export interface cache_control_types {
   no_store: string
@@ -83,9 +84,5 @@ export const serve_http: serve_http;
 
 export type serve_https = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
 export const serve_https: serve_https;
-
-export type create_thread_callback = (thread_id: number) => void;
-export type create_thread = (entry_file_path: string, callback: create_thread_callback) => Worker[];
-export const create_thread: create_thread;
 
 export * as uws from 'uWebSockets.js';
