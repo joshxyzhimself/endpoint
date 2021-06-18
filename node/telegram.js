@@ -117,6 +117,17 @@ const get_me = async (token) => {
   return me;
 };
 
+const get_chat_administrators = async (token, body) => {
+  assert(typeof token === 'string');
+  assert(body instanceof Object);
+  assert(typeof body.chat_id === 'string' || typeof body.chat_id === 'number');
+  const response = await post_json(create_endpoint(token, 'getChatAdministrators'), body);
+  assert(response instanceof Object);
+  assert(response.result instanceof Object);
+  const chat_administrators = response.result;
+  return chat_administrators;
+};
+
 module.exports = {
   post_form,
   post_json,
@@ -131,4 +142,5 @@ module.exports = {
   set_webhook,
   get_updates,
   get_me,
+  get_chat_administrators,
 };
