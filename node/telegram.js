@@ -55,7 +55,7 @@ const create_endpoint = (token, method) => {
 const send_message = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
-  assert(typeof body.chat_id === 'string' || typeof body.chat_id === 'number');
+  assert(typeof body.chat_id === 'number');
   assert(typeof body.text === 'string');
   const response = await post_json(create_endpoint(token, 'sendMessage'), body);
   return response;
@@ -64,7 +64,7 @@ const send_message = async (token, body) => {
 const delete_message = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
-  assert(typeof body.chat_id === 'string' || typeof body.chat_id === 'number');
+  assert(typeof body.chat_id === 'number');
   assert(typeof body.message_id === 'number');
   const response = await post_json(create_endpoint(token, 'deleteMessage'), body);
   return response;
@@ -73,7 +73,7 @@ const delete_message = async (token, body) => {
 const send_photo = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
-  assert(typeof body.chat_id === 'string' || typeof body.chat_id === 'number');
+  assert(typeof body.chat_id === 'number');
   assert(body.caption === undefined || typeof body.caption === 'string');
   assert(body.photo instanceof Buffer);
   const response = await post_form(create_endpoint(token, 'sendPhoto'), body);
@@ -120,7 +120,7 @@ const get_me = async (token) => {
 const get_chat_administrators = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
-  assert(typeof body.chat_id === 'string' || typeof body.chat_id === 'number');
+  assert(typeof body.chat_id === 'number');
   const response = await post_json(create_endpoint(token, 'getChatAdministrators'), body);
   assert(response instanceof Object);
   assert(response.result instanceof Object);
