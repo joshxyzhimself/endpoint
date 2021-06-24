@@ -18,39 +18,32 @@ process.nextTick(async () => {
 
   });
 
-  /**
-   * @type {logs.resource}
-   */
-  const resource = { id: 'webhook' };
+  const resource = 'test_resource';
+  const operation = 'test_operation';
 
-  /**
-   * @type {logs.operation}
-   */
-  const operation = { id: 'on_message' };
-
-  /**
-   * @type {logs.input}
-   */
-  const input = { data: null };
+  const input = { foo: 'bar' };
 
   try {
     logs.emit({
       resource,
       operation,
-      input,
-      output: { message: 'test' },
-      severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
-      timestamp: { mts: Date.now() },
+      message: 'test',
+      severity: { type: logs.severity_types.INFO },
+    });
+    logs.emit({
+      resource,
+      operation,
+      data: { input },
+      severity: { type: logs.severity_types.INFO },
     });
     throw new Error('test_error');
   } catch (e) {
     logs.emit({
       resource,
       operation,
-      input,
+      data: { input },
       error: logs.capture_error(e),
-      severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },
-      timestamp: { mts: Date.now() },
+      severity: { type: logs.severity_types.ERROR },
     });
   }
 });

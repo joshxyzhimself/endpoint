@@ -22,54 +22,53 @@ export interface severity_codes {
   EMERGENCY: number,
 }
 
-export interface application {
-  id: string|number,
-  version: string|number,
+export interface data {
+  [key:string]: unknown,
 }
-export interface resource {
-  id: string|number,
-}
-export interface operation {
-  id: string|number,
-}
-export interface session {
-  id: string|number,
-}
-export interface trace {
-  session?: session,
-  start?: number,
-  end?: number,
-}
-export interface input {
 
-}
-export interface output {
-
-}
 export interface error {
   name: string,
   message: string,
   stack: string,
+  got_response_status_code?: unknown,
+  got_response_status_message?: unknown,
+  got_response_body?: unknown,
+  [key:string]: unknown,
 }
+
 export interface severity {
   type: string,
-  code: number,
+  code?: number,
+  [key:string]: unknown,
 }
-export interface timestamp {
-  mts: number,
+
+export interface trace {
+  /**
+   * epoch milliseconds number.
+   */
+  mts?: number,
+
+  /**
+  * RFC 2822-compatible string.
+  */
   rfc?: string,
+   
+  /**
+  * ISO 8601-compliant string.
+  */
   iso?: string,
+
+  [key:string]: unknown,
 }
+
 export interface entry {
-  application?: application,
-  resource: resource,
-  operation: operation,
-  trace?: trace,
-  input?: input,
-  output?: output,
+  resource: string,
+  operation: string,
+  message?: string,
+  data?: data,
   error?: error,
   severity: severity,
-  timestamp: timestamp,
+  trace?: trace,
 }
 
 export type capture_error = (e: Error) => error;

@@ -65,7 +65,17 @@ const capture_error = (e) => {
     name: e.name,
     message: e.message,
     stack: e.stack,
+
+    // @ts-ignore
+    got_response_status_code: e?.response?.statusCode,
+
+    // @ts-ignore
+    got_response_status_message: e?.response?.statusMessage,
+
+    // @ts-ignore
+    got_response_body: e?.response?.body,
   };
+
 
   return error;
 };
@@ -75,13 +85,30 @@ const capture_error = (e) => {
  */
 const emit = (entry) => {
   AssertionError.assert(entry instanceof Object, 'ERR_INVALID_ENTRY');
-  AssertionError.assert(entry.resource instanceof Object, 'ERR_INVALID_ENTRY');
-  AssertionError.assert(typeof entry.resource.id === 'string' || typeof entry.resource.id === 'number', 'ERR_INVALID_ENTRY');
-  AssertionError.assert(entry.operation instanceof Object, 'ERR_INVALID_ENTRY');
-  AssertionError.assert(typeof entry.operation.id === 'string' || typeof entry.operation.id === 'number', 'ERR_INVALID_ENTRY');
+  AssertionError.assert(typeof entry.resource === 'string', 'ERR_INVALID_ENTRY');
+  AssertionError.assert(typeof entry.operation === 'string', 'ERR_INVALID_ENTRY');
+
+  if (entry.trace === undefined) {
+    entry.trace = {};
+  }
+  AssertionError.assert(entry.trace instanceof Object, 'ERR_INVALID_ENTRY');
+
+  if (entry.trace.mts === undefined) {
+    entry.trace.mts = Date.now();
+  }
+  AssertionError.assert(typeof entry.trace.mts === 'number', 'ERR_INVALID_ENTRY');
+
+  AssertionError.assert(entry.severity instanceof Object, 'ERR_INVALID_ENTRY');
+  AssertionError.assert(typeof entry.severity.type === 'string', 'ERR_INVALID_ENTRY');
+
+  if (entry.severity.code === undefined) {
+    entry.severity.code = severity_codes[entry.severity.type];
+  }
+  AssertionError.assert(typeof entry.severity.code === 'number', 'ERR_INVALID_ENTRY');
+
   emitter.emit('*', entry);
-  emitter.emit(entry.resource.id, entry);
-  emitter.emit(entry.operation.id, entry);
+  emitter.emit(entry.resource, entry);
+  emitter.emit(entry.operation, entry);
   emitter.emit(entry.severity.type, entry);
   emitter.emit(entry.severity.code, entry);
 };
