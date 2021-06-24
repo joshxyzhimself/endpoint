@@ -38,7 +38,7 @@ export interface error {
 
 export interface severity {
   type: string,
-  code?: number,
+  code: number,
   [key:string]: unknown,
 }
 
@@ -46,7 +46,7 @@ export interface trace {
   /**
    * epoch milliseconds number.
    */
-  mts?: number,
+  mts: number,
 
   /**
   * RFC 2822-compatible string.
@@ -68,7 +68,7 @@ export interface entry {
   data?: data,
   error?: error,
   severity: severity,
-  trace?: trace,
+  trace: trace,
 }
 
 export type capture_error = (e: Error) => error;

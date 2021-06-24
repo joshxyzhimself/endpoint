@@ -88,23 +88,12 @@ const emit = (entry) => {
   AssertionError.assert(typeof entry.resource === 'string', 'ERR_INVALID_ENTRY');
   AssertionError.assert(typeof entry.operation === 'string', 'ERR_INVALID_ENTRY');
 
-  if (entry.trace === undefined) {
-    entry.trace = {};
-  }
-  AssertionError.assert(entry.trace instanceof Object, 'ERR_INVALID_ENTRY');
-
-  if (entry.trace.mts === undefined) {
-    entry.trace.mts = Date.now();
-  }
-  AssertionError.assert(typeof entry.trace.mts === 'number', 'ERR_INVALID_ENTRY');
-
   AssertionError.assert(entry.severity instanceof Object, 'ERR_INVALID_ENTRY');
   AssertionError.assert(typeof entry.severity.type === 'string', 'ERR_INVALID_ENTRY');
-
-  if (entry.severity.code === undefined) {
-    entry.severity.code = severity_codes[entry.severity.type];
-  }
   AssertionError.assert(typeof entry.severity.code === 'number', 'ERR_INVALID_ENTRY');
+
+  AssertionError.assert(entry.trace instanceof Object, 'ERR_INVALID_ENTRY');
+  AssertionError.assert(typeof entry.trace.mts === 'number', 'ERR_INVALID_ENTRY');
 
   emitter.emit('*', entry);
   emitter.emit(entry.resource, entry);

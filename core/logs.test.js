@@ -28,13 +28,15 @@ process.nextTick(async () => {
       resource,
       operation,
       message: 'test',
-      severity: { type: logs.severity_types.INFO },
+      severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
+      trace: { mts: Date.now() },
     });
     logs.emit({
       resource,
       operation,
       data: { input },
-      severity: { type: logs.severity_types.INFO },
+      severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
+      trace: { mts: Date.now() },
     });
     throw new Error('test_error');
   } catch (e) {
@@ -43,7 +45,8 @@ process.nextTick(async () => {
       operation,
       data: { input },
       error: logs.capture_error(e),
-      severity: { type: logs.severity_types.ERROR },
+      severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },
+      trace: { mts: Date.now() },
     });
   }
 });
