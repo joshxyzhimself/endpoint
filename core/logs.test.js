@@ -18,22 +18,22 @@ process.nextTick(async () => {
 
   });
 
-  const resource = 'test_resource';
-  const operation = 'test_operation';
+  const resource_id = 'test_resource';
+  const operation_id = 'test_operation';
 
   const input = { foo: 'bar' };
 
   try {
     logs.emit({
-      resource,
-      operation,
+      resource_id,
+      operation_id,
       message: 'test',
       severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
       trace: { mts: Date.now() },
     });
     logs.emit({
-      resource,
-      operation,
+      resource_id,
+      operation_id,
       data: { input },
       severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
       trace: { mts: Date.now() },
@@ -41,8 +41,8 @@ process.nextTick(async () => {
     throw new Error('test_error');
   } catch (e) {
     logs.emit({
-      resource,
-      operation,
+      resource_id,
+      operation_id,
       data: { input },
       error: logs.capture_error(e),
       severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },

@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const assert = require('assert');
 const mime_types = require('mime-types');
 const uws = require('uWebSockets.js');
-const logger = require('../core/logger');
+const logs = require('../core/logs');
 
 const cache_control_types = {
   // For sensitive data
@@ -34,24 +34,25 @@ const cached_files = new Map();
  */
 const internal_handler_2 = async (res, handler, response, request) => {
   try {
-    assert(typeof res === 'object');
-    assert(typeof res.writeStatus === 'function');
-    assert(typeof res.writeHeader === 'function');
-    assert(typeof res.end === 'function');
-    assert(typeof handler === 'function');
-    assert(typeof response === 'object');
-    assert(typeof request === 'object');
+    assert(res instanceof Object);
+    assert(res.writeStatus instanceof Function);
+    assert(res.writeHeader instanceof Function);
+    assert(res.end instanceof Function);
+    assert(handler instanceof Function);
+    assert(response instanceof Object);
+    assert(request instanceof Object);
     await handler(response, request);
     assert(typeof response.aborted === 'boolean');
-    assert(typeof response.ended === 'boolean');
     if (response.aborted === true) {
       return;
     }
+    assert(typeof response.ended === 'boolean');
+    assert(response.ended === false);
     assert(typeof response.file_cache === 'boolean');
     assert(typeof response.file_cache_max_age_ms === 'number');
     assert(typeof response.compress === 'boolean');
     assert(typeof response.status === 'number');
-    assert(typeof response.headers === 'object');
+    assert(response.headers instanceof Object);
     if (typeof response.file_path === 'string') {
       assert(path.isAbsolute(response.file_path) === true);
       if (response.file_cache === true) {
@@ -115,7 +116,7 @@ const internal_handler_2 = async (res, handler, response, request) => {
     } else if (typeof response.html === 'string') {
       response.headers['Content-Type'] = 'text/html';
       response.buffer = Buffer.from(response.html);
-    } else if (typeof response.json === 'object') {
+    } else if (response.json instanceof Object) {
       response.headers['Content-Type'] = 'application/json';
       response.buffer = Buffer.from(JSON.stringify(response.json));
     } else if (response.buffer instanceof Buffer) {
@@ -204,7 +205,14 @@ const internal_handler_2 = async (res, handler, response, request) => {
         response.ended = true;
       }
     }
-    logger.log('uwu', logger.severity_types.ERROR, e.message, { e, response });
+    logs.emit({
+      resource_id: 'uwu',
+      operation_id: 'internal_handler_2',
+      data: { request, response },
+      error: logs.capture_error(e),
+      severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },
+      trace: { mts: Date.now() },
+    });
   }
 };
 
@@ -212,19 +220,19 @@ const internal_handler_2 = async (res, handler, response, request) => {
  * @type {import('./uwu').serve_handler}
  */
 const serve_handler = (handler) => {
-  assert(typeof handler === 'function');
+  assert(handler instanceof Function);
 
   /**
    * @type {import('./uwu').internal_handler}
    */
   const internal_handler = (res, req) => {
-    assert(typeof res === 'object');
-    assert(typeof res.onData === 'function');
-    assert(typeof res.onAborted === 'function');
-    assert(typeof req === 'object');
-    assert(typeof req.getUrl === 'function');
-    assert(typeof req.getQuery === 'function');
-    assert(typeof req.getHeader === 'function');
+    assert(res instanceof Object);
+    assert(res.onData instanceof Function);
+    assert(res.onAborted instanceof Function);
+    assert(req instanceof Object);
+    assert(req.getUrl instanceof Function);
+    assert(req.getQuery instanceof Function);
+    assert(req.getHeader instanceof Function);
 
     /**
      * @type {import('./uwu').request}
@@ -287,7 +295,14 @@ const serve_handler = (handler) => {
           try {
             request.json = JSON.parse(buffer_string);
           } catch (e) {
-            logger.log('uwu', logger.severity_types.ERROR, e.message, { e, buffer_string });
+            logs.emit({
+              resource_id: 'uwu',
+              operation_id: 'on_data',
+              data: { request, buffer, buffer_string },
+              error: logs.capture_error(e),
+              severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },
+              trace: { mts: Date.now() },
+            });
           }
         }
         process.nextTick(internal_handler_2, res, handler, response, request);
@@ -304,8 +319,8 @@ const serve_handler = (handler) => {
  * @type {import('./uwu').serve_static}
  */
 const serve_static = (app, route_path, local_path, response_override) => {
-  assert(typeof app === 'object');
-  assert(typeof app.get === 'function');
+  assert(app instanceof Object);
+  assert(app.get instanceof Function);
 
   assert(typeof route_path === 'string');
   assert(route_path.substring(0, 1) === '/');
@@ -315,12 +330,12 @@ const serve_static = (app, route_path, local_path, response_override) => {
   assert(local_path.substring(0, 1) === '/');
   assert(local_path.substring(local_path.length - 1, local_path.length) === '/');
 
-  assert(response_override === undefined || typeof response_override === 'object');
+  assert(response_override === undefined || response_override instanceof Object);
 
   const serve_static_handler = serve_handler(async (response, request) => {
     response.file_cache = true;
     response.file_path = path.join(process.cwd(), request.url.replace(route_path, local_path));
-    if (typeof response_override === 'object') {
+    if (response_override instanceof Object) {
       Object.assign(response, response_override);
     } else {
       response.compress = false;
@@ -330,8 +345,8 @@ const serve_static = (app, route_path, local_path, response_override) => {
   });
 
   app.get(`${route_path}*`, (res, req) => {
-    assert(typeof req === 'object');
-    assert(typeof req.getUrl === 'function');
+    assert(req instanceof Object);
+    assert(req.getUrl instanceof Function);
     const request_url = req.getUrl();
     const request_url_extname = path.extname(request_url);
     if (request_url_extname === '') {

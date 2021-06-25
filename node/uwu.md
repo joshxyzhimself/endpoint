@@ -10,7 +10,6 @@ const uwu = require('endpoint/node/uwu');
 ## uwu.serve_handler(handler)
 
 - Notes
-  - Compatible with `uws.get`, `uws.post`
   - `handler` function has `response` and `request` parameters
 - Parameters
   - `handler` - `Function`, async function for handling request
@@ -72,8 +71,8 @@ app.get('/test3', uwu.serve_handler(async (response, request) => {
 ## uwu.serve_static(app, route_path, local_path, response_override?)
 
 - Notes
-  - Intended for serving static files
-  - Should be used before using `uwu.serve_handler`.
+  - For serving static files
+  - Used before using `uwu.serve_handler`.
 - Parameters
   - `app` - `Object`, uWebSockets app instance
   - `route_path` - `String`, web route path
@@ -81,7 +80,7 @@ app.get('/test3', uwu.serve_handler(async (response, request) => {
   - `response_override?` - `Object`, overrides the response object
 
 ```js
-uwu.serve_static(app, '/scripts/', '/scripts/');
+uwu.serve_static(app, '/scripts/', '/whatever/dir/scripts/');
 ```
 
 ## uwu.cache_control_types

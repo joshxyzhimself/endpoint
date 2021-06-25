@@ -85,8 +85,8 @@ const capture_error = (e) => {
  */
 const emit = (entry) => {
   AssertionError.assert(entry instanceof Object, 'ERR_INVALID_ENTRY');
-  AssertionError.assert(typeof entry.resource === 'string', 'ERR_INVALID_ENTRY');
-  AssertionError.assert(typeof entry.operation === 'string', 'ERR_INVALID_ENTRY');
+  AssertionError.assert(typeof entry.resource_id === 'string', 'ERR_INVALID_ENTRY');
+  AssertionError.assert(typeof entry.operation_id === 'string', 'ERR_INVALID_ENTRY');
 
   AssertionError.assert(entry.severity instanceof Object, 'ERR_INVALID_ENTRY');
   AssertionError.assert(typeof entry.severity.type === 'string', 'ERR_INVALID_ENTRY');
@@ -96,10 +96,7 @@ const emit = (entry) => {
   AssertionError.assert(typeof entry.trace.mts === 'number', 'ERR_INVALID_ENTRY');
 
   emitter.emit('*', entry);
-  emitter.emit(entry.resource, entry);
-  emitter.emit(entry.operation, entry);
-  emitter.emit(entry.severity.type, entry);
-  emitter.emit(entry.severity.code, entry);
+  emitter.emit(entry.resource_id, entry);
 };
 
 module.exports = {

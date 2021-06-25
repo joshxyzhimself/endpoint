@@ -62,8 +62,8 @@ export interface trace {
 }
 
 export interface entry {
-  resource: string,
-  operation: string,
+  resource_id: string,
+  operation_id: string,
   message?: string,
   data?: data,
   error?: error,
