@@ -2,7 +2,7 @@
 ## Usage
 
 ```js
-yarn add endpoint@joshxyzhimself/endpoint#v5.13.0
+yarn add endpoint@joshxyzhimself/endpoint#v5.16.2
 ```
 
 ## License
