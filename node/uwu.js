@@ -1,8 +1,5 @@
-// @ts-check
 
-/**
- * uwu: uWebSockets utilities
- */
+// @ts-check
 
 const fs = require('fs');
 const path = require('path');

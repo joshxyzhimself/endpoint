@@ -12,13 +12,21 @@ export interface port_access_types {
   EXCLUSIVE: number,
 }
 
+export interface response_headers {
+  [key:string]: any,
+}
+
+export interface response_json {
+  [key:string]: any,
+}
+
 export interface response {
   aborted?: boolean,
   ended?: boolean,
   error?: Error,
 
   status?: number,
-  headers?: object,
+  headers?: response_headers,
 
   file_path?: string,
   file_name?: string,
@@ -29,7 +37,7 @@ export interface response {
 
   text?: string,
   html?: string,
-  json?: object,
+  json?: response_json,
   buffer?: Buffer,
   buffer_hash?: string,
 
@@ -55,12 +63,16 @@ export interface headers {
   user_agent: string,
 }
 
+export interface request_json {
+  [key:string]: any,
+}
+
 export interface request {
   url: string,
   query: string,
   method: string,
   headers: headers,
-  json: object,
+  json: request_json,
 }
 
 export const cache_control_types: cache_control_types;
