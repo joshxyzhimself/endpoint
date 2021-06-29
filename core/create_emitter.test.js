@@ -1,4 +1,6 @@
 
+// @ts-check
+
 const create_emitter = require('./create_emitter');
 
 process.nextTick(async () => {

@@ -55,60 +55,69 @@ const internal_handler_2 = async (res, handler, response, request) => {
     assert(response.headers instanceof Object);
     if (typeof response.file_path === 'string') {
       assert(path.isAbsolute(response.file_path) === true);
-      if (response.file_cache === true) {
-        if (cached_files.has(response.file_path) === true) {
-          const cached_file = cached_files.get(response.file_path);
-          if (Date.now() - cached_file.timestamp > response.file_cache_max_age_ms) {
-            cached_files.delete(response.file_path);
-          }
+      try {
+        fs.accessSync(response.file_path);
+      } catch (e) {
+        response.status = 500;
+        if (fs.existsSync(response.file_path) === true) {
+          response.status = 404;
         }
-        if (cached_files.has(response.file_path) === false) {
+      }
+      if (response.status === 200) {
+        if (response.file_cache === true) {
+          if (cached_files.has(response.file_path) === true) {
+            const cached_file = cached_files.get(response.file_path);
+            if (Date.now() - cached_file.timestamp > response.file_cache_max_age_ms) {
+              cached_files.delete(response.file_path);
+            }
+          }
+          if (cached_files.has(response.file_path) === false) {
+            const file_name = path.basename(response.file_path);
+            const file_content_type = mime_types.contentType(file_name) || undefined;
+            const buffer = fs.readFileSync(response.file_path);
+            const buffer_hash = crypto.createHash('sha224').update(buffer).digest('hex');
+            const brotli_buffer = zlib.brotliCompressSync(buffer);
+            const brotli_buffer_hash = crypto.createHash('sha224').update(brotli_buffer).digest('hex');
+            const gzip_buffer = zlib.gzipSync(buffer);
+            const gzip_buffer_hash = crypto.createHash('sha224').update(gzip_buffer).digest('hex');
+            const timestamp = Date.now();
+            const cached_file = {
+              file_name,
+              file_content_type,
+              buffer,
+              buffer_hash,
+              brotli_buffer,
+              brotli_buffer_hash,
+              gzip_buffer,
+              gzip_buffer_hash,
+              timestamp,
+            };
+            cached_files.set(response.file_path, cached_file);
+          }
+          const cached_file = cached_files.get(response.file_path);
+          response.file_name = cached_file.file_name;
+          response.file_content_type = cached_file.file_content_type;
+          response.buffer = cached_file.buffer;
+          response.buffer_hash = cached_file.buffer_hash;
+          response.brotli_buffer = cached_file.brotli_buffer;
+          response.brotli_buffer_hash = cached_file.brotli_buffer_hash;
+          response.gzip_buffer = cached_file.gzip_buffer;
+          response.gzip_buffer_hash = cached_file.gzip_buffer_hash;
+          response.timestamp = cached_file.timestamp;
+        } else {
           fs.accessSync(response.file_path);
           const file_name = path.basename(response.file_path);
           const file_content_type = mime_types.contentType(file_name) || undefined;
           const buffer = fs.readFileSync(response.file_path);
           const buffer_hash = crypto.createHash('sha224').update(buffer).digest('hex');
-          const brotli_buffer = zlib.brotliCompressSync(buffer);
-          const brotli_buffer_hash = crypto.createHash('sha224').update(brotli_buffer).digest('hex');
-          const gzip_buffer = zlib.gzipSync(buffer);
-          const gzip_buffer_hash = crypto.createHash('sha224').update(gzip_buffer).digest('hex');
-          const timestamp = Date.now();
-          const cached_file = {
-            file_name,
-            file_content_type,
-            buffer,
-            buffer_hash,
-            brotli_buffer,
-            brotli_buffer_hash,
-            gzip_buffer,
-            gzip_buffer_hash,
-            timestamp,
-          };
-          cached_files.set(response.file_path, cached_file);
+          response.file_name = file_name;
+          response.file_content_type = file_content_type;
+          response.buffer = buffer;
+          response.buffer_hash = buffer_hash;
         }
-        const cached_file = cached_files.get(response.file_path);
-        response.file_name = cached_file.file_name;
-        response.file_content_type = cached_file.file_content_type;
-        response.buffer = cached_file.buffer;
-        response.buffer_hash = cached_file.buffer_hash;
-        response.brotli_buffer = cached_file.brotli_buffer;
-        response.brotli_buffer_hash = cached_file.brotli_buffer_hash;
-        response.gzip_buffer = cached_file.gzip_buffer;
-        response.gzip_buffer_hash = cached_file.gzip_buffer_hash;
-        response.timestamp = cached_file.timestamp;
-      } else {
-        fs.accessSync(response.file_path);
-        const file_name = path.basename(response.file_path);
-        const file_content_type = mime_types.contentType(file_name) || undefined;
-        const buffer = fs.readFileSync(response.file_path);
-        const buffer_hash = crypto.createHash('sha224').update(buffer).digest('hex');
-        response.file_name = file_name;
-        response.file_content_type = file_content_type;
-        response.buffer = buffer;
-        response.buffer_hash = buffer_hash;
-      }
-      if (typeof response.file_content_type === 'string') {
-        response.headers['Content-Type'] = response.file_content_type;
+        if (typeof response.file_content_type === 'string') {
+          response.headers['Content-Type'] = response.file_content_type;
+        }
       }
     } else if (typeof response.text === 'string') {
       response.headers['Content-Type'] = 'text/plain';
@@ -175,6 +184,7 @@ const internal_handler_2 = async (res, handler, response, request) => {
       assert(typeof value === 'string');
       res.writeHeader(key, value);
     });
+    assert(response.buffer === undefined || response.buffer instanceof Buffer);
     if (response.status === 304 || response.buffer === undefined) {
       res.end();
     } else {

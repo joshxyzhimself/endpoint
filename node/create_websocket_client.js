@@ -1,6 +1,6 @@
 const AssertionError = require('../core/AssertionError');
 const create_emitter = require('../core/create_emitter');
-const logger = require('../core/logger');
+const logs = require('../core/logs');
 const WebSocket = require('ws');
 
 const error_types = {
@@ -84,7 +84,13 @@ const create_websocket_client = (id, url) => {
   };
 
   const connect = () => {
-    logger.log(id, logger.severity_types.INFO, 'CONNECTING');
+    logs.emit({
+      resource_id: 'node_websocket_client',
+      operation_id: 'connect',
+      data: { id, state: 'CONNECTING' },
+      severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
+      trace: { mts: Date.now() },
+    });
     emitter.emit(event_types.CONNECTING);
     emitter.emit(event_types.STATE, event_types.CONNECTING);
     client = new WebSocket(url);
@@ -106,7 +112,13 @@ const create_websocket_client = (id, url) => {
     });
 
     client.on('open', () => {
-      logger.log(id, logger.severity_types.INFO, 'CONNECTED');
+      logs.emit({
+        resource_id: 'node_websocket_client',
+        operation_id: 'on_open',
+        data: { id, state: 'CONNECTED' },
+        severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
+        trace: { mts: Date.now() },
+      });
       if (client.readyState === event_types.CONNECTED) {
         emitter.emit(event_types.CONNECTED);
         emitter.emit(event_types.STATE, event_types.CONNECTED);
@@ -118,11 +130,24 @@ const create_websocket_client = (id, url) => {
       emitter.emit(event_types.MESSAGE, message);
     });
     client.on('error', (error) => {
-      logger.log(id, logger.severity_types.ERROR, 'ERROR', { error });
+      logs.emit({
+        resource_id: 'node_websocket_client',
+        operation_id: 'on_error',
+        data: { id, state: 'ERROR' },
+        error: logs.capture_error(error),
+        severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },
+        trace: { mts: Date.now() },
+      });
       emitter.emit(event_types.ERROR, error);
     });
     client.on('close', async (code, reason) => {
-      logger.log(id, logger.severity_types.INFO, 'DISCONNECTED', { code, reason });
+      logs.emit({
+        resource_id: 'node_websocket_client',
+        operation_id: 'on_disconnect',
+        data: { id, code, reason, state: 'DISCONNECTED' },
+        severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
+        trace: { mts: Date.now() },
+      });
       emitter.emit(event_types.DISCONNECTED, code, reason);
       emitter.emit(event_types.STATE, event_types.DISCONNECTED, code, reason);
       clearInterval(ping_interval);
@@ -142,7 +167,13 @@ const create_websocket_client = (id, url) => {
   const disconnect = () => {
     if (client instanceof WebSocket) {
       if (client.readyState === event_types.CONNECTED) {
-        logger.log(id, logger.severity_types.INFO, 'DISCONNECTING');
+        logs.emit({
+          resource_id: 'node_websocket_client',
+          operation_id: 'disconnect',
+          data: { id, state: 'DISCONNECTING' },
+          severity: { type: logs.severity_types.INFO, code: logs.severity_codes.INFO },
+          trace: { mts: Date.now() },
+        });
         emitter.emit(event_types.DISCONNECTING);
         emitter.emit(event_types.STATE, event_types.DISCONNECTING);
         client.close(1000);

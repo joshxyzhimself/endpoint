@@ -1,5 +1,4 @@
 
-
 export type index = Map<string|number, Set<Function>>;
 export type on = (id: string|number, listener: Function) => void;
 export type off = (id: string|number, listener: Function) => void;
