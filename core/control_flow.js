@@ -12,6 +12,10 @@ const errors = {
     code: 'ERR_CONTROL_FLOW_INVALID_CALLBACK',
     message: 'Invalid callback.',
   },
+  INVALID_TIMEOUT: {
+    code: 'ERR_CONTROL_FLOW_INVALID_TIMEOUT',
+    message: 'Invalid timeout.',
+  },
 };
 
 /**
@@ -43,6 +47,11 @@ const parallel = async (values, callback) => {
   return results;
 };
 
-const control_flow = { series, parallel };
+const sleep = async (timeout) => {
+  AssertionError.assert(typeof timeout === 'number', errors.INVALID_TIMEOUT.code, errors.INVALID_TIMEOUT.message);
+  await new Promise((resolve) => setTimeout(resolve, timeout));
+};
+
+const control_flow = { series, parallel, sleep };
 
 module.exports = control_flow;
