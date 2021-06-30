@@ -1,4 +1,6 @@
 
+// @ts-check
+
 const AssertionError = require('./AssertionError');
 
 /**

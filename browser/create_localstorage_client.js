@@ -1,10 +1,19 @@
 
+// @ts-check
+
 const AssertionError = require('../core/AssertionError');
 const create_emitter = require('../core/create_emitter');
 
 const event_types = {
   UPDATE: 'update',
   ERROR: 'error',
+};
+
+const errors = {
+  INVALID_KEY: {
+    code: 'ERR_LOCALSTORAGE_INVALID_KEY',
+    message: 'Invalid key.',
+  },
 };
 
 const create_localstorage_client = () => {
@@ -27,12 +36,12 @@ const create_localstorage_client = () => {
     emitter.emit(event_types.UPDATE, key, null);
   };
   const set = (key, value) => {
-    AssertionError.assert(typeof key === 'string');
+    AssertionError.assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
     const encoded_value = JSON.stringify(value);
     localStorage.setItem(key, encoded_value);
   };
   const get = (key) => {
-    AssertionError.assert(typeof key === 'string');
+    AssertionError.assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
     const encoded_value = localStorage.getItem(key);
     if (typeof encoded_value === 'string') {
       const value = JSON.parse(encoded_value);
@@ -41,7 +50,7 @@ const create_localstorage_client = () => {
     return null;
   };
   const remove = (key) => {
-    AssertionError.assert(typeof key === 'string');
+    AssertionError.assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
     localStorage.removeItem(key);
   };
   const localstorage_client = {

@@ -9,7 +9,6 @@ export interface emitter {
   on: on
   off: off
   emit: emit
-  index: index
 }
 
 const create_emitter: create_emitter;

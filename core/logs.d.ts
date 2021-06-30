@@ -26,8 +26,16 @@ export interface data {
   [key:string]: unknown,
 }
 
+export interface error_with_optional_code {
+  name: string,
+  code?: string,
+  message: string,
+  stack: string,
+}
+
 export interface error {
   name: string,
+  code: string,
   message: string,
   stack: string,
   got_response_status_code?: unknown,
@@ -71,7 +79,7 @@ export interface entry {
   trace: trace,
 }
 
-export type capture_error = (e: Error) => error;
+export type capture_error = (e: raw_error) => error;
 export type emit = (entry: entry) => void;
 
 export type listener = (entry: entry) => void;

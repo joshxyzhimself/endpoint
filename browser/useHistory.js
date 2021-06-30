@@ -1,4 +1,6 @@
 
+// @ts-check
+
 // updated: 01-13-2021
 
 import { useState, useEffect, useCallback } from 'react';

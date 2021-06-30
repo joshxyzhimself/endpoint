@@ -1,13 +1,15 @@
 
-const AssertionError = require('./AssertionError');
+// @ts-check
+
+const assert = require('assert');
 const queue = require('./queue');
 
 let index_counter = 0;
 
 const q = queue(5, async (index) => {
   console.log({ values: q.values });
-  AssertionError.assert(typeof index === 'number');
-  AssertionError.assert(Number.isInteger(index) === true);
+  assert(typeof index === 'number');
+  assert(Number.isInteger(index) === true);
   try {
     await new Promise((resolve) => setTimeout(resolve, 500));
     const response = null;

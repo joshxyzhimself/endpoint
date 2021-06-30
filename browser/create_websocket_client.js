@@ -1,10 +1,27 @@
+
+// @ts-check
+
 const AssertionError = require('../core/AssertionError');
 const create_emitter = require('../core/create_emitter');
 const logs = require('../core/logs');
 
-const error_types = {
-  ERR_INVALID_PARAMETER_TYPE: 'ERR_INVALID_PARAMETER_TYPE',
-  ERR_WEBSOCKET_DISCONNECTED: 'ERR_WEBSOCKET_DISCONNECTED',
+const errors = {
+  INVALID_ID: {
+    code: 'ERR_WEBSOCKET_INVALID_ID',
+    message: 'Invalid id.',
+  },
+  INVALID_URL: {
+    code: 'ERR_WEBSOCKET_INVALID_URL',
+    message: 'Invalid url.',
+  },
+  INVALID_DATA: {
+    code: 'ERR_WEBSOCKET_INVALID_DATA',
+    message: 'Invalid data.',
+  },
+  SOCKET_DISCONNECTED: {
+    code: 'ERR_WEBSOCKET_DISCONNECTED',
+    message: 'Websocket disconnected.',
+  },
 };
 
 const event_types = {
@@ -28,8 +45,8 @@ const event_types = {
  * @param {string} url
  */
 const create_websocket_client = (id, url) => {
-  AssertionError.assert(typeof id === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
-  AssertionError.assert(typeof url === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+  AssertionError.assert(typeof id === 'string', errors.INVALID_ID.code, errors.INVALID_ID.message);
+  AssertionError.assert(typeof url === 'string', errors.INVALID_URL.code, errors.INVALID_URL.message);
 
   let client = null;
   let backoff = 125;
@@ -47,9 +64,9 @@ const create_websocket_client = (id, url) => {
    * @param {object} data
    */
   const send = (data) => {
-    AssertionError.assert(data instanceof Object, error_types.ERR_INVALID_PARAMETER_TYPE);
-    AssertionError.assert(client instanceof WebSocket, error_types.ERR_WEBSOCKET_DISCONNECTED);
-    AssertionError.assert(client.readyState === 1, error_types.ERR_WEBSOCKET_DISCONNECTED);
+    AssertionError.assert(data instanceof Object, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+    AssertionError.assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    AssertionError.assert(client.readyState === 1, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
     const data2 = JSON.stringify(data);
     client.send(data2);
   };
@@ -58,9 +75,9 @@ const create_websocket_client = (id, url) => {
    * @param {ArrayBuffer} data
    */
   const send_arraybuffer = (data) => {
-    AssertionError.assert(data instanceof ArrayBuffer, error_types.ERR_INVALID_PARAMETER_TYPE);
-    AssertionError.assert(client instanceof WebSocket, error_types.ERR_WEBSOCKET_DISCONNECTED);
-    AssertionError.assert(client.readyState === 1, error_types.ERR_WEBSOCKET_DISCONNECTED);
+    AssertionError.assert(data instanceof ArrayBuffer, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+    AssertionError.assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    AssertionError.assert(client.readyState === 1, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
     client.send(data);
   };
 
@@ -89,7 +106,7 @@ const create_websocket_client = (id, url) => {
       }
     };
     client.onmessage = (event) => {
-      AssertionError.assert(typeof event.data === 'string', error_types.ERR_INVALID_PARAMETER_TYPE);
+      AssertionError.assert(typeof event.data === 'string', errors.INVALID_DATA.code, errors.INVALID_DATA.message);
       const message = JSON.parse(event.data);
       emitter.emit(event_types.MESSAGE, message);
     };
@@ -157,7 +174,7 @@ const create_websocket_client = (id, url) => {
     on: emitter.on,
     off: emitter.off,
     event_types,
-    error_types,
+    errors,
   };
 
   return websocket_client;

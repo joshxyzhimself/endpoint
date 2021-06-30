@@ -1,11 +1,13 @@
 
-const AssertionError = require('./AssertionError');
+// @ts-check
+
+const assert = require('assert');
 const queue = require('./queue');
 
 const values = [100, 200, 300, 400, 500];
 
 const q = queue(2, async (value) => {
-  AssertionError.assert(typeof value === 'number');
+  assert(typeof value === 'number');
 
   if (value === 200) {
     q.pause();

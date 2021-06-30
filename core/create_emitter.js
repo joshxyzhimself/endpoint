@@ -17,13 +17,12 @@ const create_emitter = () => {
    * @type {import('./create_emitter').on}
    */
   const on = (id, listener) => {
-    AssertionError.assert(typeof id === 'string' || typeof id === 'number');
-    AssertionError.assert(listener instanceof Function);
+    AssertionError.assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
+    AssertionError.assert(listener instanceof Function, 'ERR_EMITTER_INVALID_EVENT_LISTENER', 'Invalid event listener.');
     if (index.has(id) === false) {
       index.set(id, new Set());
     }
     const listeners = index.get(id);
-    AssertionError.assert(listeners instanceof Set);
     if (listeners.has(listener) === false) {
       listeners.add(listener);
     }
@@ -33,11 +32,10 @@ const create_emitter = () => {
    * @type {import('./create_emitter').off}
    */
   const off = (id, listener) => {
-    AssertionError.assert(typeof id === 'string' || typeof id === 'number');
-    AssertionError.assert(listener instanceof Function);
-    AssertionError.assert(index.has(id) === true);
+    AssertionError.assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
+    AssertionError.assert(listener instanceof Function, 'ERR_EMITTER_INVALID_EVENT_LISTENER', 'Invalid event listener.');
+    AssertionError.assert(index.has(id) === true, 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
     const listeners = index.get(id);
-    AssertionError.assert(listeners instanceof Set);
     if (listeners.has(listener) === true) {
       listeners.delete(listener);
     }
@@ -50,7 +48,7 @@ const create_emitter = () => {
    * @type {import('./create_emitter').emit}
    */
   const emit = (id, ...args) => {
-    AssertionError.assert(typeof id === 'string' || typeof id === 'number');
+    AssertionError.assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
     if (index.has(id) == true) {
       const listeners = index.get(id);
       listeners.forEach((listener) => {
@@ -62,7 +60,7 @@ const create_emitter = () => {
   /**
    * @type {import('./create_emitter').emitter}
    */
-  const emitter = { on, off, emit, index };
+  const emitter = { on, off, emit };
   return emitter;
 };
 
