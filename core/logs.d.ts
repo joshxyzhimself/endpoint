@@ -35,7 +35,7 @@ export interface error_with_optional_code {
 
 export interface error {
   name: string,
-  code: string,
+  code?: string,
   message: string,
   stack: string,
   got_response_status_code?: unknown,
