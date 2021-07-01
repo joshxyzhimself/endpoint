@@ -1,4 +1,6 @@
-const util = require('util');
+
+// @ts-check
+
 const assert = require('assert');
 const crypto = require('crypto');
 
@@ -6,8 +8,6 @@ const crypto = require('crypto');
  * References
  * - https://blog.filippo.io/the-scrypt-parameters/
  */
-
-const scrypt_derive_key = util.promisify(crypto.scrypt);
 
 const config = {
   length: 64,
@@ -28,18 +28,27 @@ const create_salt = () => crypto.randomBytes(32).toString('hex');
  *
  * @param {string} password
  * @param {string} password_salt
- * @returns {string}
+ * @returns {Promise<string>}
  */
-const derive_key = async (password, password_salt) => {
-  assert(typeof password === 'string');
-  assert(typeof password_salt === 'string');
-  const utf8_password_normalized = password.normalize('NFKC');
-  const utf8_password_normalized_buffer = Buffer.from(utf8_password_normalized);
-  const password_salt_buffer = Buffer.from(password_salt, 'hex');
-  const password_key_buffer = await scrypt_derive_key(utf8_password_normalized_buffer, password_salt_buffer, config.length, config.options);
-  const password_key = password_key_buffer.toString('hex');
-  return password_key;
-};
+const derive_key = (password, password_salt) => new Promise((resolve, reject) => {
+  try {
+    assert(typeof password === 'string');
+    assert(typeof password_salt === 'string');
+    const password_normalized = password.normalize('NFKC');
+    const password_normalized_buffer = Buffer.from(password_normalized);
+    const password_salt_buffer = Buffer.from(password_salt, 'hex');
+    crypto.scrypt(password_normalized_buffer, password_salt_buffer, config.length, config.options, ((error, password_key_buffer) => {
+      if (error instanceof Error) {
+        reject(error);
+        return;
+      }
+      const password_key = password_key_buffer.toString('hex');
+      resolve(password_key);
+    }));
+  } catch (e) {
+    reject(e);
+  }
+});
 
 const scrypt = {
   safe_username_regex: /^[A-Za-z0-9_]+$/,

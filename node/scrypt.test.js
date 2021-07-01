@@ -1,4 +1,6 @@
 
+// @ts-check
+
 const scrypt = require('./scrypt');
 
 (async () => {

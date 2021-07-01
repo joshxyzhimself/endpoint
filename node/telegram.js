@@ -1,8 +1,9 @@
-// 01-23-2021
+
+// @ts-check
 
 const assert = require('assert');
-const got = require('got');
 const multipart = require('multi-part');
+const got = require('got').default;
 
 const post_form = async (url, body) => {
   assert(typeof url === 'string');
@@ -16,33 +17,52 @@ const post_form = async (url, body) => {
   });
   const form_buffer = await form.buffer();
   const form_headers = form.getHeaders(false);
-  const response = await got.post(url, { headers: form_headers, body: form_buffer }).json();
+  const request_options = {
+    headers: form_headers,
+    body: form_buffer,
+    timeout: 3000,
+  };
+  const response = await got.post(url, request_options).json();
   return response;
 };
 
 const post_json = async (url, body) => {
   assert(typeof url === 'string');
   assert(body instanceof Object);
-  const response = await got.post(url, { json: body }).json();
+  const request_options = {
+    json: body,
+    timeout: 3000,
+  };
+  const response = await got.post(url, request_options).json();
   return response;
 };
 
 const get_json = async (url, body) => {
   assert(typeof url === 'string');
   assert(body instanceof Object);
-  const response = await got.get(url, { searchParams: body }).json();
+  const request_options = {
+    searchParams: body,
+    timeout: 3000,
+  };
+  const response = await got.get(url, request_options).json();
   return response;
 };
 
 const get_buffer = async (url) => {
   assert(typeof url === 'string');
-  const response = await got.get(url).buffer();
+  const request_options = {
+    timeout: 3000,
+  };
+  const response = await got.get(url, request_options).buffer();
   return response;
 };
 
 const get_text = async (url) => {
   assert(typeof url === 'string');
-  const response = await got.get(url).text();
+  const request_options = {
+    timeout: 3000,
+  };
+  const response = await got.get(url, request_options).text();
   return response;
 };
 

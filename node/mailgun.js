@@ -1,5 +1,8 @@
+
+// @ts-check
+
 const assert = require('assert');
-const got = require('got');
+const got = require('got').default;
 
 const send_message = async (domain, password, from, to, subject, text) => {
   assert(typeof domain === 'string', 'Invalid parameter type for "domain".');
@@ -15,6 +18,7 @@ const send_message = async (domain, password, from, to, subject, text) => {
     username: 'api',
     password,
     form: { from, to, subject, text },
+    timeout: 10000,
   }).json();
 
   return response;
