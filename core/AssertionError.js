@@ -38,14 +38,14 @@ class AssertionError extends Error {
     if (typeof value !== 'boolean') {
       throw new TypeError('AssertionError.assert(value, code?, message?), "value" must be a boolean.');
     }
-    if (typeof code !== 'string') {
+    if (code !== undefined && typeof code !== 'string') {
       throw new TypeError('AssertionError.assert(value, code?, message?), "code" must be a string.');
     }
-    if (typeof message !== 'string') {
+    if (message !== undefined && typeof message !== 'string') {
       throw new TypeError('AssertionError.assert(value, code?, message?), "message" must be a string.');
     }
     if (value === false) {
-      throw new AssertionError(code, message);
+      throw new AssertionError(code || 'ERR_ASSERTION_ERROR', message || 'Assertion error.');
     }
   }
 }
