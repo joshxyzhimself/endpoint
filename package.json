@@ -1,13 +1,13 @@
 {
   "name": "endpoint",
-  "version": "6.0.0",
+  "version": "6.0.5",
   "description": "none",
   "repository": "git@github.com:joshxyzhimself/endpoint.git",
   "author": "joshxyzhimself <joshxyzhimself@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "benchmark": "^2.1.4",
-    "eslint": "^7.29.0"
+    "eslint": "^7.30.0"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^7.13.0",
@@ -16,9 +16,9 @@
     "luxon": "^1.27.0",
     "multi-part": "^3.0.0",
     "mysql2": "^2.2.5",
-    "postgres": "^2.0.0-beta.5",
+    "postgres": "^2.0.0-beta.6",
     "react": "^17.0.2",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v19.3.0",
-    "ws": "^7.5.1"
+    "ws": "^7.5.2"
   }
 }
