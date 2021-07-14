@@ -1,11 +1,17 @@
 
 import * as http from 'http';
+import * as undici from 'undici';
+
+
+export type get_response_body = (
+  response: undici.Dispatcher.ResponseData,
+) => Promise<Buffer|object>;
 
 
 export interface json_response {
   status: number,
   headers: object,
-  body: object,
+  body: Buffer|object,
 }
 
 

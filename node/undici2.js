@@ -11,24 +11,31 @@ const mime_types = require('mime-types');
 const request = undici.request;
 
 
-const get_response_body_json = (response_body) => new Promise((resolve, reject) => {
-  assert(response_body instanceof Object);
-  assert(response_body.on instanceof Function);
+/**
+ *
+ * @type {import('./undici2').get_response_body}
+ */
+const get_response_body = (response) => new Promise((resolve, reject) => {
+  assert(response.body instanceof Object);
+  assert(response.body.on instanceof Function);
   const buffer_chunks = [];
-  response_body.on('data', (buffer_chunk) => {
+  response.body.on('data', (buffer_chunk) => {
     assert(buffer_chunk instanceof Buffer);
     buffer_chunks.push(buffer_chunk);
   });
-  response_body.on('end', () => {
+  response.body.on('end', () => {
     const buffer = Buffer.concat(buffer_chunks);
-    const buffer_string = buffer.toString('utf-8');
-    try {
-      const response_json = JSON.parse(buffer_string);
-      resolve(response_json);
-    } catch (e) {
-      console.error(buffer_string);
-      reject(e);
+    if (response.headers['content-type'].includes('application/json') === true) {
+      const buffer_string = buffer.toString('utf-8');
+      try {
+        const response_json = JSON.parse(buffer_string);
+        resolve(response_json);
+      } catch (e) {
+        console.error(buffer_string);
+        reject(e);
+      }
     }
+    resolve(buffer);
   });
 });
 
@@ -50,7 +57,7 @@ const json_post = async (request_url, request_headers, request_body) => {
   });
   const status = undici_response.statusCode;
   const headers = undici_response.headers;
-  const body = await get_response_body_json(undici_response.body);
+  const body = await get_response_body(undici_response);
   const response = { status, headers, body };
   return response;
 };
@@ -68,7 +75,7 @@ const json_get = async (request_url, request_headers) => {
   });
   const status = undici_response.statusCode;
   const headers = undici_response.headers;
-  const body = await get_response_body_json(undici_response.body);
+  const body = await get_response_body(undici_response);
   const response = { status, headers, body };
   return response;
 };
@@ -168,7 +175,7 @@ const form_post = async (request_url, request_headers, form_items) => {
   });
   const status = undici_response.statusCode;
   const headers = undici_response.headers;
-  const body = await get_response_body_json(undici_response.body);
+  const body = await get_response_body(undici_response);
   const response = { status, headers, body };
   return response;
 };
