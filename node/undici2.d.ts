@@ -8,44 +8,45 @@ export type get_response_body = (
 ) => Promise<Buffer|object>;
 
 
-export interface json_response {
+export interface request_urlencoded_interface {
+  [key: string]: string,
+}
+
+
+export interface request_json_interface {
+  [key: string]: any,
+}
+
+
+export interface request_form_item {
+  name: string,
+  value: string|Buffer|object,
+  filename?: string,
+}
+
+export interface request_options {
+  method: string,
+  url: string,
+  headers?: http.IncomingHttpHeaders,
+  urlencoded?: request_urlencoded_interface,
+  json?: request_json_interface,
+  form?: request_form_item[],
+  body?: string,
+}
+
+
+export interface response {
   status: number,
   headers: object,
   body: Buffer|object,
 }
 
 
-export type json_post = (
-  request_url: string,
-  request_headers: http.IncomingHttpHeaders,
-  request_body: object,
-) => json_response
-
-
-export type json_get = (
-  request_url: string,
-  request_headers: http.IncomingHttpHeaders,
-) => json_response
-
-
-export interface form_item {
-  name: string,
-  value: string|Buffer|object,
-  filename?: string,
-}
-
-
-export type form_post = (
-  request_url: string,
-  request_headers: http.IncomingHttpHeaders,
-  form_items: form_item[],
-) => json_response
+export type request = (request_options: request_options) => Promise<response>;
 
 
 export interface undici2 {
-  json_post,
-  json_get,
-  form_post,
+  request: request,
 }
 
 

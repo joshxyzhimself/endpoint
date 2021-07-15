@@ -5,13 +5,14 @@
 const os = require('os');
 const assert = require('assert');
 const querystring = require('querystring');
+const undici2 = require('../undici2');
 const units = require('../../core/units');
 
-const create_clickhouse_client = (clickhouse_host, clickhouse_port, clickhouse_database, clickhouse_options) => {
+const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database, clickhouse_options) => {
   assert(typeof clickhouse_host === 'string');
   assert(typeof clickhouse_port === 'number');
   assert(typeof clickhouse_database === 'string');
-  assert(clickhouse_options instanceof Object);
+  assert(clickhouse_options === undefined || clickhouse_options instanceof Object);
   const clickhouse_options_stringified = querystring.stringify({
     date_time_input_format: 'best_effort',
     date_time_output_format: 'iso',
@@ -22,6 +23,7 @@ const create_clickhouse_client = (clickhouse_host, clickhouse_port, clickhouse_d
     min_insert_block_size_rows: units.one_million,
     min_insert_block_size_bytes: units.one_gigabyte,
     mutations_sync: 2,
+    ...clickhouse_options,
   });
 
   const clickhouse_url = `http://${clickhouse_host}:${clickhouse_port}/?${clickhouse_options_stringified}`;
@@ -32,7 +34,12 @@ const create_clickhouse_client = (clickhouse_host, clickhouse_port, clickhouse_d
   const query_text = async (query) => {
     try {
       assert(typeof query === 'string');
-      const response = await got.post(clickhouse_url, { body: query }).json();
+      const response = await undici2.request({
+        method: 'POST',
+        url: clickhouse_url,
+        urlencoded: { query },
+      });
+      console.log({ response });
       assert(typeof response === 'string');
       return response;
     } catch (e) {
@@ -50,7 +57,13 @@ const create_clickhouse_client = (clickhouse_host, clickhouse_port, clickhouse_d
   const query_json = async (query) => {
     try {
       assert(typeof query === 'string');
-      const response = await got.post(clickhouse_url, { body: query }).json();
+      const response = await undici2.request({
+        method: 'POST',
+        url: clickhouse_url,
+        urlencoded: { query },
+      });
+      console.log({ response });
+      console.log(JSON.parse(response.body.toString()));
       assert(response instanceof Object);
       assert(response.meta instanceof Array);
       assert(response.data instanceof Array);
@@ -233,4 +246,4 @@ const create_clickhouse_client = (clickhouse_host, clickhouse_port, clickhouse_d
   };
 };
 
-module.exports = create_clickhouse_client;
+module.exports = create_ch_client;
