@@ -31,7 +31,6 @@ const get_response_body = (response) => new Promise((resolve, reject) => {
         const response_json = JSON.parse(buffer_string);
         resolve(response_json);
       } catch (e) {
-        console.error(buffer_string);
         reject(e);
       }
     }
