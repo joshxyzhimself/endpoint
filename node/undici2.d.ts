@@ -45,6 +45,7 @@ export type form_post = (
 export interface undici2 {
   json_post,
   json_get,
+  form_post,
 }
 
 
