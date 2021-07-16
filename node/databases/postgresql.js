@@ -192,6 +192,8 @@ const create_pg_client = (postgres_host, postgres_port, postgres_username, postg
   const pg_client = {
     client,
     drop_table,
+    create_pgpass,
+    unlink_pgpass,
     pg_dump,
     pg_restore,
     psql,
