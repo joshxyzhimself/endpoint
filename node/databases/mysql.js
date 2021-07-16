@@ -1,6 +1,10 @@
 
+// @ts-check
+
+
 const assert = require('assert');
 const mysql2 = require('mysql2/promise');
+
 
 const create_connection = async (mysql_host, mysql_username, mysql_password, mysql_database) => {
   const mysql_connection = await mysql2.createConnection({

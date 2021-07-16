@@ -16,7 +16,7 @@ const errors = {
   },
 };
 
-const create_localstorage_client = () => {
+const create_ls_client = () => {
   const emitter = create_emitter();
   window.onstorage = (event) => {
     const key = event.key;
@@ -64,4 +64,4 @@ const create_localstorage_client = () => {
   return localstorage_client;
 };
 
-module.exports = create_localstorage_client;
+module.exports = create_ls_client;

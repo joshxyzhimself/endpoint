@@ -1,5 +1,9 @@
+
+// @ts-check
+
 const assert = require('assert');
 const luxon = require('luxon');
+
 
 /**
  * @param {String} time_zone
@@ -12,6 +16,7 @@ const set_tz = (time_zone) => {
   return luxon.Settings.defaultZoneName;
 };
 
+
 /**
  * @param {luxon.DateTime} datetime
  */
@@ -19,6 +24,7 @@ const to_iso = (datetime) => {
   assert(luxon.DateTime.isDateTime(datetime) === true, 'to_iso(datetime), "datetime" must be a DateTime object.');
   return datetime.toISO();
 };
+
 
 /**
  * @param {String} iso_datetime
@@ -30,11 +36,14 @@ const from_iso = (iso_datetime) => {
   return datetime;
 };
 
+
 const current_dt = () => {
   return luxon.DateTime.local();
 };
 
+
 const time_units = new Set(['day', 'days', 'hour', 'hours', 'minute', 'minutes', 'second', 'seconds']);
+
 
 /**
  * @param {Number} time_unit_amount
@@ -91,5 +100,6 @@ const next_dt = (time_unit_amount, time_unit) => {
     }
   }
 };
+
 
 module.exports = { set_tz, to_iso, from_iso, current_dt, next_dt, luxon };

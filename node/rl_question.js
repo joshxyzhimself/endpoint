@@ -5,8 +5,9 @@ const readline_interface = readline.createInterface({ input: process.stdin, outp
 
 /**
  * @param {string} query
+ * @returns {string}
  */
-const readline_question = (query) => new Promise((resolve, reject) => {
+const rl_question = (query) => new Promise((resolve, reject) => {
   try {
     assert(typeof query === 'string');
     readline_interface.question(query.concat('\n'), resolve);
@@ -15,4 +16,4 @@ const readline_question = (query) => new Promise((resolve, reject) => {
   }
 });
 
-module.exports = readline_question;
+module.exports = rl_question;

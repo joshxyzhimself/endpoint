@@ -8,6 +8,7 @@ const querystring = require('querystring');
 const undici2 = require('../undici2');
 const units = require('../../core/units');
 
+
 const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database, clickhouse_options) => {
   assert(typeof clickhouse_host === 'string');
   assert(typeof clickhouse_port === 'number');
@@ -26,7 +27,9 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     ...clickhouse_options,
   });
 
+
   const clickhouse_url = `http://${clickhouse_host}:${clickhouse_port}/?${clickhouse_options_stringified}`;
+
 
   /**
    * @param {string} query_string
@@ -49,6 +52,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
       throw e;
     }
   };
+
 
   const encode = (value) => {
     switch (typeof value) {
@@ -75,6 +79,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     throw new Error('encode(value), unhandled primitive type.');
   };
 
+
   const show_databases = async () => {
     const response = await query(`
       SHOW DATABASES
@@ -82,6 +87,8 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     `);
     return response;
   };
+
+
   const show_tables = async () => {
     const response = await query(`
       SHOW TABLES IN "${clickhouse_database}"
@@ -89,18 +96,23 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     `);
     return response;
   };
+
+
   const create_database = async () => {
     const response = await query(`
       CREATE DATABASE IF NOT EXISTS "${clickhouse_database}";
     `);
     return response;
   };
+
+
   const drop_database = async () => {
     const response = await query(`
       DROP DATABASE IF EXISTS "${clickhouse_database}";
     `);
     return response;
   };
+
 
   /**
    * @param {string} table
@@ -112,6 +124,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     `);
     return response;
   };
+
 
   /**
    * @param {string} table
@@ -136,6 +149,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     `);
   };
 
+
   /**
    * @param {string} table
    */
@@ -149,31 +163,37 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     return response;
   };
 
+
   /**
    * @param {string} table
    */
-  function bulk_operation (table) {
+  const create_bulk_operation = (table) => {
     assert(typeof table === 'string');
-
     const documents = [];
+
 
     /**
      * @param {object} document
      */
-    this.create = (document) => {
+    const create = (document) => {
       assert(document instanceof Object);
       documents.push(document);
     };
 
-    this.commit = async () => {
-      console.log(`clickhouse: commit "${clickhouse_database}" "${table}" ${documents.length} items, START`);
+
+    const commit = async () => {
       if (documents.length > 0) {
         const table_description = await query(`
           DESCRIBE "${clickhouse_database}"."${table}" FORMAT JSON;
         `);
         assert(table_description instanceof Object);
-        assert(table_description.rows instanceof Array);
-        const columns = table_description.rows;
+
+        // @ts-ignore
+        assert(table_description.body.json.data instanceof Array);
+
+        // @ts-ignore
+        const columns = table_description.body.json.data;
+
         columns.forEach((column) => {
           assert(column instanceof Object);
           assert(typeof column.name === 'string');
@@ -199,11 +219,20 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
           VALUES ${rows_concatenated};
         `);
       }
-      console.log(`clickhouse: commit "${clickhouse_database}" "${table}" ${documents.length} items, OK`);
     };
-  }
 
-  return {
+
+    const bulk_operation = {
+      create,
+      commit,
+    };
+
+
+    return bulk_operation;
+  };
+
+
+  const ch_client = {
     clickhouse_host,
     clickhouse_port,
     clickhouse_database,
@@ -217,8 +246,15 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     drop_table,
     insert_table_rows,
     count_table_rows,
-    bulk_operation,
+    create_bulk_operation,
   };
+
+
+  return ch_client;
 };
 
-module.exports = create_ch_client;
+
+const clickhouse = { create_ch_client };
+
+
+module.exports = clickhouse;

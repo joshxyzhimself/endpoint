@@ -1,7 +1,6 @@
 
 // @ts-check
 
-
 const crypto = require('crypto');
 const assert = require('assert');
 const undici = require('undici');
@@ -24,17 +23,16 @@ const get_response_body = (response) => new Promise((resolve, reject) => {
     const buffer = Buffer.concat(buffer_chunks);
     const response_body = {
       json: null,
-      text_plain: null,
-      text_tsv: null,
+      string: null,
       buffer,
     };
     if (response.headers['content-type'].includes('text/plain') === true) {
-      response_body.text_plain = buffer.toString('utf-8');
+      response_body.string = buffer.toString('utf-8');
       resolve(response_body);
       return;
     }
     if (response.headers['content-type'].includes('text/tab-separated-values') === true) {
-      response_body.text_tsv = buffer.toString('utf-8');
+      response_body.string = buffer.toString('utf-8');
       resolve(response_body);
       return;
     }

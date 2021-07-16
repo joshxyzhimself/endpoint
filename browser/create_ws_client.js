@@ -44,7 +44,7 @@ const event_types = {
  * @param {string} id
  * @param {string} url
  */
-const create_websocket_client = (id, url) => {
+const create_ws_client = (id, url) => {
   AssertionError.assert(typeof id === 'string', errors.INVALID_ID.code, errors.INVALID_ID.message);
   AssertionError.assert(typeof url === 'string', errors.INVALID_URL.code, errors.INVALID_URL.message);
 
@@ -180,4 +180,4 @@ const create_websocket_client = (id, url) => {
   return websocket_client;
 };
 
-module.exports = create_websocket_client;
+module.exports = create_ws_client;

@@ -33,8 +33,7 @@ export interface request_options {
 
 export interface response_body {
   json: object,
-  text_plain: string,
-  text_tsv: string,
+  string: string,
   buffer: Buffer,
 }
 
