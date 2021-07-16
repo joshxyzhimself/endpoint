@@ -37,10 +37,10 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
       const response = await undici2.request({
         method: 'POST',
         url: clickhouse_url,
-        urlencoded: { query },
+        buffer: query,
       });
       console.log({ response });
-      assert(typeof response === 'string');
+      // assert(typeof response === 'string');
       return response;
     } catch (e) {
       console.error({ query: query.substring(0, 200) });
@@ -60,14 +60,12 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
       const response = await undici2.request({
         method: 'POST',
         url: clickhouse_url,
-        urlencoded: { query },
+        buffer: query,
       });
-      console.log({ response });
-      console.log(JSON.parse(response.body.toString()));
       assert(response instanceof Object);
-      assert(response.meta instanceof Array);
-      assert(response.data instanceof Array);
-      return { columns: response.meta, rows: response.data };
+      assert(response.body.json.meta instanceof Array);
+      assert(response.body.json.data instanceof Array);
+      return { columns: response.body.json.meta, rows: response.body.json.data };
     } catch (e) {
       console.error({ query: query.substring(0, 200) });
       if (e.response instanceof Object && typeof e.response.body === 'string') {

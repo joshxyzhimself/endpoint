@@ -22,16 +22,34 @@ const get_response_body = (response) => new Promise((resolve, reject) => {
   });
   response.body.on('end', () => {
     const buffer = Buffer.concat(buffer_chunks);
+    const response_body = {
+      json: null,
+      text_plain: null,
+      text_tsv: null,
+      buffer,
+    };
+    if (response.headers['content-type'].includes('text/plain') === true) {
+      response_body.text_plain = buffer.toString('utf-8');
+      resolve(response_body);
+      return;
+    }
+    if (response.headers['content-type'].includes('text/tab-separated-values') === true) {
+      response_body.text_tsv = buffer.toString('utf-8');
+      resolve(response_body);
+      return;
+    }
     if (response.headers['content-type'].includes('application/json') === true) {
       const buffer_string = buffer.toString('utf-8');
       try {
-        const response_json = JSON.parse(buffer_string);
-        resolve(response_json);
+        response_body.json = JSON.parse(buffer_string);
+        resolve(response_body);
+        return;
       } catch (e) {
         reject(e);
+        return;
       }
     }
-    resolve(buffer);
+    resolve(response_body);
   });
 });
 
@@ -47,6 +65,7 @@ const request = async (request_options) => {
   assert(request_options.urlencoded === undefined || request_options.urlencoded instanceof Object);
   assert(request_options.json === undefined || request_options.json instanceof Object);
   assert(request_options.form === undefined || request_options.form instanceof Array);
+  assert(request_options.buffer === undefined || typeof request_options.buffer === 'string' || request_options.buffer instanceof Buffer);
   const request_headers = { ...request_options.headers };
   let request_body;
   if (request_options.method === 'GET' || request_options.method === 'HEAD') {
@@ -56,16 +75,19 @@ const request = async (request_options) => {
   } else if (request_options.urlencoded instanceof Object) {
     assert(request_options.json === undefined);
     assert(request_options.form === undefined);
+    assert(request_options.buffer === undefined);
     request_body = new URLSearchParams(request_options.urlencoded).toString();
     request_headers['content-type'] = 'application/x-www-form-urlencoded';
   } else if (request_options.json instanceof Object) {
     assert(request_options.urlencoded === undefined);
     assert(request_options.form === undefined);
+    assert(request_options.buffer === undefined);
     request_body = JSON.stringify(request_options.json);
     request_headers['content-type'] = 'application/json';
   } else if (request_options.form instanceof Array) {
     assert(request_options.urlencoded === undefined);
     assert(request_options.json === undefined);
+    assert(request_options.buffer === undefined);
     const form_boundary = crypto.randomBytes(32).toString('hex');
     const form_items = request_options.form;
     const form_item_buffers = [];
@@ -126,6 +148,12 @@ const request = async (request_options) => {
     request_body = Buffer.concat(form_item_buffers);
     request_headers['content-type'] = `multipart/form-data; boundary=${form_boundary}`;
     request_headers['content-length'] = String(request_body.byteLength);
+  } else if (typeof request_options.buffer === 'string' || request_options.buffer instanceof Buffer) {
+    assert(request_options.urlencoded === undefined);
+    assert(request_options.json === undefined);
+    assert(request_options.form === undefined);
+    request_body = request_options.buffer;
+    request_headers['content-type'] = 'application/octet-stream';
   }
   const undici_response = await undici.request(request_options.url, {
     method: request_options.method,

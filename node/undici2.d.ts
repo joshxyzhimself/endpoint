@@ -3,9 +3,17 @@ import * as http from 'http';
 import * as undici from 'undici';
 
 
+export interface response_body {
+  json: object,
+  text_plain: string,
+  text_tsv: string,
+  buffer: Buffer,
+}
+
+
 export type get_response_body = (
   response: undici.Dispatcher.ResponseData,
-) => Promise<Buffer|object>;
+) => Promise<response_body>;
 
 
 export interface request_urlencoded_interface {
@@ -20,7 +28,7 @@ export interface request_json_interface {
 
 export interface request_form_item {
   name: string,
-  value: string|Buffer|object,
+  value: object|string|Buffer,
   filename?: string,
 }
 
@@ -31,14 +39,14 @@ export interface request_options {
   urlencoded?: request_urlencoded_interface,
   json?: request_json_interface,
   form?: request_form_item[],
-  body?: string,
+  buffer?: string|Buffer,
 }
 
 
 export interface response {
   status: number,
   headers: object,
-  body: Buffer|object,
+  body: response_body,
 }
 
 
