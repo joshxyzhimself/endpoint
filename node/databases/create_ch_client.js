@@ -39,9 +39,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
         url: clickhouse_url,
         buffer: query,
       });
-      console.log({ response });
-      // assert(typeof response === 'string');
-      return response;
+      return response.body.text_tsv || response.body.text_plain || null;
     } catch (e) {
       console.error({ query: query.substring(0, 200) });
       if (e.response instanceof Object && typeof e.response.body === 'string') {
@@ -63,8 +61,11 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
         buffer: query,
       });
       assert(response instanceof Object);
+      // @ts-ignore
       assert(response.body.json.meta instanceof Array);
+      // @ts-ignore
       assert(response.body.json.data instanceof Array);
+      // @ts-ignore
       return { columns: response.body.json.meta, rows: response.body.json.data };
     } catch (e) {
       console.error({ query: query.substring(0, 200) });

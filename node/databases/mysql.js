@@ -1,17 +1,12 @@
 
 const assert = require('assert');
 const mysql2 = require('mysql2/promise');
-const config = require('../config');
 
-assert(typeof config.mysql_host === 'string');
-assert(typeof config.mysql_username === 'string');
-assert(typeof config.mysql_password === 'string');
-
-const create_connection = async (mysql_database) => {
+const create_connection = async (mysql_host, mysql_username, mysql_password, mysql_database) => {
   const mysql_connection = await mysql2.createConnection({
-    host: config.mysql_host,
-    user: config.mysql_username,
-    password: config.mysql_password,
+    host: mysql_host,
+    user: mysql_username,
+    password: mysql_password,
     database: mysql_database,
   });
   return mysql_connection;
