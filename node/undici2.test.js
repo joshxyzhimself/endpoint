@@ -14,9 +14,6 @@ const image_file_path = path.join(process.cwd(), '/node/undici2.test.jpg');
 process.nextTick(async () => {
 
 
-  console.log(new URLSearchParams({ foo: 'bar', asd: '123' }).toString());
-
-
   const json_get_response = await undici2.request({
     method: 'GET',
     url: 'https://ipinfo.io/json?token=24685cdbd4a1ac',
@@ -38,7 +35,7 @@ process.nextTick(async () => {
     headers: {
       authorization: 'Client-ID 09fac1ab310235c',
     },
-    form: [
+    multipart: [
       {
         name: 'title',
         value: 'test_title',

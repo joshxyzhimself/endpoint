@@ -64,32 +64,32 @@ const request = async (request_options) => {
   assert(request_options.headers === undefined || request_options.headers instanceof Object);
   assert(request_options.urlencoded === undefined || request_options.urlencoded instanceof Object);
   assert(request_options.json === undefined || request_options.json instanceof Object);
-  assert(request_options.form === undefined || request_options.form instanceof Array);
+  assert(request_options.multipart === undefined || request_options.multipart instanceof Array);
   assert(request_options.buffer === undefined || typeof request_options.buffer === 'string' || request_options.buffer instanceof Buffer);
   const request_headers = { ...request_options.headers };
   let request_body;
   if (request_options.method === 'GET' || request_options.method === 'HEAD') {
     assert(request_options.urlencoded === undefined);
     assert(request_options.json === undefined);
-    assert(request_options.form === undefined);
+    assert(request_options.multipart === undefined);
   } else if (request_options.urlencoded instanceof Object) {
     assert(request_options.json === undefined);
-    assert(request_options.form === undefined);
+    assert(request_options.multipart === undefined);
     assert(request_options.buffer === undefined);
     request_body = new URLSearchParams(request_options.urlencoded).toString();
     request_headers['content-type'] = 'application/x-www-form-urlencoded';
   } else if (request_options.json instanceof Object) {
     assert(request_options.urlencoded === undefined);
-    assert(request_options.form === undefined);
+    assert(request_options.multipart === undefined);
     assert(request_options.buffer === undefined);
     request_body = JSON.stringify(request_options.json);
     request_headers['content-type'] = 'application/json';
-  } else if (request_options.form instanceof Array) {
+  } else if (request_options.multipart instanceof Array) {
     assert(request_options.urlencoded === undefined);
     assert(request_options.json === undefined);
     assert(request_options.buffer === undefined);
     const form_boundary = crypto.randomBytes(32).toString('hex');
-    const form_items = request_options.form;
+    const form_items = request_options.multipart;
     const form_item_buffers = [];
     for (let i = 0, l = form_items.length; i < l; i += 1) {
       const form_item = form_items[i];
@@ -151,7 +151,7 @@ const request = async (request_options) => {
   } else if (typeof request_options.buffer === 'string' || request_options.buffer instanceof Buffer) {
     assert(request_options.urlencoded === undefined);
     assert(request_options.json === undefined);
-    assert(request_options.form === undefined);
+    assert(request_options.multipart === undefined);
     request_body = request_options.buffer;
     request_headers['content-type'] = 'application/octet-stream';
   }
