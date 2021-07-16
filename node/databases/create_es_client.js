@@ -1,69 +1,173 @@
+
+// @ts-check
+
+
 const assert = require('assert');
 const ElasticSearch = require('@elastic/elasticsearch');
-const config = require('../config');
-const environment_types = require('../environment_types');
 
-assert(typeof config.namespace === 'string');
-assert(typeof config.environment === 'string');
-assert(typeof config.elasticsearch_host === 'string');
-assert(typeof config.elasticsearch_port === 'number');
-assert(typeof config.elasticsearch_username === 'string');
-assert(typeof config.elasticsearch_password === 'string');
 
-assert(environment_types.has(config.environment) === true);
+const create_es_client = (elasticsearch_host, elasticsearch_port, elasticsearch_username, elasticsearch_password) => {
+  assert(typeof elasticsearch_host === 'string');
+  assert(typeof elasticsearch_port === 'number');
+  assert(typeof elasticsearch_username === 'string');
+  assert(typeof elasticsearch_password === 'string');
 
-const namespace = config.namespace;
-const environment = config.environment;
 
-const client = new ElasticSearch.Client({
-  node: `http://${config.elasticsearch_host}:${config.elasticsearch_port}`,
-  auth: {
-    username: config.elasticsearch_username,
-    password: config.elasticsearch_password,
-  },
-  requestTimeout: 90000,
-  pingTimeout: 30000,
-});
+  const client = new ElasticSearch.Client({
+    node: `http://${elasticsearch_host}:${elasticsearch_port}`,
+    auth: {
+      username: elasticsearch_username,
+      password: elasticsearch_password,
+    },
+    requestTimeout: 90000,
+    pingTimeout: 30000,
+  });
 
-/**
- * @param {string} index
- */
-const format_index = (index) => {
-  assert(typeof index === 'string');
-  const formatted_index = [namespace, environment, index].join('_');
-  return formatted_index;
-};
 
-const create_index = async (index, body) => {
-  assert(typeof index === 'string');
-  assert(body === undefined || body instanceof Object);
-  await client.indices.create({ index: format_index(index), body });
-  console.log(`elastic: create_index ${format_index(index)}, OK`);
-};
-
-const delete_index = async (index) => {
-  assert(typeof index === 'string');
-  try {
-    await client.indices.delete({ index: format_index(index) });
-  } catch (e) {
-    if (e.message !== 'index_not_found_exception') {
-      throw new Error(e);
-    }
-  }
-  console.log(`elastic: delete_index ${format_index(index)}, OK`);
-};
-
-const refresh_indices = async (...indices) => {
-  indices.forEach((index) => {
+  const create_index = async (index, body) => {
     assert(typeof index === 'string');
-  });
-  await client.indices.refresh({
-    index: indices.map((index) => format_index(index)).join(','),
-    ignore_unavailable: false,
-    allow_no_indices: false,
-  });
-  console.log(`elastic: refresh_indices ${indices.map((index) => format_index(index)).join(',')}, OK`);
+    assert(body === undefined || body instanceof Object);
+    await client.indices.create({ index: index, body });
+  };
+
+
+  const delete_index = async (index) => {
+    assert(typeof index === 'string');
+    try {
+      await client.indices.delete({ index: index });
+    } catch (e) {
+      if (e.message !== 'index_not_found_exception') {
+        throw new Error(e);
+      }
+    }
+  };
+
+
+  const refresh_indices = async (...indices) => {
+    indices.forEach((index) => {
+      assert(typeof index === 'string');
+    });
+    await client.indices.refresh({
+      index: indices.join(','),
+      ignore_unavailable: false,
+      allow_no_indices: false,
+    });
+  };
+
+
+  /**
+   * @param {object} body
+   * @param {number} limit
+   * @param {number} offset
+   * @param {string[]} indices
+   */
+  const search_by_body = async (body, limit, offset, ...indices) => {
+    assert(body instanceof Object);
+    assert(typeof offset === 'number');
+    assert(typeof limit === 'number');
+    const response = await client.search({
+      index: indices.join(','),
+      size: limit,
+      from: offset,
+      body: {
+        ...body,
+        highlight: {
+          order: 'score',
+          fields: {
+            '*': { pre_tags: ['<strong>'], post_tags: ['</strong>'] },
+          },
+        },
+        track_total_hits: true,
+      },
+    });
+    assert(response instanceof Object);
+    assert(response.body instanceof Object);
+
+    // @ts-ignore
+    assert(response.body.hits instanceof Object);
+
+    // @ts-ignore
+    assert(response.body.hits.hits instanceof Array);
+
+    // @ts-ignore
+    assert(typeof response.body.took === 'number');
+
+
+    /**
+     * @type {object[]}
+     */
+    // @ts-ignore
+    const hits = response.body.hits.hits;
+
+
+    /**
+     * @type {number}
+     */
+    // @ts-ignore
+    const count = response.body.hits.total.value;
+
+
+    /**
+     * @type {number}
+     */
+    // @ts-ignore
+    const took = response.body.took;
+
+
+    const results = { hits, count, took };
+    return results;
+  };
+
+
+  /**
+   * @param {string} query_string
+   * @param {number} limit
+   * @param {number} offset
+   * @param  {string[]} indices
+   */
+  const search_by_text = async (query_string, limit, offset, ...indices) => {
+    assert(typeof query_string === 'string');
+    assert(typeof offset === 'number');
+    assert(typeof limit === 'number');
+    indices.forEach((index) => {
+      assert(typeof index === 'string');
+    });
+    const body = {};
+    if (query_string !== '') {
+      Object.assign(body, { query: { simple_query_string: { query: query_string } } });
+    }
+    const results = await search_by_body(body, limit, offset, ...indices);
+    return results;
+  };
+
+
+  /**
+   * @param {string} index
+   * @param {string} id
+   */
+  const get_document = async (index, id) => {
+    assert(typeof index === 'string');
+    assert(typeof id === 'string');
+    const response = await client.get({ index, id });
+    assert(response.body instanceof Object);
+    return response.body;
+  };
+
+
+  const es_client = {
+    client,
+    create_index,
+    delete_index,
+    refresh_indices,
+    search_by_body,
+    search_by_text,
+    get_document,
+  };
+
+
+  return es_client;
 };
+
 
 // create:
 // Indexes the specified document if it does not already exist.
@@ -73,7 +177,7 @@ const refresh_indices = async (...indices) => {
 
 const operation_types = new Set(['create', 'index', 'update']);
 
-function bulk_operation () {
+const create_bulk_operation = () => {
   const operations = [];
   const request_body = [];
   const documents = [];
@@ -103,7 +207,7 @@ function bulk_operation () {
     }
 
     operations.push(operation);
-    request_body.push({ [operation]: { _index: format_index(datasource.index), _id: document_id } });
+    request_body.push({ [operation]: { _index: datasource.index, _id: document_id } });
     request_body.push(document);
     documents.push(document);
     return document;
@@ -114,33 +218,33 @@ function bulk_operation () {
    * @param {object} datasource
    * @param {string|void} document_id
    */
-  this.index = (datasource, document, document_id) => create_action('index', datasource, document, document_id);
+  const index = (datasource, document, document_id) => create_action('index', datasource, document, document_id);
 
   /**
    * @param {object} document
    * @param {object} datasource
    * @param {string|void} document_id
    */
-  this.create = (datasource, document, document_id) => create_action('create', datasource, document, document_id);
+  const create = (datasource, document, document_id) => create_action('create', datasource, document, document_id);
 
   /**
    * @param {object} document
    * @param {object} datasource
    * @param {string|void} document_id
    */
-  this.update = (datasource, document, document_id) => create_action('update', datasource, document, document_id);
+  const update = (datasource, document, document_id) => create_action('update', datasource, document, document_id);
 
   /**
    * @param  {string[]} error_types
    */
-  this.ignore_error_types = (...error_types) => {
+  const ignore_error_types = (...error_types) => {
     error_types.forEach((error_type) => {
       assert(typeof error_type === 'string');
       ignored_error_types.add(error_type);
     });
   };
 
-  this.commit = async () => {
+  const commit = async () => {
     console.log('elastic: bulk_operation.commit, START');
     if (documents.length > 0) {
       const bulk_response = await client.bulk({ refresh: false, body: request_body }); // eslint-disable-line no-await-in-loop
@@ -179,103 +283,18 @@ function bulk_operation () {
     }
     console.log('elastic: bulk_operation.commit, OK');
   };
-}
 
-/**
- * @param {object} body
- * @param {number} limit
- * @param {number} offset
- * @param {string[]} indices
- */
-const search_by_body = async (body, limit, offset, ...indices) => {
-  assert(body instanceof Object);
-  assert(typeof offset === 'number');
-  assert(typeof limit === 'number');
-  const response = await client.search({
-    index: indices.map((index) => format_index(index)).join(','),
-    size: limit,
-    from: offset,
-    body: {
-      ...body,
-      highlight: {
-        order: 'score',
-        fields: {
-          '*': { pre_tags: ['<strong>'], post_tags: ['</strong>'] },
-        },
-      },
-      track_total_hits: true,
-    },
-  });
-  assert(response instanceof Object);
-  assert(response.body instanceof Object);
-  assert(response.body.hits instanceof Object);
-  assert(response.body.hits.hits instanceof Array);
-  assert(typeof response.body.took === 'number');
-
-  /**
-   * @type {object[]}
-   */
-  const hits = response.body.hits.hits;
-
-  /**
-   * @type {number}
-   */
-  const count = response.body.hits.total.value;
-
-  /**
-   * @type {number}
-   */
-  const took = response.body.took;
-
-  const results = { hits, count, took };
-  return results;
+  const bulk_operation = {
+    index,
+    create,
+    update,
+    ignore_error_types,
+    commit,
+  };
+  return bulk_operation;
 };
 
-/**
- * @param {string} query_string
- * @param {number} limit
- * @param {number} offset
- * @param  {string[]} indices
- */
-const search_by_text = async (query_string, limit, offset, ...indices) => {
-  assert(typeof query_string === 'string');
-  assert(typeof offset === 'number');
-  assert(typeof limit === 'number');
-  indices.forEach((index) => {
-    assert(typeof index === 'string');
-  });
-  const body = {};
-  if (query_string !== '') {
-    Object.assign(body, { query: { simple_query_string: { query: query_string } } });
-  }
-  const results = await search_by_body(body, limit, offset, ...indices);
-  return results;
-};
 
-/**
- * @param {string} index
- * @param {string} id
- */
-const get_document = async (index, id) => {
-  assert(typeof index === 'string');
-  assert(typeof id === 'string');
-  const response = await client.get({ index, id });
-  assert(response.body instanceof Object);
-  return response.body;
-};
-
-const elasticsearch = {
-  namespace,
-  environment,
-  client,
-  format_index,
-  create_index,
-  delete_index,
-  refresh_indices,
-  bulk_operation,
-  search_by_body,
-  search_by_text,
-  get_document,
-};
+const elasticsearch = { create_es_client };
 
 module.exports = elasticsearch;
