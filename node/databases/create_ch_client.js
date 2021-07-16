@@ -29,46 +29,20 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
   const clickhouse_url = `http://${clickhouse_host}:${clickhouse_port}/?${clickhouse_options_stringified}`;
 
   /**
-   * @param {string} query
+   * @param {string} query_string
    */
-  const query_text = async (query) => {
+  const query = async (query_string) => {
     try {
-      assert(typeof query === 'string');
+      assert(typeof query_string === 'string');
       const response = await undici2.request({
         method: 'POST',
         url: clickhouse_url,
-        buffer: query,
+        headers: { 'x-clickhouse-format': 'JSON' },
+        buffer: query_string,
       });
-      return response.body.text_tsv || response.body.text_plain || null;
+      return response;
     } catch (e) {
-      console.error({ query: query.substring(0, 200) });
-      if (e.response instanceof Object && typeof e.response.body === 'string') {
-        throw new Error(e.response.body);
-      }
-      throw e;
-    }
-  };
-
-  /**
-   * @param {string} query
-   */
-  const query_json = async (query) => {
-    try {
-      assert(typeof query === 'string');
-      const response = await undici2.request({
-        method: 'POST',
-        url: clickhouse_url,
-        buffer: query,
-      });
-      assert(response instanceof Object);
-      // @ts-ignore
-      assert(response.body.json.meta instanceof Array);
-      // @ts-ignore
-      assert(response.body.json.data instanceof Array);
-      // @ts-ignore
-      return { columns: response.body.json.meta, rows: response.body.json.data };
-    } catch (e) {
-      console.error({ query: query.substring(0, 200) });
+      console.error({ query: query_string.substring(0, 200) });
       if (e.response instanceof Object && typeof e.response.body === 'string') {
         throw new Error(e.response.body);
       }
@@ -90,7 +64,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
           return 'NULL';
         }
         if (value instanceof Array) {
-          return `[${value.map((array_value) => encode(array_value))}]`;
+          return `[${value.map((array_value) => encode(array_value)).join(',')}]`;
         }
         break;
       }
@@ -98,32 +72,34 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
         break;
       }
     }
-    throw new Error('encode(value), unexpected primitive type.');
+    throw new Error('encode(value), unhandled primitive type.');
   };
 
   const show_databases = async () => {
-    const response = await query_json(`
+    const response = await query(`
       SHOW DATABASES
       FORMAT JSON;
     `);
     return response;
   };
   const show_tables = async () => {
-    const response = await query_json(`
+    const response = await query(`
       SHOW TABLES IN "${clickhouse_database}"
       FORMAT JSON;
     `);
     return response;
   };
   const create_database = async () => {
-    await query_text(`
+    const response = await query(`
       CREATE DATABASE IF NOT EXISTS "${clickhouse_database}";
     `);
+    return response;
   };
   const drop_database = async () => {
-    await query_text(`
+    const response = await query(`
       DROP DATABASE IF EXISTS "${clickhouse_database}";
     `);
+    return response;
   };
 
   /**
@@ -131,9 +107,10 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
    */
   const drop_table = async (table) => {
     assert(typeof table === 'string');
-    await query_text(`
+    const response = await query(`
       DROP TABLE IF EXISTS "${clickhouse_database}"."${table}";
     `);
+    return response;
   };
 
   /**
@@ -153,7 +130,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
       row_values.push(row_propertry_values_concatenated);
     });
     const row_values_concatenated = row_values.join(', ');
-    await query_text(`
+    await query(`
       INSERT INTO "${clickhouse_database}"."${table}"
       VALUES ${row_values_concatenated}
     `);
@@ -164,7 +141,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
    */
   const count_table_rows = async (table) => {
     assert(typeof table === 'string');
-    const response = await query_json(`
+    const response = await query(`
       SELECT COUNT(*)
       FROM "${clickhouse_database}"."${table}"
       FORMAT JSON;
@@ -191,7 +168,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     this.commit = async () => {
       console.log(`clickhouse: commit "${clickhouse_database}" "${table}" ${documents.length} items, START`);
       if (documents.length > 0) {
-        const table_description = await query_json(`
+        const table_description = await query(`
           DESCRIBE "${clickhouse_database}"."${table}" FORMAT JSON;
         `);
         assert(table_description instanceof Object);
@@ -217,7 +194,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
           rows.push(document_property_values_encoded_concatenated);
         });
         const rows_concatenated = rows.join(', ');
-        await query_text(`
+        await query(`
           INSERT INTO "${clickhouse_database}"."${table}" ${column_names_concatenated}
           VALUES ${rows_concatenated};
         `);
@@ -231,8 +208,7 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
     clickhouse_port,
     clickhouse_database,
     clickhouse_options,
-    query_text,
-    query_json,
+    query,
     encode,
     show_databases,
     show_tables,
