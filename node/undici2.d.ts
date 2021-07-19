@@ -28,6 +28,7 @@ export interface request_options {
   json?: request_json_interface,
   multipart?: request_form_item[],
   buffer?: string|Buffer,
+  signal?: AbortSignal,
 }
 
 

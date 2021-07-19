@@ -20,31 +20,35 @@ const get_response_body = (response) => new Promise((resolve, reject) => {
     buffer_chunks.push(buffer_chunk);
   });
   response.body.on('end', () => {
-    const buffer = Buffer.concat(buffer_chunks);
+    const buffer = buffer_chunks.length > 0
+      ? Buffer.concat(buffer_chunks)
+      : null;
     const response_body = {
       json: null,
       string: null,
       buffer,
     };
-    if (response.headers['content-type'].includes('text/plain') === true) {
-      response_body.string = buffer.toString('utf-8');
-      resolve(response_body);
-      return;
-    }
-    if (response.headers['content-type'].includes('text/tab-separated-values') === true) {
-      response_body.string = buffer.toString('utf-8');
-      resolve(response_body);
-      return;
-    }
-    if (response.headers['content-type'].includes('application/json') === true) {
-      const buffer_string = buffer.toString('utf-8');
-      try {
-        response_body.json = JSON.parse(buffer_string);
+    if (typeof response.headers['content-type'] === 'string') {
+      if (response.headers['content-type'].includes('text/plain') === true) {
+        response_body.string = buffer.toString('utf-8');
         resolve(response_body);
         return;
-      } catch (e) {
-        reject(e);
+      }
+      if (response.headers['content-type'].includes('text/tab-separated-values') === true) {
+        response_body.string = buffer.toString('utf-8');
+        resolve(response_body);
         return;
+      }
+      if (response.headers['content-type'].includes('application/json') === true) {
+        const buffer_string = buffer.toString('utf-8');
+        try {
+          response_body.json = JSON.parse(buffer_string);
+          resolve(response_body);
+          return;
+        } catch (e) {
+          reject(e);
+          return;
+        }
       }
     }
     resolve(response_body);
@@ -64,6 +68,7 @@ const request = async (request_options) => {
   assert(request_options.json === undefined || request_options.json instanceof Object);
   assert(request_options.multipart === undefined || request_options.multipart instanceof Array);
   assert(request_options.buffer === undefined || typeof request_options.buffer === 'string' || request_options.buffer instanceof Buffer);
+  assert(request_options.signal === undefined || request_options.signal instanceof AbortSignal);
   const request_headers = { ...request_options.headers };
   let request_body;
   if (request_options.method === 'GET' || request_options.method === 'HEAD') {
@@ -153,10 +158,12 @@ const request = async (request_options) => {
     request_body = request_options.buffer;
     request_headers['content-type'] = 'application/octet-stream';
   }
+  const request_signal = request_options.signal;
   const undici_response = await undici.request(request_options.url, {
     method: request_options.method,
     headers: request_headers,
     body: request_body,
+    signal: request_signal,
   });
   const status = undici_response.statusCode;
   const headers = undici_response.headers;
