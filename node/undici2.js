@@ -2,9 +2,9 @@
 // @ts-check
 
 const crypto = require('crypto');
-const assert = require('assert');
 const undici = require('undici');
 const mime_types = require('mime-types');
+const assert = require('../core/assert');
 
 
 /**

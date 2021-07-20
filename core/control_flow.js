@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const AssertionError = require('./AssertionError');
+const assert = require('./assert');
 
 const errors = {
   INVALID_VALUES: {
@@ -24,8 +24,8 @@ const errors = {
  * @returns {Promise<any>}
  */
 const series = async (values, callback) => {
-  AssertionError.assert(values instanceof Array, errors.INVALID_VALUES.code, errors.INVALID_VALUES.message);
-  AssertionError.assert(callback instanceof Function, errors.INVALID_CALLBACK.code, errors.INVALID_CALLBACK.message);
+  assert(values instanceof Array, errors.INVALID_VALUES.code, errors.INVALID_VALUES.message);
+  assert(callback instanceof Function, errors.INVALID_CALLBACK.code, errors.INVALID_CALLBACK.message);
   const results = [];
   for (let index = 0, length = values.length; index < length; index += 1) {
     const value = values[index];
@@ -41,14 +41,14 @@ const series = async (values, callback) => {
  * @returns {Promise<any>}
  */
 const parallel = async (values, callback) => {
-  AssertionError.assert(values instanceof Array, errors.INVALID_VALUES.code, errors.INVALID_VALUES.message);
-  AssertionError.assert(callback instanceof Function, errors.INVALID_CALLBACK.code, errors.INVALID_CALLBACK.message);
+  assert(values instanceof Array, errors.INVALID_VALUES.code, errors.INVALID_VALUES.message);
+  assert(callback instanceof Function, errors.INVALID_CALLBACK.code, errors.INVALID_CALLBACK.message);
   const results = await Promise.all(values.map((value, index) => callback(value, index)));
   return results;
 };
 
 const sleep = async (timeout) => {
-  AssertionError.assert(typeof timeout === 'number', errors.INVALID_TIMEOUT.code, errors.INVALID_TIMEOUT.message);
+  assert(typeof timeout === 'number', errors.INVALID_TIMEOUT.code, errors.INVALID_TIMEOUT.message);
   await new Promise((resolve) => setTimeout(resolve, timeout));
 };
 

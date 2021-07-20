@@ -5,10 +5,10 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
-const assert = require('assert');
 const mime_types = require('mime-types');
 const uws = require('uWebSockets.js');
 const logs = require('../core/logs');
+const assert = require('../core/assert');
 
 const cache_control_types = {
   // For sensitive data

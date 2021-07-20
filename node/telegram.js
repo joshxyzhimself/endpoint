@@ -1,9 +1,11 @@
 
 // @ts-check
 
-const assert = require('assert');
+
 const multipart = require('multi-part');
-const got = require('got').default;
+const undici2 = require('./undici2');
+const assert = require('../core/assert');
+
 
 const post_form = async (url, body) => {
   assert(typeof url === 'string');

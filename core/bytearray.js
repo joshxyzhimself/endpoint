@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const AssertionError = require('./AssertionError');
+const assert = require('./assert');
 
 let type_index = 127;
 
@@ -367,7 +367,7 @@ const buffer_to_hex = (buffer) => Array.from(buffer).map((b) => b.toString(16).p
  * @param {Uint8Array} buffer
  */
 const decode = (buffer) => {
-  AssertionError.assert(buffer instanceof Uint8Array);
+  assert(buffer instanceof Uint8Array);
 
   if (buffer._offset === undefined) {
     buffer._offset = -1;

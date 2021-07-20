@@ -1,7 +1,7 @@
 // 01-23-2021
 
-const assert = require('assert');
 const worker_threads = require('worker_threads');
+const assert = require('../core/assert');
 
 const telegram = require('./telegram');
 const config = require('../node/config');

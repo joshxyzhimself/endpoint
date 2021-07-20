@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const process = require('process');
-const assert = require('assert');
+const assert = require('../core/assert');
 const undici2 = require('./undici2');
 const uwu = require('./uwu');
 
@@ -83,7 +83,9 @@ process.nextTick(async () => {
       signal: request_abort_controller.signal,
     });
     assert(response.status === 200);
-    assert.deepStrictEqual(response.body.json, { foo: 'bar' });
+    assert(response.body.json instanceof Object);
+    // @ts-ignore
+    assert(response.body.json.foo === 'bar');
   }
   {
     const response = await undici2.request({

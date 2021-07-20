@@ -1,5 +1,5 @@
 
-const assert = require('assert');
+const assert = require('../core/assert');
 const semaphore = require('./semaphore');
 const config = require('./config');
 

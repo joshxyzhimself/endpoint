@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const assert = require('assert');
+const assert = require('../core/assert');
 const queue = require('./queue');
 
 let index_counter = 0;

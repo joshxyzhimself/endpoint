@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const AssertionError = require('./AssertionError');
+const assert = require('./assert');
 const create_emitter = require('./create_emitter');
 
 const errors = {
@@ -43,11 +43,11 @@ const errors = {
  */
 const queue = (concurrency, callback) => {
 
-  AssertionError.assert(typeof concurrency === 'number', errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
-  AssertionError.assert(Number.isFinite(concurrency) === true, errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
-  AssertionError.assert(Number.isInteger(concurrency) === true, errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
-  AssertionError.assert(concurrency > 0, errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
-  AssertionError.assert(callback instanceof Function, errors.ERR_INVALID_CALLBACK.code, errors.ERR_INVALID_CALLBACK.message);
+  assert(typeof concurrency === 'number', errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
+  assert(Number.isFinite(concurrency) === true, errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
+  assert(Number.isInteger(concurrency) === true, errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
+  assert(concurrency > 0, errors.ERR_INVALID_CONCURRENCY.code, errors.ERR_INVALID_CONCURRENCY.message);
+  assert(callback instanceof Function, errors.ERR_INVALID_CALLBACK.code, errors.ERR_INVALID_CALLBACK.message);
 
   let active = 0;
   let paused = false;

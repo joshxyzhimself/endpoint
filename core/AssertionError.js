@@ -23,30 +23,15 @@ class AssertionError extends Error {
 
   toJSON () {
     /**
-     * @type {import('./AssertionError').error_json}
+     * @type {import('./AssertionError').AssertionErrorJSON}
      */
-    const error_json = {
+    const json = {
       name: this.name,
       code: this.code,
       message: this.message,
       stack: this.stack,
     };
-    return error_json;
-  }
-
-  static assert (value, code, message) {
-    if (typeof value !== 'boolean') {
-      throw new TypeError('AssertionError.assert(value, code?, message?), "value" must be a boolean.');
-    }
-    if (code !== undefined && typeof code !== 'string') {
-      throw new TypeError('AssertionError.assert(value, code?, message?), "code" must be a string.');
-    }
-    if (message !== undefined && typeof message !== 'string') {
-      throw new TypeError('AssertionError.assert(value, code?, message?), "message" must be a string.');
-    }
-    if (value === false) {
-      throw new AssertionError(code || 'ERR_ASSERTION_ERROR', message || 'Assertion error.');
-    }
+    return json;
   }
 }
 

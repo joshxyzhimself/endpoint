@@ -4,9 +4,13 @@
 // https://en.wikipedia.org/wiki/Time-based_One-time_Password_algorithm
 // https://pypi.org/project/authenticator/
 
-const assert = require('assert');
+// @ts-check
+
+
 const crypto = require('crypto');
 const base32 = require('hi-base32');
+const assert = require('../core/assert');
+
 
 const hotp_create_key = () => base32.encode(crypto.randomBytes(32)).replace(/=/g, '');
 

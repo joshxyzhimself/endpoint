@@ -5,11 +5,11 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const assert = require('assert');
 const process = require('process');
 const child_process = require('child_process');
 const postgres = require('postgres');
 const luxon = require('luxon');
+const assert = require('../../core/assert');
 const rl_question = require('../rl_question');
 
 

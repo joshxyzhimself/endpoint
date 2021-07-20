@@ -1,5 +1,5 @@
 
-export interface error_json {
+export interface AssertionErrorJSON {
   name: string,
   code: string,
   message: string,
@@ -8,8 +8,7 @@ export interface error_json {
 
 export class AssertionError {
   constructor(code: string, message: string) : void;
-  toJSON() : error_json;
-  static assert: (value: boolean, code?: string, message?: string) => void;
+  toJSON() : AssertionErrorJSON;
 }
 
 export = AssertionError;

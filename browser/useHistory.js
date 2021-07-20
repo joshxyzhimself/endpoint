@@ -4,14 +4,14 @@
 // updated: 01-13-2021
 
 import { useState, useEffect, useCallback } from 'react';
-import AssertionError from '../core/AssertionError';
+import assert from '../core/assert';
 
 function useHistory () {
 
   const [pathname, set_pathname] = useState(window.location.pathname);
 
   const push = useCallback((next_pathname) => {
-    AssertionError.assert(typeof next_pathname === 'string');
+    assert(typeof next_pathname === 'string');
     if (pathname !== next_pathname) {
       window.history.pushState(null, null, next_pathname);
       set_pathname(next_pathname);
@@ -19,7 +19,7 @@ function useHistory () {
   }, [pathname]);
 
   const replace = useCallback((next_pathname) => {
-    AssertionError.assert(typeof next_pathname === 'string');
+    assert(typeof next_pathname === 'string');
     if (pathname !== next_pathname) {
       window.history.replaceState(null, null, next_pathname);
       set_pathname(next_pathname);

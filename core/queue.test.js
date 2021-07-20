@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const assert = require('assert');
+const assert = require('../core/assert');
 const queue = require('./queue');
 
 const values = [100, 200, 300, 400, 500];

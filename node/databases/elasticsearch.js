@@ -1,8 +1,9 @@
 
 // @ts-check
 
-const assert = require('assert');
+
 const ElasticSearch = require('@elastic/elasticsearch');
+const assert = require('../../core/assert');
 
 
 const create_es_client = (elasticsearch_host, elasticsearch_port, elasticsearch_username, elasticsearch_password) => {

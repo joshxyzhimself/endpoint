@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const AssertionError = require('./AssertionError');
+const assert = require('./assert');
 
 /**
  * @type {import('./create_emitter').create_emitter}
@@ -17,8 +17,8 @@ const create_emitter = () => {
    * @type {import('./create_emitter').on}
    */
   const on = (id, listener) => {
-    AssertionError.assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
-    AssertionError.assert(listener instanceof Function, 'ERR_EMITTER_INVALID_EVENT_LISTENER', 'Invalid event listener.');
+    assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
+    assert(listener instanceof Function, 'ERR_EMITTER_INVALID_EVENT_LISTENER', 'Invalid event listener.');
     if (index.has(id) === false) {
       index.set(id, new Set());
     }
@@ -32,9 +32,9 @@ const create_emitter = () => {
    * @type {import('./create_emitter').off}
    */
   const off = (id, listener) => {
-    AssertionError.assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
-    AssertionError.assert(listener instanceof Function, 'ERR_EMITTER_INVALID_EVENT_LISTENER', 'Invalid event listener.');
-    AssertionError.assert(index.has(id) === true, 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
+    assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
+    assert(listener instanceof Function, 'ERR_EMITTER_INVALID_EVENT_LISTENER', 'Invalid event listener.');
+    assert(index.has(id) === true, 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
     const listeners = index.get(id);
     if (listeners.has(listener) === true) {
       listeners.delete(listener);
@@ -48,7 +48,7 @@ const create_emitter = () => {
    * @type {import('./create_emitter').emit}
    */
   const emit = (id, ...args) => {
-    AssertionError.assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
+    assert(typeof id === 'string' || typeof id === 'number', 'ERR_EMITTER_INVALID_EVENT_ID', 'Invalid event id.');
     if (index.has(id) == true) {
       const listeners = index.get(id);
       listeners.forEach((listener) => {

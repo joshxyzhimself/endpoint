@@ -1,7 +1,7 @@
 
 const os = require('os');
-const assert = require('assert');
 const cluster = require('cluster');
+const assert = require('../core/assert');
 
 const MessageTypes = {
   WorkerInit: 0,
@@ -10,7 +10,7 @@ const MessageTypes = {
   WorkerExit: 3,
 };
 
-function multi() {
+function multi () {
 
   this.process_concurrency = os.cpus().length;
   this.task_concurrency = 1;

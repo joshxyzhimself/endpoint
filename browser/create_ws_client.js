@@ -1,9 +1,9 @@
 
 // @ts-check
 
-const AssertionError = require('../core/AssertionError');
-const create_emitter = require('../core/create_emitter');
 const logs = require('../core/logs');
+const assert = require('../core/assert');
+const create_emitter = require('../core/create_emitter');
 
 const errors = {
   INVALID_ID: {
@@ -45,8 +45,8 @@ const event_types = {
  * @param {string} url
  */
 const create_ws_client = (id, url) => {
-  AssertionError.assert(typeof id === 'string', errors.INVALID_ID.code, errors.INVALID_ID.message);
-  AssertionError.assert(typeof url === 'string', errors.INVALID_URL.code, errors.INVALID_URL.message);
+  assert(typeof id === 'string', errors.INVALID_ID.code, errors.INVALID_ID.message);
+  assert(typeof url === 'string', errors.INVALID_URL.code, errors.INVALID_URL.message);
 
   let client = null;
   let backoff = 125;
@@ -64,9 +64,9 @@ const create_ws_client = (id, url) => {
    * @param {object} data
    */
   const send = (data) => {
-    AssertionError.assert(data instanceof Object, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
-    AssertionError.assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
-    AssertionError.assert(client.readyState === 1, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(data instanceof Object, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+    assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(client.readyState === 1, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
     const data2 = JSON.stringify(data);
     client.send(data2);
   };
@@ -75,9 +75,9 @@ const create_ws_client = (id, url) => {
    * @param {ArrayBuffer} data
    */
   const send_arraybuffer = (data) => {
-    AssertionError.assert(data instanceof ArrayBuffer, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
-    AssertionError.assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
-    AssertionError.assert(client.readyState === 1, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(data instanceof ArrayBuffer, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+    assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(client.readyState === 1, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
     client.send(data);
   };
 
@@ -106,7 +106,7 @@ const create_ws_client = (id, url) => {
       }
     };
     client.onmessage = (event) => {
-      AssertionError.assert(typeof event.data === 'string', errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+      assert(typeof event.data === 'string', errors.INVALID_DATA.code, errors.INVALID_DATA.message);
       const message = JSON.parse(event.data);
       emitter.emit(event_types.MESSAGE, message);
     };

@@ -3,10 +3,10 @@
 
 
 const os = require('os');
-const assert = require('assert');
 const querystring = require('querystring');
-const undici2 = require('../undici2');
+const assert = require('../../core/assert');
 const units = require('../../core/units');
+const undici2 = require('../undici2');
 
 
 const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database, clickhouse_options) => {

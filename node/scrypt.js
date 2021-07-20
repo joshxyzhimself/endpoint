@@ -1,8 +1,10 @@
 
 // @ts-check
 
-const assert = require('assert');
+
 const crypto = require('crypto');
+const assert = require('../core/assert');
+
 
 /**
  * References

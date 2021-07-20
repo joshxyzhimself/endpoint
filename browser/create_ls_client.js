@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const AssertionError = require('../core/AssertionError');
+const assert = require('../core/assert');
 const create_emitter = require('../core/create_emitter');
 
 const event_types = {
@@ -36,12 +36,12 @@ const create_ls_client = () => {
     emitter.emit(event_types.UPDATE, key, null);
   };
   const set = (key, value) => {
-    AssertionError.assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
+    assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
     const encoded_value = JSON.stringify(value);
     localStorage.setItem(key, encoded_value);
   };
   const get = (key) => {
-    AssertionError.assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
+    assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
     const encoded_value = localStorage.getItem(key);
     if (typeof encoded_value === 'string') {
       const value = JSON.parse(encoded_value);
@@ -50,7 +50,7 @@ const create_ls_client = () => {
     return null;
   };
   const remove = (key) => {
-    AssertionError.assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
+    assert(typeof key === 'string', errors.INVALID_KEY.code, errors.INVALID_KEY.message);
     localStorage.removeItem(key);
   };
   const localstorage_client = {

@@ -1,8 +1,8 @@
 
 // @ts-check
 
-const assert = require('assert');
 const luxon = require('luxon');
+const assert = require('../core/assert');
 
 
 /**

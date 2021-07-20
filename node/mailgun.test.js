@@ -1,5 +1,5 @@
 
-const assert = require('assert');
+const assert = require('../core/assert');
 const mailgun = require('./mailgun');
 const config = require('./config');
 

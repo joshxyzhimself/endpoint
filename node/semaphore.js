@@ -1,6 +1,7 @@
-const assert = require('assert');
+
 const got = require('got');
 const normalize_phone_number = require('../common/normalize_phone_number');
+const assert = require('../core/assert');
 
 const queue = [];
 

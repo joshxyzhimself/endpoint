@@ -1,10 +1,10 @@
 
 // @ts-check
 
-const AssertionError = require('../core/AssertionError');
-const create_emitter = require('../core/create_emitter');
-const logs = require('../core/logs');
 const WebSocket = require('ws');
+const logs = require('../core/logs');
+const assert = require('../core/assert');
+const create_emitter = require('../core/create_emitter');
 
 const errors = {
   INVALID_API: {
@@ -50,8 +50,8 @@ const event_types = {
  * @param {string} url
  */
 const create_ws_client = (id, url) => {
-  AssertionError.assert(typeof id === 'string', errors.INVALID_ID.code, errors.INVALID_ID.message);
-  AssertionError.assert(typeof url === 'string', errors.INVALID_URL.code, errors.INVALID_URL.message);
+  assert(typeof id === 'string', errors.INVALID_ID.code, errors.INVALID_ID.message);
+  assert(typeof url === 'string', errors.INVALID_URL.code, errors.INVALID_URL.message);
 
   let client = null;
   let ping_interval = null;
@@ -68,7 +68,7 @@ const create_ws_client = (id, url) => {
     }
     ping_heartbeat_timeout = setTimeout(() => {
       if (client instanceof Object) {
-        AssertionError.assert(client.terminate instanceof Function, errors.INVALID_API.code, errors.INVALID_API.message);
+        assert(client.terminate instanceof Function, errors.INVALID_API.code, errors.INVALID_API.message);
         client.terminate();
       }
       ping_heartbeat_timeout = null;
@@ -87,9 +87,9 @@ const create_ws_client = (id, url) => {
    * @param {object} data
    */
   const send = (data) => {
-    AssertionError.assert(data instanceof Object, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
-    AssertionError.assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
-    AssertionError.assert(client.readyState === event_types.CONNECTED, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(data instanceof Object, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+    assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(client.readyState === event_types.CONNECTED, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
     const data2 = JSON.stringify(data);
     client.send(data2);
   };
@@ -98,9 +98,9 @@ const create_ws_client = (id, url) => {
    * @param {ArrayBuffer} data
    */
   const send_arraybuffer = (data) => {
-    AssertionError.assert(data instanceof ArrayBuffer, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
-    AssertionError.assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
-    AssertionError.assert(client.readyState === event_types.CONNECTED, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(data instanceof ArrayBuffer, errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+    assert(client instanceof WebSocket, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
+    assert(client.readyState === event_types.CONNECTED, errors.SOCKET_DISCONNECTED.code, errors.SOCKET_DISCONNECTED.message);
     client.send(data);
   };
 
@@ -117,8 +117,8 @@ const create_ws_client = (id, url) => {
     client = new WebSocket(url);
     ping_interval = setInterval(() => {
       if (client instanceof Object) {
-        AssertionError.assert(client.ping instanceof Function, errors.INVALID_API.code, errors.INVALID_API.message);
-        AssertionError.assert(typeof client.readyState === 'number', errors.INVALID_API.code, errors.INVALID_API.message);
+        assert(client.ping instanceof Function, errors.INVALID_API.code, errors.INVALID_API.message);
+        assert(typeof client.readyState === 'number', errors.INVALID_API.code, errors.INVALID_API.message);
         if (client.readyState === event_types.CONNECTED) {
           client.ping(() => {
             ping_timestamp_ms = Date.now();
@@ -146,7 +146,7 @@ const create_ws_client = (id, url) => {
       }
     });
     client.on('message', (data) => {
-      AssertionError.assert(typeof data === 'string', errors.INVALID_DATA.code, errors.INVALID_DATA.message);
+      assert(typeof data === 'string', errors.INVALID_DATA.code, errors.INVALID_DATA.message);
       const message = JSON.parse(String(data));
       emitter.emit(event_types.MESSAGE, message);
     });

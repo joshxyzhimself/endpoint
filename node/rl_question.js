@@ -1,11 +1,15 @@
-const assert = require('assert');
+
+// @ts-check
+
+
 const readline = require('readline');
+const assert = require('../core/assert');
 
 const readline_interface = readline.createInterface({ input: process.stdin, output: process.stdout });
 
 /**
  * @param {string} query
- * @returns {string}
+ * @returns {Promise<string>}
  */
 const rl_question = (query) => new Promise((resolve, reject) => {
   try {

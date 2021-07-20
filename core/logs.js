@@ -1,7 +1,7 @@
 
 // @ts-check
 
-const AssertionError = require('./AssertionError');
+const assert = require('./assert');
 const create_emitter = require('./create_emitter');
 
 /**
@@ -64,11 +64,11 @@ const errors = {
  * @type {import('./logs').capture_error}
  */
 const capture_error = (e) => {
-  AssertionError.assert(e instanceof Error, errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
-  AssertionError.assert(typeof e.name === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
-  AssertionError.assert(e.code === undefined || typeof e.code === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
-  AssertionError.assert(typeof e.message === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
-  AssertionError.assert(typeof e.stack === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
+  assert(e instanceof Error, errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
+  assert(typeof e.name === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
+  assert(e.code === undefined || typeof e.code === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
+  assert(typeof e.message === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
+  assert(typeof e.stack === 'string', errors.INVALID_ERROR.code, errors.INVALID_ERROR.message);
 
   /**
    * @type {import('./logs').error}
@@ -97,16 +97,16 @@ const capture_error = (e) => {
  * @param {import('./logs').entry} entry
  */
 const emit = (entry) => {
-  AssertionError.assert(entry instanceof Object, errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
-  AssertionError.assert(typeof entry.resource_id === 'string', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
-  AssertionError.assert(typeof entry.operation_id === 'string', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(entry instanceof Object, errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(typeof entry.resource_id === 'string', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(typeof entry.operation_id === 'string', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
 
-  AssertionError.assert(entry.severity instanceof Object, errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
-  AssertionError.assert(typeof entry.severity.type === 'string', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
-  AssertionError.assert(typeof entry.severity.code === 'number', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(entry.severity instanceof Object, errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(typeof entry.severity.type === 'string', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(typeof entry.severity.code === 'number', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
 
-  AssertionError.assert(entry.trace instanceof Object, errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
-  AssertionError.assert(typeof entry.trace.mts === 'number', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(entry.trace instanceof Object, errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
+  assert(typeof entry.trace.mts === 'number', errors.INVALID_ENTRY.code, errors.INVALID_ENTRY.message);
 
   emitter.emit('*', entry);
   emitter.emit(entry.resource_id, entry);

@@ -1,8 +1,8 @@
 
 // @ts-check
 
-const assert = require('assert');
 const got = require('got').default;
+const assert = require('../core/assert');
 
 const send_message = async (domain, password, from, to, subject, text) => {
   assert(typeof domain === 'string', 'Invalid parameter type for "domain".');

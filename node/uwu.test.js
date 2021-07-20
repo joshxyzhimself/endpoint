@@ -2,7 +2,7 @@
 
 const os = require('os');
 const fs = require('fs');
-const assert = require('assert');
+const assert = require('../core/assert');
 const worker_threads = require('worker_threads');
 const got = require('got').default;
 const uwu = require('./uwu');
