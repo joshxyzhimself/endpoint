@@ -61,6 +61,7 @@ export interface headers {
   content_type: string,
   if_none_match: string,
   user_agent: string,
+  cookie: string,
 }
 
 export interface request_json {

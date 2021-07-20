@@ -255,6 +255,7 @@ const serve_handler = (handler) => {
         content_type: req.getHeader('content-type'),
         if_none_match: req.getHeader('if-none-match'),
         user_agent: req.getHeader('user-agent'),
+        cookie: req.getHeader('cookie'),
       },
       json: undefined,
     };
