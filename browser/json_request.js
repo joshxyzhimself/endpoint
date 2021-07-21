@@ -1,22 +1,9 @@
 
 // @ts-check
 
-const assert = require('../core/assert');
+// TODO: [update]: sync API with undici2.request
 
-const errors = {
-  INVALID_URL: {
-    code: 'ERR_REQUEST_INVALID_URL',
-    message: 'Invalid url.',
-  },
-  INVALID_BODY: {
-    code: 'ERR_REQUEST_INVALID_BODY',
-    message: 'Invalid body.',
-  },
-  INVALID_STATUS: {
-    code: 'ERR_REQUEST_INVALID_STATUS',
-    message: 'Invalid status.',
-  },
-};
+const assert = require('../core/assert');
 
 /**
  * @typedef json_request_options
@@ -42,8 +29,8 @@ const errors = {
  * @returns {Promise<any>}
  */
 const json_request = async (url, body) => {
-  assert(typeof url === 'string', errors.INVALID_URL.code, errors.INVALID_URL.message);
-  assert(body === undefined || body instanceof Object, errors.INVALID_BODY.code, errors.INVALID_BODY.message);
+  assert(typeof url === 'string');
+  assert(body === undefined || body instanceof Object);
   const request_url = url;
   const request_options = { method: 'GET', headers: { 'Accept': 'application/json' } };
   if (body instanceof Object) {
@@ -52,7 +39,7 @@ const json_request = async (url, body) => {
     request_options.body = JSON.stringify(body);
   }
   const response = await fetch(request_url, request_options);
-  assert(response.status === 200, errors.INVALID_STATUS.code, errors.INVALID_STATUS.message);
+  assert(response.status === 200);
   const response_content_type = response.headers.get('content-type');
   if (typeof response_content_type === 'string' && response_content_type.includes('application/json') === true) {
     const response_json = await response.json();

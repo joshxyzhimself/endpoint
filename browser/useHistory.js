@@ -1,12 +1,10 @@
 
 // @ts-check
 
-// updated: 01-13-2021
-
 import { useState, useEffect, useCallback } from 'react';
 import assert from '../core/assert';
 
-function useHistory () {
+const useHistory = () => {
 
   const [pathname, set_pathname] = useState(window.location.pathname);
 
@@ -39,6 +37,6 @@ function useHistory () {
   const history = { pathname, push, replace };
 
   return history;
-}
+};
 
 export default useHistory;

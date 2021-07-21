@@ -16,7 +16,7 @@ const get_breakpoint = () => {
   return 'xs';
 };
 
-function useBreakpoint () {
+const useBreakpoint = () => {
   const [breakpoint, set_breakpoint] = useState(get_breakpoint());
   useEffect(() => {
     const handler = () => {
@@ -31,6 +31,6 @@ function useBreakpoint () {
     };
   }, [breakpoint]);
   return breakpoint;
-}
+};
 
 export default useBreakpoint;
