@@ -4,10 +4,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import assert from '../core/assert';
 
+/**
+ * @type {import('./useHistory').useHistory}
+ */
 const useHistory = () => {
 
   const [pathname, set_pathname] = useState(window.location.pathname);
 
+  /**
+   * @type {import('./useHistory').push}
+   */
   const push = useCallback((next_pathname) => {
     assert(typeof next_pathname === 'string');
     if (pathname !== next_pathname) {
@@ -16,6 +22,9 @@ const useHistory = () => {
     }
   }, [pathname]);
 
+  /**
+   * @type {import('./useHistory').push}
+   */
   const replace = useCallback((next_pathname) => {
     assert(typeof next_pathname === 'string');
     if (pathname !== next_pathname) {
@@ -34,6 +43,9 @@ const useHistory = () => {
     };
   }, []);
 
+  /**
+   * @type {import('./useHistory').history}
+   */
   const history = { pathname, push, replace };
 
   return history;
