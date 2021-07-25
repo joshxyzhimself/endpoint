@@ -28,26 +28,28 @@ const get_response_body = (response) => new Promise((resolve, reject) => {
       string: null,
       buffer,
     };
-    if (typeof response.headers['content-type'] === 'string') {
-      if (response.headers['content-type'].includes('text/plain') === true) {
-        response_body.string = buffer.toString('utf-8');
-        resolve(response_body);
-        return;
-      }
-      if (response.headers['content-type'].includes('text/tab-separated-values') === true) {
-        response_body.string = buffer.toString('utf-8');
-        resolve(response_body);
-        return;
-      }
-      if (response.headers['content-type'].includes('application/json') === true) {
-        const buffer_string = buffer.toString('utf-8');
-        try {
-          response_body.json = JSON.parse(buffer_string);
+    if (buffer instanceof Buffer) {
+      if (typeof response.headers['content-type'] === 'string') {
+        if (response.headers['content-type'].includes('text/plain') === true) {
+          response_body.string = buffer.toString('utf-8');
           resolve(response_body);
           return;
-        } catch (e) {
-          reject(e);
+        }
+        if (response.headers['content-type'].includes('text/tab-separated-values') === true) {
+          response_body.string = buffer.toString('utf-8');
+          resolve(response_body);
           return;
+        }
+        if (response.headers['content-type'].includes('application/json') === true) {
+          const buffer_string = buffer.toString('utf-8');
+          try {
+            response_body.json = JSON.parse(buffer_string);
+            resolve(response_body);
+            return;
+          } catch (e) {
+            reject(e);
+            return;
+          }
         }
       }
     }
