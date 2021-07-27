@@ -1,12 +1,16 @@
 
 // @ts-check
 
-
 const ElasticSearch = require('@elastic/elasticsearch');
 const assert = require('../../core/assert');
 
 
-const create_es_client = (elasticsearch_host, elasticsearch_port, elasticsearch_username, elasticsearch_password) => {
+const create_es_client = (
+  elasticsearch_host,
+  elasticsearch_port,
+  elasticsearch_username,
+  elasticsearch_password,
+) => {
   assert(typeof elasticsearch_host === 'string');
   assert(typeof elasticsearch_port === 'number');
   assert(typeof elasticsearch_username === 'string');
@@ -24,6 +28,10 @@ const create_es_client = (elasticsearch_host, elasticsearch_port, elasticsearch_
   });
 
 
+  /**
+   * @param {string} index
+   * @param {object} body
+   */
   const create_index = async (index, body) => {
     assert(typeof index === 'string');
     assert(body === undefined || body instanceof Object);
@@ -31,18 +39,22 @@ const create_es_client = (elasticsearch_host, elasticsearch_port, elasticsearch_
   };
 
 
+  /**
+   * @param {string} index
+   */
   const delete_index = async (index) => {
     assert(typeof index === 'string');
     try {
       await client.indices.delete({ index: index });
     } catch (e) {
-      if (e.message !== 'index_not_found_exception') {
-        throw new Error(e);
-      }
+      assert(e.message === 'index_not_found_exception');
     }
   };
 
 
+  /**
+   * @param  {string[]} indices
+   */
   const refresh_indices = async (...indices) => {
     indices.forEach((index) => {
       assert(typeof index === 'string');
@@ -65,6 +77,9 @@ const create_es_client = (elasticsearch_host, elasticsearch_port, elasticsearch_
     assert(body instanceof Object);
     assert(typeof offset === 'number');
     assert(typeof limit === 'number');
+    indices.forEach((index) => {
+      assert(typeof index === 'string');
+    });
     const response = await client.search({
       index: indices.join(','),
       size: limit,
