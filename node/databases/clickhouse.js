@@ -4,7 +4,6 @@
 const os = require('os');
 const querystring = require('querystring');
 const assert = require('../../core/assert');
-const units = require('../../core/units');
 const undici2 = require('../undici2');
 
 
@@ -16,13 +15,15 @@ const create_ch_client = (clickhouse_host, clickhouse_port, clickhouse_database,
   const clickhouse_options_stringified = querystring.stringify({
     date_time_input_format: 'best_effort',
     date_time_output_format: 'iso',
-    max_threads: os.cpus().length,
-    max_query_size: units.one_gigabyte,
-    max_block_size: units.one_gigabyte,
-    max_insert_block_size: units.one_million,
-    min_insert_block_size_rows: units.one_million,
-    min_insert_block_size_bytes: units.one_gigabyte,
     mutations_sync: 2,
+    max_query_size: 100000000000,
+    max_block_size: 100000000000,
+    http_max_uri_size: 100000000000,
+    max_threads: os.cpus().length,
+    max_insert_threads: os.cpus().length,
+    max_insert_block_size: 100000000000,
+    min_insert_block_size_rows: 100000000000,
+    min_insert_block_size_bytes: 100000000000,
     ...clickhouse_options,
   });
 
