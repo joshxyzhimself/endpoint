@@ -5,6 +5,12 @@ const ElasticSearch = require('@elastic/elasticsearch');
 const assert = require('../../core/assert');
 
 
+/**
+ * @param {string} elasticsearch_host
+ * @param {number} elasticsearch_port
+ * @param {string} elasticsearch_username
+ * @param {string} elasticsearch_password
+ */
 const create_es_client = (
   elasticsearch_host,
   elasticsearch_port,

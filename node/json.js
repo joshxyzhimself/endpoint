@@ -29,8 +29,13 @@ const write = (file_path, file_data) => {
 };
 
 
+/**
+ * @param {string[]} paths
+ */
+const from_cwd = (...paths) => path.join(process.cwd(), ...paths);
 
-const json = { read, write };
+
+const json = { read, write, from_cwd };
 
 
 module.exports = json;
