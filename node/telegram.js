@@ -2,78 +2,105 @@
 // @ts-check
 
 
-const multipart = require('multi-part');
-const undici2 = require('./undici2');
 const assert = require('../core/assert');
+const undici2 = require('./undici2');
 
 
+/**
+ * @param {string} url
+ * @param {object} body
+ */
 const post_form = async (url, body) => {
   assert(typeof url === 'string');
   assert(body instanceof Object);
-  const form = new multipart();
-  Object.entries(body).forEach((entry) => {
-    const [field, value] = entry;
-    assert(typeof field === 'string');
-    assert(value !== undefined);
-    form.append(field, value);
+  const response = await undici2.request({
+    url,
+    method: 'POST',
+    multipart: body,
   });
-  const form_buffer = await form.buffer();
-  const form_headers = form.getHeaders(false);
-  const request_options = {
-    headers: form_headers,
-    body: form_buffer,
-    timeout: 3000,
-  };
-  const response = await got.post(url, request_options).json();
-  return response;
+  assert(response.status === 200);
+  assert(response.body.json instanceof Object);
+  return response.body.json;
 };
 
+
+/**
+ * @param {string} url
+ * @param {object} body
+ */
 const post_json = async (url, body) => {
   assert(typeof url === 'string');
   assert(body instanceof Object);
-  const request_options = {
+  const response = await undici2.request({
+    url,
+    method: 'POST',
     json: body,
-    timeout: 3000,
-  };
-  const response = await got.post(url, request_options).json();
-  return response;
+  });
+  assert(response.status === 200);
+  assert(response.body.json instanceof Object);
+  return response.body.json;
 };
 
-const get_json = async (url, body) => {
+
+/**
+ * @param {string} url
+ */
+const get_json = async (url) => {
   assert(typeof url === 'string');
-  assert(body instanceof Object);
-  const request_options = {
-    searchParams: body,
-    timeout: 3000,
-  };
-  const response = await got.get(url, request_options).json();
-  return response;
+  const response = await undici2.request({
+    url,
+    method: 'GET',
+  });
+  assert(response.status === 200);
+  assert(response.body.json instanceof Object);
+  return response.body.json;
 };
 
+/**
+ * @param {string} url
+ */
 const get_buffer = async (url) => {
   assert(typeof url === 'string');
-  const request_options = {
-    timeout: 3000,
-  };
-  const response = await got.get(url, request_options).buffer();
-  return response;
+  const response = await undici2.request({
+    url,
+    method: 'GET',
+  });
+  assert(response.status === 200);
+  assert(response.body.buffer instanceof Buffer);
+  return response.body.buffer;
 };
 
+
+/**
+ * @param {string} url
+ */
 const get_text = async (url) => {
   assert(typeof url === 'string');
-  const request_options = {
-    timeout: 3000,
-  };
-  const response = await got.get(url, request_options).text();
-  return response;
+  const response = await undici2.request({
+    url,
+    method: 'GET',
+  });
+  assert(response.status === 200);
+  assert(typeof response.body.string === 'string');
+  return response.body.string;
 };
 
+
+/**
+ * @param {string} token
+ * @param {string} method
+ */
 const create_endpoint = (token, method) => {
   assert(typeof token === 'string');
   assert(typeof method === 'string');
   return `https://api.telegram.org/bot${token}/${method}`;
 };
 
+
+/**
+ * @param {string} token
+ * @param {object} body
+ */
 const send_message = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
@@ -83,6 +110,11 @@ const send_message = async (token, body) => {
   return response;
 };
 
+
+/**
+ * @param {string} token
+ * @param {object} body
+ */
 const delete_message = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
@@ -92,6 +124,11 @@ const delete_message = async (token, body) => {
   return response;
 };
 
+
+/**
+ * @param {string} token
+ * @param {object} body
+ */
 const send_photo = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
@@ -102,12 +139,21 @@ const send_photo = async (token, body) => {
   return response;
 };
 
+
+/**
+ * @param {string} token
+ */
 const delete_webhook = async (token) => {
   assert(typeof token === 'string');
   const response = await post_json(create_endpoint(token, 'deleteWebhook'), {});
   return response;
 };
 
+
+/**
+ * @param {string} token
+ * @param {object} body
+ */
 const set_webhook = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
@@ -118,6 +164,11 @@ const set_webhook = async (token, body) => {
   return response;
 };
 
+
+/**
+ * @param {string} token
+ * @param {object} body
+ */
 const get_updates = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
@@ -130,6 +181,10 @@ const get_updates = async (token, body) => {
   return updates;
 };
 
+
+/**
+ * @param {string} token
+ */
 const get_me = async (token) => {
   assert(typeof token === 'string');
   const response = await post_json(create_endpoint(token, 'getMe'), {});
@@ -139,6 +194,11 @@ const get_me = async (token) => {
   return me;
 };
 
+
+/**
+ * @param {string} token
+ * @param {object} body
+ */
 const get_chat_administrators = async (token, body) => {
   assert(typeof token === 'string');
   assert(body instanceof Object);
@@ -149,6 +209,85 @@ const get_chat_administrators = async (token, body) => {
   const chat_administrators = response.result;
   return chat_administrators;
 };
+
+
+// https://core.telegram.org/bots/api#markdownv2-style
+
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+const code = (value) => {
+  assert(typeof value === 'string');
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`');
+};
+
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+const url = (value) => {
+  assert(typeof value === 'string');
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/\)/g, '\\)');
+};
+
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+const text = (value) => {
+  assert(typeof value === 'string');
+  return value
+    .replace(/_/g, '\\_')
+    .replace(/\*/g, '\\*')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/~/g, '\\~')
+    .replace(/`/g, '\\`')
+    .replace(/>/g, '\\>')
+    .replace(/#/g, '\\#')
+    .replace(/\+/g, '\\+')
+    .replace(/-/g, '\\-')
+    .replace(/=/g, '\\=')
+    .replace(/\|/g, '\\|')
+    .replace(/\{/g, '\\{')
+    .replace(/\}/g, '\\}')
+    .replace(/\./g, '\\.')
+    .replace(/!/g, '\\!');
+};
+
+
+/**
+ * @param  {string[]} values
+ * @returns {string}
+ */
+const lines = (...values) => {
+  values.forEach((value) => assert(typeof value === 'string'));
+  return values.join('\n');
+};
+
+
+/**
+ * @param  {string[]} values
+ * @returns {string}
+ */
+const codes = (...values) => {
+  values.forEach((value) => assert(typeof value === 'string'));
+  return ['```', ...values, '```'].join('\n');
+};
+
+
+const encode = { code, url, text, lines, codes };
+
 
 module.exports = {
   post_form,
@@ -165,4 +304,5 @@ module.exports = {
   get_updates,
   get_me,
   get_chat_administrators,
+  encode,
 };

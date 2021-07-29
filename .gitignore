@@ -2,5 +2,6 @@
 /temp/
 
 .config.json
+test.config.json
 yarn.lock
 yarn-error.log

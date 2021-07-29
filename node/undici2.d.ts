@@ -13,10 +13,8 @@ export interface request_json_interface {
 }
 
 
-export interface request_form_item {
-  name: string,
-  value: object|string|Buffer,
-  filename?: string,
+export interface request_form_interface {
+  [key: string]: number|string|Buffer,
 }
 
 
@@ -26,7 +24,7 @@ export interface request_options {
   headers?: http.IncomingHttpHeaders,
   urlencoded?: request_urlencoded_interface,
   json?: request_json_interface,
-  multipart?: request_form_item[],
+  multipart?: request_form_interface,
   buffer?: string|Buffer,
   signal?: AbortSignal,
 }

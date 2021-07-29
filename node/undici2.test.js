@@ -9,7 +9,8 @@ const undici2 = require('./undici2');
 const uwu = require('./uwu');
 
 
-const image_file_path = path.join(process.cwd(), '/node/undici2.test.jpg');
+const test_image_path = path.join(process.cwd(), 'test.png');
+const test_image_buffer = fs.readFileSync(test_image_path);
 
 
 process.nextTick(async () => {
@@ -36,44 +37,34 @@ process.nextTick(async () => {
     headers: {
       authorization: 'Client-ID 09fac1ab310235c',
     },
-    multipart: [
-      {
-        name: 'title',
-        value: 'test_title',
-      },
-      {
-        name: 'description',
-        value: 'test_description',
-      },
-      {
-        name: 'type',
-        value: 'file',
-      },
-      {
-        name: 'name',
-        value: 'undici2.test.jpg',
-      },
-      {
-        name: 'image',
-        value: fs.readFileSync(image_file_path),
-        filename: 'undici2.test.jpg',
-      },
-    ],
+    multipart: {
+      title: 'test_title',
+      description: 'test_description',
+      type: 'file',
+      name: 'test.png',
+      image: test_image_buffer,
+    },
   });
-  console.log(form_post_response);
+  console.log(form_post_response.body.json);
 
 
   const port = 8080;
   const origin = `http://localhost:${port}`;
   const app = uwu.uws.App({});
+
+
   app.post('/test-json', uwu.serve_handler(async (response, request) => {
-    console.log({ request });
     response.json = { foo: 'bar' };
   }));
+
   app.get('/test-internal-error', uwu.serve_handler(async () => {
     throw new Error('Test error.');
   }));
+
+
   const token = await uwu.serve_http(app, uwu.port_access_types.SHARED, port);
+
+
   {
     const request_abort_controller = new AbortController();
     const response = await undici2.request({
@@ -87,6 +78,8 @@ process.nextTick(async () => {
     // @ts-ignore
     assert(response.body.json.foo === 'bar');
   }
+
+
   {
     const response = await undici2.request({
       method: 'GET',
@@ -94,5 +87,7 @@ process.nextTick(async () => {
     });
     assert(response.status === 500);
   }
+
+
   uwu.uws.us_listen_socket_close(token);
 });
