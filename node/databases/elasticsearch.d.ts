@@ -12,11 +12,11 @@ export interface document_operation {
 export interface document {
   _index: string,
   _id?: string,
-  [key: string]: string|number|boolean,
+  [key: string]: any,
 }
 
 
-export type create_index = (index: string, body: object) => void;
+export type create_index = (index: string, body?: object) => void;
 
 
 export type delete_index = (index: string) => void;
