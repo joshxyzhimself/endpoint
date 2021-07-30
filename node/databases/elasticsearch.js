@@ -52,7 +52,9 @@ const create_es_client = (
     try {
       await client.indices.delete({ index: index });
     } catch (e) {
-      assert(e.message === 'index_not_found_exception');
+      if (e.message.includes('index_not_found_exception') === false) {
+        throw e;
+      }
     }
   };
 
