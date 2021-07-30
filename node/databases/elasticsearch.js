@@ -184,37 +184,47 @@ const create_es_client = (
   const operation_types = new Set(['create', 'index', 'update']);
 
   const create_bulk_operation = () => {
+
     const operations = [];
+
     const request_body = [];
+
+    /**
+     * @type {import('./elasticsearch').document[]}
+     */
     const documents = [];
+
     const ignored_error_types = new Set();
 
 
     /**
-     * @param {object} document
      * @param {string} operation
+     * @param {import('./elasticsearch').document} document
      */
-    const create_action = (operation, datasource, document, document_id) => {
+    const create_action = (operation, document) => {
       assert(typeof operation === 'string');
       assert(operation_types.has(operation) === true);
-      assert(datasource instanceof Object);
-      assert(typeof datasource.index === 'string');
       assert(document instanceof Object);
-      assert(document._id === undefined);
-      assert(document._index === undefined);
+      assert(document._id === undefined || typeof document._id === 'string');
+      assert(typeof document._index === 'string');
 
-      // optional document_id on INDEX operation
+      // optional document._id on INDEX operation
       if (operation === 'index') {
-        assert(document_id === undefined || typeof document_id === 'string');
+        assert(document._id === undefined || typeof document._id === 'string');
       }
 
-      // require document_id on CREATE and UPDATE operations
+      // require document._id on CREATE and UPDATE operations
       if (operation === 'create' || operation === 'update') {
-        assert(typeof document_id === 'string');
+        assert(typeof document._id === 'string');
       }
 
       operations.push(operation);
-      request_body.push({ [operation]: { _index: datasource.index, _id: document_id } });
+      request_body.push({
+        [operation]: {
+          _index: document._index,
+          _id: document._id,
+        },
+      });
       request_body.push(document);
       documents.push(document);
       return document;
@@ -222,27 +232,21 @@ const create_es_client = (
 
 
     /**
-     * @param {object} document
-     * @param {object} datasource
-     * @param {string|void} document_id
+     * @param {import('./elasticsearch').document} document
      */
-    const index = (datasource, document, document_id) => create_action('index', datasource, document, document_id);
+    const index = (document) => create_action('index', document);
 
 
     /**
-     * @param {object} document
-     * @param {object} datasource
-     * @param {string|void} document_id
+     * @param {import('./elasticsearch').document} document
      */
-    const create = (datasource, document, document_id) => create_action('create', datasource, document, document_id);
+    const create = (document) => create_action('create', document);
 
 
     /**
-     * @param {object} document
-     * @param {object} datasource
-     * @param {string|void} document_id
+     * @param {import('./elasticsearch').document} document
      */
-    const update = (datasource, document, document_id) => create_action('update', datasource, document, document_id);
+    const update = (document) => create_action('update', document);
 
 
     /**
@@ -268,12 +272,11 @@ const create_es_client = (
           // @ts-ignore
           bulk_response.body.items.forEach((item, item_index) => {
             assert(item instanceof Object);
-            const item_operation = item[operations[item_index]];
-            assert(item_operation instanceof Object);
-            if (item_operation.error !== undefined) {
-              assert(item_operation.error instanceof Object);
-              assert(typeof item_operation.error.type === 'string');
-              if (ignored_error_types.has(item_operation.error.type) === false) {
+            const document_operation = item[operations[item_index]];
+            assert(document_operation instanceof Object);
+            if (document_operation.error instanceof Object) {
+              assert(typeof document_operation.error.type === 'string');
+              if (ignored_error_types.has(document_operation.error.type) === false) {
                 errorred_items.push(item);
               }
             }
@@ -286,14 +289,23 @@ const create_es_client = (
         // @ts-ignore
         bulk_response.body.items.forEach((item, item_index) => {
           assert(item instanceof Object);
-          const item_operation = item[operations[item_index]];
-          assert(typeof item_operation._id === 'string');
-          assert(typeof item_operation._index === 'string');
+
+          /**
+           * @type {import('./elasticsearch').document_operation}
+           */
+          const document_operation = item[operations[item_index]];
+          assert(document_operation instanceof Object);
+          assert(typeof document_operation._id === 'string');
+          assert(typeof document_operation._index === 'string');
+
           const document = documents[item_index];
-          if (documents[item_index]._id === undefined) {
-            document._id = item_operation._id;
-            document._index = item_operation._index;
+          assert(document instanceof Object);
+          assert(document._index === document_operation._index);
+          assert(document._id === undefined || typeof document._id === 'string');
+          if (document._id === undefined) {
+            document._id = document_operation._id;
           }
+
         });
       }
     };
