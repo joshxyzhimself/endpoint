@@ -10,7 +10,7 @@ export interface document_operation {
 
 
 export interface document {
-  _index: string,
+  _index?: string,
   _id?: string,
   [key: string]: any,
 }
@@ -54,10 +54,25 @@ export type get_document = (
 ) => document;
 
 
+export type bulk_operation_create_action = (
+  operation: string,
+  document_index: string,
+  document_id: string,
+  document: document,
+) => document;
+
+
+export type bulk_operation_action = (
+  document_index: string,
+  document_id: string,
+  document: document,
+) => document;
+
+
 export interface bulk_operation {
-  index: (document: document) => document,
-  create: (document: document) => document,
-  update: (document: document) => document,
+  index: bulk_operation_action,
+  create: bulk_operation_action,
+  update: bulk_operation_action,
   ignore_error_types: (...error_types: string[]) => void,
   commit: () => Promise<void>,
 }
