@@ -35,8 +35,7 @@ const create_es_client = (
 
 
   /**
-   * @param {string} index
-   * @param {object} body
+   * @type {import('./elasticsearch').create_index}
    */
   const create_index = async (index, body) => {
     assert(typeof index === 'string');
@@ -46,7 +45,7 @@ const create_es_client = (
 
 
   /**
-   * @param {string} index
+   * @type {import('./elasticsearch').delete_index}
    */
   const delete_index = async (index) => {
     assert(typeof index === 'string');
@@ -59,7 +58,7 @@ const create_es_client = (
 
 
   /**
-   * @param  {string[]} indices
+   * @type {import('./elasticsearch').refresh_indices}
    */
   const refresh_indices = async (...indices) => {
     indices.forEach((index) => {
@@ -74,10 +73,7 @@ const create_es_client = (
 
 
   /**
-   * @param {object} body
-   * @param {number} limit
-   * @param {number} offset
-   * @param {string[]} indices
+   * @type {import('./elasticsearch').search_by_body}
    */
   const search_by_body = async (body, limit, offset, ...indices) => {
     assert(body instanceof Object);
@@ -141,21 +137,18 @@ const create_es_client = (
 
 
   /**
-   * @param {string} query_string
-   * @param {number} limit
-   * @param {number} offset
-   * @param  {string[]} indices
+   * @type {import('./elasticsearch').search_by_text}
    */
-  const search_by_text = async (query_string, limit, offset, ...indices) => {
-    assert(typeof query_string === 'string');
+  const search_by_text = async (query, limit, offset, ...indices) => {
+    assert(typeof query === 'string');
     assert(typeof offset === 'number');
     assert(typeof limit === 'number');
     indices.forEach((index) => {
       assert(typeof index === 'string');
     });
     const body = {};
-    if (query_string !== '') {
-      Object.assign(body, { query: { simple_query_string: { query: query_string } } });
+    if (query !== '') {
+      Object.assign(body, { query: { simple_query_string: { query } } });
     }
     const results = await search_by_body(body, limit, offset, ...indices);
     return results;
@@ -163,26 +156,37 @@ const create_es_client = (
 
 
   /**
-   * @param {string} index
-   * @param {string} id
+   * @type {import('./elasticsearch').get_document}
    */
   const get_document = async (index, id) => {
     assert(typeof index === 'string');
     assert(typeof id === 'string');
     const response = await client.get({ index, id });
     assert(response.body instanceof Object);
-    return response.body;
+
+
+    /**
+     * @type {import('./elasticsearch').document}
+     */
+    // @ts-ignore
+    const document = response.body;
+
+
+    return document;
   };
 
 
-  // - "create" fails if a document with the same ID already exists in the target,
   // - "index" adds or replaces a document as necessary.
+  // - "create" fails if a document with the same ID already exists in the target,
   // - "update" expects that the partial doc, upsert, and script and its options are specified on the next line.
   // - https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
 
 
   const operation_types = new Set(['create', 'index', 'update']);
 
+  /**
+   * @type {import('./elasticsearch').create_bulk_operation}
+   */
   const create_bulk_operation = () => {
 
     const operations = [];
@@ -286,9 +290,11 @@ const create_es_client = (
             throw new Error('elastic: bulk_operation.commit, ERROR');
           }
         }
-        // @ts-ignore
+
+
         bulk_response.body.items.forEach((item, item_index) => {
           assert(item instanceof Object);
+
 
           /**
            * @type {import('./elasticsearch').document_operation}
@@ -298,6 +304,7 @@ const create_es_client = (
           assert(typeof document_operation._id === 'string');
           assert(typeof document_operation._index === 'string');
 
+
           const document = documents[item_index];
           assert(document instanceof Object);
           assert(document._index === document_operation._index);
@@ -305,6 +312,7 @@ const create_es_client = (
           if (document._id === undefined) {
             document._id = document_operation._id;
           }
+
 
         });
       }
@@ -324,6 +332,9 @@ const create_es_client = (
   };
 
 
+  /**
+   * @type {import('./elasticsearch').es_client}
+   */
   const es_client = {
     client,
     create_index,
