@@ -206,22 +206,22 @@ const create_es_client = (
     /**
      * @type {import('./elasticsearch').bulk_operation_create_action}
      */
-    const create_action = (operation, document_index, document_id, document) => {
+    const create_action = (operation, document) => {
       assert(typeof operation === 'string');
       assert(operation_types.has(operation) === true);
-      assert(typeof document_index === 'string');
-      assert(document_id === undefined || typeof document_id === 'string');
+      assert(typeof document._index === 'string');
+      assert(document._id === undefined || typeof document._id === 'string');
       assert(document instanceof Object);
-      assert(document._id === undefined);
-      assert(document._index === undefined);
+      assert(document._source._id === undefined);
+      assert(document._source._index === undefined);
       switch (operation) {
         case 'index': {
-          assert(document_id === undefined || typeof document_id === 'string');
+          assert(document._id === undefined || typeof document._id === 'string');
           break;
         }
         case 'create':
         case 'update': {
-          assert(typeof document_id === 'string');
+          assert(typeof document._id === 'string');
           break;
         }
         default: {
@@ -229,8 +229,8 @@ const create_es_client = (
         }
       }
       operations.push(operation);
-      request_body.push({ [operation]: { _index: document_index, _id: document_id } });
-      request_body.push(document);
+      request_body.push({ [operation]: { _index: document._index, _id: document._id } });
+      request_body.push(document._source);
       documents.push(document);
       return document;
     };
@@ -239,19 +239,19 @@ const create_es_client = (
     /**
      * @type {import('./elasticsearch').bulk_operation_action}
      */
-    const index = (document_index, document_id, document) => create_action('index', document_index, document_id, document);
+    const index = (document) => create_action('index', document);
 
 
     /**
      * @type {import('./elasticsearch').bulk_operation_action}
      */
-    const create = (document_index, document_id, document) => create_action('create', document_index, document_id, document);
+    const create = (document) => create_action('create', document);
 
 
     /**
      * @type {import('./elasticsearch').bulk_operation_action}
      */
-    const update = (document_index, document_id, document) => create_action('update', document_index, document_id, document);
+    const update = (document) => create_action('update', document);
 
 
     /**
@@ -296,7 +296,6 @@ const create_es_client = (
         bulk_response.body.items.forEach((item, item_index) => {
           assert(item instanceof Object);
 
-
           /**
            * @type {import('./elasticsearch').document_operation}
            */
@@ -305,14 +304,11 @@ const create_es_client = (
           assert(typeof document_operation._id === 'string');
           assert(typeof document_operation._index === 'string');
 
-
           const document = documents[item_index];
           assert(document instanceof Object);
-          assert(document._index === undefined);
+          assert(document._index === document_operation._index);
           assert(document._id === undefined);
           document._id = document_operation._id;
-          document._index = document_operation._index;
-
 
         });
       }

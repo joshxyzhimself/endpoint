@@ -8,11 +8,22 @@ export interface document_operation {
   [key: string]: unknown,
 }
 
+export interface document_source {
+  _id?: never,
+  _index?: never,
+  [key: string]: any,
+}
+
+export interface document_highlight {
+  [key: string]: string[]
+}
 
 export interface document {
-  _index?: string,
+  _index: NonNullable<string>,
+  _source: NonNullable<document_source>,
   _id?: string,
-  [key: string]: any,
+  _score?: number,
+  highlight?: document_highlight,
 }
 
 
@@ -56,15 +67,11 @@ export type get_document = (
 
 export type bulk_operation_create_action = (
   operation: string,
-  document_index: string,
-  document_id: string,
   document: document,
 ) => document;
 
 
 export type bulk_operation_action = (
-  document_index: string,
-  document_id: string,
   document: document,
 ) => document;
 
