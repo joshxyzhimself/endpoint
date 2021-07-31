@@ -7,7 +7,7 @@
   "license": "MIT",
   "devDependencies": {
     "benchmark": "^2.1.4",
-    "eslint": "^7.31.0"
+    "eslint": "^7.32.0"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^7.13.0",
@@ -19,7 +19,7 @@
     "postgres": "^2.0.0-beta.6",
     "react": "^17.0.2",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v19.3.0",
-    "undici": "^4.2.2",
+    "undici": "^4.3.1",
     "ws": "^8.0.0"
   }
 }
