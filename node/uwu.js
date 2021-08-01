@@ -257,6 +257,7 @@ const serve_handler = (handler) => {
         user_agent: req.getHeader('user-agent'),
         cookie: req.getHeader('cookie'),
       },
+      ip_address: Buffer.from(res.getRemoteAddressAsText()).toString(),
       json: undefined,
     };
 

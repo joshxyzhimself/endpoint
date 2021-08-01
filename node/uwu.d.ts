@@ -73,6 +73,7 @@ export interface request {
   query: string,
   method: string,
   headers: headers,
+  ip_address: string,
   json: request_json,
 }
 
