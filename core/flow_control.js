@@ -5,15 +5,15 @@ const assert = require('./assert');
 
 const errors = {
   INVALID_VALUES: {
-    code: 'ERR_CONTROL_FLOW_INVALID_VALUES',
+    code: 'ERR_FLOW_CONTROL_INVALID_VALUES',
     message: 'Invalid values.',
   },
   INVALID_CALLBACK: {
-    code: 'ERR_CONTROL_FLOW_INVALID_CALLBACK',
+    code: 'ERR_FLOW_CONTROL_INVALID_CALLBACK',
     message: 'Invalid callback.',
   },
   INVALID_TIMEOUT: {
-    code: 'ERR_CONTROL_FLOW_INVALID_TIMEOUT',
+    code: 'ERR_FLOW_CONTROL_INVALID_TIMEOUT',
     message: 'Invalid timeout.',
   },
 };
@@ -47,11 +47,14 @@ const parallel = async (values, callback) => {
   return results;
 };
 
+/**
+ * @param {number} timeout
+ */
 const sleep = async (timeout) => {
   assert(typeof timeout === 'number', errors.INVALID_TIMEOUT.code, errors.INVALID_TIMEOUT.message);
   await new Promise((resolve) => setTimeout(resolve, timeout));
 };
 
-const control_flow = { series, parallel, sleep };
+const flow_control = { series, parallel, sleep };
 
-module.exports = control_flow;
+module.exports = flow_control;

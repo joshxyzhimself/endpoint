@@ -12,7 +12,13 @@ const luxon = require('luxon');
 const assert = require('../../core/assert');
 const rl_question = require('../rl_question');
 
-
+/**
+ * @param {string} postgres_host
+ * @param {number} postgres_port
+ * @param {string} postgres_username
+ * @param {string} postgres_password
+ * @param {string} postgres_database
+ */
 const create_pg_client = (postgres_host, postgres_port, postgres_username, postgres_password, postgres_database) => {
   assert(typeof postgres_host === 'string');
   assert(typeof postgres_port === 'number');
