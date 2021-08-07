@@ -56,8 +56,6 @@ export interface undici2 {
   request: request,
 }
 
+const default_export: undici2;
 
-const undici2: undici2;
-
-
-export = undici2;
+export = default_export;

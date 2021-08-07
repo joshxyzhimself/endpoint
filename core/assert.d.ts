@@ -1,6 +1,6 @@
 
 export type assert =(value: boolean, code?: string, message?: string) => void;
 
-const assert: assert;
+const default_export: assert;
 
-export = assert;
+export = default_export;

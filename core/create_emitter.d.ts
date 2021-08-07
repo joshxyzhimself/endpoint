@@ -11,6 +11,6 @@ export interface emitter {
   emit: emit
 }
 
-const create_emitter: create_emitter;
+const default_export: create_emitter;
 
-export = create_emitter;
+export = default_export;

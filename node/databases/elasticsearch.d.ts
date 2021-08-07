@@ -112,7 +112,6 @@ export interface elasticsearch {
   create_es_client: create_es_client,
 }
 
-
 const default_export: elasticsearch;
 
 export = default_export;

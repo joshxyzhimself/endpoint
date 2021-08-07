@@ -94,5 +94,7 @@ export interface logs {
   on: on,
   off: off,
 }
-const logs: logs;
-export = logs;
+
+const default_export: logs;
+
+export = default_export;

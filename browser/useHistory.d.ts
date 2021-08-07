@@ -12,4 +12,4 @@ export type useHistory = () => history;
 
 const useHistory: useHistory;
 
-export = useHistory;
+export default useHistory;
