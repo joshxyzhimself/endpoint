@@ -2,6 +2,14 @@
 // @ts-check
 
 
+// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/sign
+// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+// https://gist.github.com/pedrouid/b4056fd1f754918ddae86b32cf7d803e#hmac
+// return new Uint8Array(await window.crypto.subtle.digest('SHA-256', data));
+// return createHash('sha256').update(data).digest();
+// https://github.com/joshxyzhimself/internals/blob/master/crypto/hotp.js
+
+
 const assert = require('../core/assert');
 const base32 = require('../core/base32');
 
