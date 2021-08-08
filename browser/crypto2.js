@@ -143,7 +143,7 @@ const hotp_code = async (key, algorithm, digits, counter) => {
 
   const truncated_value = read_uint32be(truncated_buffer, 0);
 
-  const code = String(truncated_value % 10 ** digits).padStart(digits, '0');
+  const code = String(truncated_value % (10 ** digits)).padStart(digits, '0');
 
   return code;
 };
