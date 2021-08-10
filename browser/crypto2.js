@@ -150,16 +150,28 @@ const hotp_code = async (key, algorithm, digits, counter) => {
 
 
 /**
+ * @param {number} period
+ * @return {number}
+ */
+const totp_counter = (period) => {
+  const counter = Math.floor(Math.round(Date.now() / 1000) / period);
+  return counter;
+};
+
+
+/**
  * @param {string} key
  * @param {string} algorithm
  * @param {number} digits
+ * @param {number} period
  * @returns {Promise<string>}
  */
-const totp_code = async (key, algorithm, digits) => {
+const totp_code = async (key, algorithm, digits, period) => {
   assert(typeof key === 'string');
   assert(typeof algorithm === 'string');
   assert(typeof digits === 'number');
-  const counter = Math.floor(Math.round(Date.now() / 1000) / 30);
+  assert(typeof period === 'number');
+  const counter = totp_counter(period);
   const code = await hotp_code(key, algorithm, digits, counter);
   return code;
 };
@@ -206,9 +218,9 @@ const test_totp_code = () => {
   console.log({ key });
 
   setInterval(async () => {
-    const code = await totp_code(key, algorithm, 6);
+    const code = await totp_code(key, algorithm, 6, 30);
     console.log({ code });
-    const code2 = await totp_code(key, algorithm, 8);
+    const code2 = await totp_code(key, algorithm, 8, 30);
     console.log({ code2 });
   }, 1000);
 };
@@ -219,6 +231,7 @@ const crypto2 = {
   hmac,
   random_bytes,
   hotp_code,
+  totp_counter,
   totp_code,
   otp_uri,
   test_totp_code,
