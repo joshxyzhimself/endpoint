@@ -178,37 +178,56 @@ const totp_code = async (key, algorithm, digits, period) => {
 
 
 /**
- * @param {string} type
  * @param {string} issuer
- * @param {string} owner
+ * @param {string} account
+ * @param {string} secret
+ * @param {string} algorithm
+ * @param {number} digits
+ * @param {number} counter
+ * @returns {string}
+ */
+const hotp_uri = (issuer, account, secret, algorithm, digits, counter) => {
+  assert(typeof issuer === 'string');
+  assert(typeof account === 'string');
+  assert(typeof secret === 'string');
+  assert(typeof algorithm === 'string');
+  assert(typeof digits === 'number');
+  assert(typeof counter === 'number');
+  let response = `otpauth://hotp/${encodeURIComponent(`${issuer}:${account}`)}`;
+  response += `?issuer=${encodeURIComponent(issuer)}`;
+  response += `&account=${encodeURIComponent(account)}`;
+  response += `&secret=${encodeURIComponent(secret)}`;
+  response += `&algorithm=${encodeURIComponent(algorithm)}`;
+  response += `&digits=${encodeURIComponent(digits)}`;
+  response += `&counter=${encodeURIComponent(counter)}`;
+  return response;
+};
+
+
+/**
+ * @param {string} issuer
+ * @param {string} account
  * @param {string} secret
  * @param {string} algorithm
  * @param {number} digits
  * @param {number} period
  * @returns {string}
  */
-const otp_uri = (type, issuer, owner, secret, algorithm, digits, period) => {
-  assert(typeof type === 'string');
+const totp_uri = (issuer, account, secret, algorithm, digits, period) => {
   assert(typeof issuer === 'string');
-  assert(typeof owner === 'string');
+  assert(typeof account === 'string');
   assert(typeof secret === 'string');
   assert(typeof algorithm === 'string');
   assert(typeof digits === 'number');
-  assert(type === 'hotp' || type === 'totp');
-  switch (type) {
-    case 'hotp': {
-      const response = `otpauth://${type}/${issuer}:${owner}?secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}`;
-      return response;
-    }
-    case 'totp': {
-      assert(typeof period === 'number');
-      const response = `otpauth://${type}/${issuer}:${owner}?secret=${secret}&algorithm=${algorithm}&digits=${digits}&period=${period}`;
-      return response;
-    }
-    default: {
-      throw new Error('Invalid type.');
-    }
-  }
+  assert(typeof period === 'number');
+  let response = `otpauth://totp/${encodeURIComponent(`${issuer}:${account}`)}`;
+  response += `?issuer=${encodeURIComponent(issuer)}`;
+  response += `&account=${encodeURIComponent(account)}`;
+  response += `&secret=${encodeURIComponent(secret)}`;
+  response += `&algorithm=${encodeURIComponent(algorithm)}`;
+  response += `&digits=${encodeURIComponent(digits)}`;
+  response += `&period=${encodeURIComponent(period)}`;
+  return response;
 };
 
 
@@ -233,7 +252,8 @@ const crypto2 = {
   hotp_code,
   totp_counter,
   totp_code,
-  otp_uri,
+  hotp_uri,
+  totp_uri,
   test_totp_code,
 };
 
