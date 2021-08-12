@@ -1,80 +1,80 @@
 import * as uws from 'uWebSockets.js';
 
 export interface cache_control_types {
-  no_store: string,
-  no_cache: string,
-  private_cached: string,
-  public_cached: string,
+  no_store: string;
+  no_cache: string;
+  private_cached: string;
+  public_cached: string;
 }
 
 export interface port_access_types {
-  SHARED: number,
-  EXCLUSIVE: number,
+  SHARED: number;
+  EXCLUSIVE: number;
 }
 
 export interface response_headers {
-  [key:string]: any,
+  [key:string]: any;
 }
 
 export interface response_json {
-  [key:string]: any,
+  [key:string]: any;
 }
 
 export interface response {
-  aborted?: boolean,
-  ended?: boolean,
-  error?: Error,
+  aborted?: boolean;
+  ended?: boolean;
+  error?: Error;
 
-  status?: number,
-  headers?: response_headers,
+  status?: number;
+  headers?: response_headers;
 
-  file_path?: string,
-  file_name?: string,
-  file_content_type?: string,
-  file_dispose?: boolean,
-  file_cache?: boolean,
-  file_cache_max_age_ms?: number,
+  file_path?: string;
+  file_name?: string;
+  file_content_type?: string;
+  file_dispose?: boolean;
+  file_cache?: boolean;
+  file_cache_max_age_ms?: number;
 
-  text?: string,
-  html?: string,
-  json?: response_json,
-  buffer?: Buffer,
-  buffer_hash?: string,
+  text?: string;
+  html?: string;
+  json?: response_json;
+  buffer?: Buffer;
+  buffer_hash?: string;
 
-  compress?: boolean,
-  compressed?: boolean,
-  brotli_buffer?: Buffer,
-  brotli_buffer_hash?: string,
-  gzip_buffer?: Buffer,
-  gzip_buffer_hash?: string,
+  compress?: boolean;
+  compressed?: boolean;
+  brotli_buffer?: Buffer;
+  brotli_buffer_hash?: string;
+  gzip_buffer?: Buffer;
+  gzip_buffer_hash?: string;
 
-  timestamp?: number,
-  start?: number,
-  end?: number,
-  took?: number,
+  timestamp?: number;
+  start?: number;
+  end?: number;
+  took?: number;
 }
 
 export interface headers {
-  host: string,
-  accept: string,
-  accept_encoding: string,
-  content_type: string,
-  if_none_match: string,
-  user_agent: string,
-  cookie: string,
+  host: string;
+  accept: string;
+  accept_encoding: string;
+  content_type: string;
+  if_none_match: string;
+  user_agent: string;
+  cookie: string;
 }
 
 export interface request_json {
-  [key:string]: any,
+  [key:string]: any;
 }
 
 export interface request {
-  url: string,
-  query: string,
-  method: string,
-  headers: headers,
-  ip_address: string,
-  json: request_json,
+  url: string;
+  query: string;
+  method: string;
+  headers: headers;
+  ip_address: string;
+  json: request_json;
 }
 
 export const cache_control_types: cache_control_types;

@@ -54,6 +54,10 @@ const encode = (data) => {
 };
 
 
+/**
+ * @param {string} character
+ * @returns {number}
+ */
 const get_character_index = (character) => {
   const character_index = characters.indexOf(character);
   assert(character_index !== -1, 'ERR_INVALID_CHARACTER', 'Invalid character.');

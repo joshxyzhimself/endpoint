@@ -1,9 +1,9 @@
 
 export interface AssertionErrorJSON {
-  name: string,
-  code: string,
-  message: string,
-  stack: string,
+  name: string;
+  code: string;
+  message: string;
+  stack: string;
 }
 
 export class AssertionError extends Error {
@@ -11,7 +11,7 @@ export class AssertionError extends Error {
   code: string;
   message: string;
   stack: string;
-  constructor(code: string, message: string) : void;
+  constructor(code: string, message: string);
   toJSON() : AssertionErrorJSON;
 }
 

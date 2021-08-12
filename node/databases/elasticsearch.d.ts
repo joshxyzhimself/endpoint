@@ -3,27 +3,27 @@ import * as ElasticSearch from '@elastic/elasticsearch';
 
 
 export interface document_operation {
-  _index: string,
-  _id: string,
-  [key: string]: unknown,
+  _index: string;
+  _id: string;
+  [key: string]: unknown;
 }
 
 export interface document_source {
-  _id?: never,
-  _index?: never,
-  [key: string]: any,
+  _id?: never;
+  _index?: never;
+  [key: string]: any;
 }
 
 export interface document_highlight {
-  [key: string]: string[]
+  [key: string]: string[];
 }
 
 export interface document {
-  _index: NonNullable<string>,
-  _source: NonNullable<document_source>,
-  _id?: string,
-  _score?: number,
-  highlight?: document_highlight,
+  _index: NonNullable<string>;
+  _source: NonNullable<document_source>;
+  _id?: string;
+  _score?: number;
+  highlight?: document_highlight;
 }
 
 
@@ -37,9 +37,9 @@ export type refresh_indices = (...indices: string[]) => void;
 
 
 export interface search_response {
-  hits: document[],
-  count: number,
-  took: number,
+  hits: document[];
+  count: number;
+  took: number;
 }
 
 
@@ -77,11 +77,11 @@ export type bulk_operation_action = (
 
 
 export interface bulk_operation {
-  index: bulk_operation_action,
-  create: bulk_operation_action,
-  update: bulk_operation_action,
-  ignore_error_types: (...error_types: string[]) => void,
-  commit: () => Promise<void>,
+  index: bulk_operation_action;
+  create: bulk_operation_action;
+  update: bulk_operation_action;
+  ignore_error_types: (...error_types: string[]) => void;
+  commit: () => Promise<void>;
 }
 
 
@@ -89,14 +89,14 @@ export type create_bulk_operation = () => bulk_operation;
 
 
 export interface es_client {
-  client: ElasticSearch.Client,
-  create_index: create_index,
-  delete_index: delete_index,
-  refresh_indices: refresh_indices,
-  search_by_body: search_by_body,
-  search_by_text: search_by_text,
-  get_document: get_document,
-  create_bulk_operation: create_bulk_operation,
+  client: ElasticSearch.Client;
+  create_index: create_index;
+  delete_index: delete_index;
+  refresh_indices: refresh_indices;
+  search_by_body: search_by_body;
+  search_by_text: search_by_text;
+  get_document: get_document;
+  create_bulk_operation: create_bulk_operation;
 }
 
 
