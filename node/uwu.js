@@ -55,9 +55,10 @@ const internal_handler_2 = async (res, handler, response, request) => {
       try {
         fs.accessSync(response.file_path);
       } catch (e) {
-        response.status = 500;
-        if (fs.existsSync(response.file_path) === true) {
+        if (fs.existsSync(response.file_path) === false) {
           response.status = 404;
+        } else {
+          response.status = 500;
         }
       }
       if (response.status === 200) {
