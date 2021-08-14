@@ -44,16 +44,16 @@ const create_pg_client = (postgres_host, postgres_port, postgres_username, postg
 
 
   const client = postgres(postgres_config);
-  const encode_database_name = client;
+  const escape = client;
   const encode_array = client.array;
-  assert(encode_database_name instanceof Function);
+  assert(escape instanceof Function);
   assert(encode_array instanceof Function);
 
 
   const drop_table = async (table) => {
     assert(typeof table === 'string');
     const response = await client`
-      DROP TABLE IF EXISTS ${encode_database_name(table)} CASCADE;
+      DROP TABLE IF EXISTS ${escape(table)} CASCADE;
     `;
     return response;
   };
@@ -200,7 +200,7 @@ const create_pg_client = (postgres_host, postgres_port, postgres_username, postg
     pg_dump,
     pg_restore,
     psql,
-    encode_database_name,
+    escape,
     encode_array,
   };
 
