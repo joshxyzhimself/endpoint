@@ -160,18 +160,30 @@ const totp_counter = (period) => {
 
 
 /**
+ * @param {number} period
+ * @return {number}
+ */
+const totp_progress = (period) => {
+  const progress = (Math.round(Date.now() / 1000) % period) / period;
+  return progress;
+};
+
+
+/**
  * @param {string} key
  * @param {string} algorithm
  * @param {number} digits
  * @param {number} period
+ * @param {number} look_ahead
  * @returns {Promise<string>}
  */
-const totp_code = async (key, algorithm, digits, period) => {
+const totp_code = async (key, algorithm, digits, period, look_ahead) => {
   assert(typeof key === 'string');
   assert(typeof algorithm === 'string');
   assert(typeof digits === 'number');
   assert(typeof period === 'number');
-  const counter = totp_counter(period);
+  assert(typeof look_ahead === 'number');
+  const counter = totp_counter(period) + look_ahead;
   const code = await hotp_code(key, algorithm, digits, counter);
   return code;
 };
@@ -237,9 +249,9 @@ const test_totp_code = () => {
   console.log({ key });
 
   setInterval(async () => {
-    const code = await totp_code(key, algorithm, 6, 30);
+    const code = await totp_code(key, algorithm, 6, 30, 0);
     console.log({ code });
-    const code2 = await totp_code(key, algorithm, 8, 30);
+    const code2 = await totp_code(key, algorithm, 8, 30, 0);
     console.log({ code2 });
   }, 1000);
 };
@@ -251,6 +263,7 @@ const crypto2 = {
   random_bytes,
   hotp_code,
   totp_counter,
+  totp_progress,
   totp_code,
   hotp_uri,
   totp_uri,
