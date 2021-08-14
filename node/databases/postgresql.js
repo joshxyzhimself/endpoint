@@ -10,7 +10,6 @@ const child_process = require('child_process');
 const postgres = require('postgres');
 const luxon = require('luxon');
 const assert = require('../../core/assert');
-const rl_question = require('../rl_question');
 
 /**
  * @param {string} postgres_host
@@ -120,8 +119,6 @@ const create_pg_client = (postgres_host, postgres_port, postgres_username, postg
    * @returns {Promise<void>}
    */
   const pg_restore = async (dump_file_path) => {
-    const confirmation = await rl_question('pg_restore: confirm with "yes":');
-    assert(confirmation === 'yes');
     await pg_dump();
     return new Promise((resolve, reject) => {
       try {
