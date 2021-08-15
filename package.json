@@ -10,8 +10,8 @@
     "eslint": "^7.32.0"
   },
   "dependencies": {
-    "@elastic/elasticsearch": "^7.13.0",
-    "@types/react": "^17.0.16",
+    "@elastic/elasticsearch": "^7.14.0",
+    "@types/react": "^17.0.18",
     "got": "^11.8.2",
     "hi-base32": "^0.5.1",
     "luxon": "^2.0.2",
@@ -20,7 +20,7 @@
     "postgres": "^2.0.0-beta.6",
     "react": "^17.0.2",
     "uWebSockets.js": "uNetworking/uWebSockets.js#v19.3.0",
-    "undici": "^4.3.1",
-    "ws": "^8.0.0"
+    "undici": "^4.4.2",
+    "ws": "^8.1.0"
   }
 }

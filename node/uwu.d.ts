@@ -1,4 +1,6 @@
 import * as uws from 'uWebSockets.js';
+import { emitter } from '../core/create_emitter';
+
 
 export interface cache_control_types {
   no_store: string;
@@ -7,18 +9,22 @@ export interface cache_control_types {
   public_cached: string;
 }
 
+
 export interface port_access_types {
   SHARED: number;
   EXCLUSIVE: number;
 }
 
+
 export interface response_headers {
   [key:string]: any;
 }
 
+
 export interface response_json {
   [key:string]: any;
 }
+
 
 export interface response {
   aborted?: boolean;
@@ -54,6 +60,7 @@ export interface response {
   took?: number;
 }
 
+
 export interface headers {
   host: string;
   accept: string;
@@ -64,9 +71,11 @@ export interface headers {
   cookie: string;
 }
 
+
 export interface request_json {
   [key:string]: any;
 }
+
 
 export interface request {
   url: string;
@@ -75,10 +84,14 @@ export interface request {
   headers: headers;
   ip_address: string;
   json: request_json;
+  error?: Error;
 }
 
+export const events: emitter;
+
+
 export const cache_control_types: cache_control_types;
-export const port_access_types: port_access_types;
+
 
 export type handler = (response: response, request: request) => void;
 export type internal_handler_2 = (res: uws.HttpResponse, handler: handler, response: response, request: request) => void;
@@ -86,16 +99,24 @@ export type internal_handler = (res: uws.HttpResponse, req: uws.HttpRequest) => 
 export type serve_handler = (handler: handler) => internal_handler;
 export const serve_handler: serve_handler;
 
+
 export type serve_static = (app: uws.TemplatedApp, route_path: string, local_path: string, response_override: response) => void;
 export const serve_static: serve_static;
+
 
 export type serve_redirect = (app: uws.TemplatedApp) => void;
 export const serve_redirect: serve_redirect;
 
+
+export const port_access_types: port_access_types;
+
+
 export type serve_http = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
 export const serve_http: serve_http;
 
+
 export type serve_https = (app: uws.TemplatedApp, port_access_type: number, port: number) => Promise<uws.us_listen_socket>;
 export const serve_https: serve_https;
+
 
 export * as uws from 'uWebSockets.js';

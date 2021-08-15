@@ -7,8 +7,13 @@ const zlib = require('zlib');
 const crypto = require('crypto');
 const mime_types = require('mime-types');
 const uws = require('uWebSockets.js');
-const logs = require('../core/logs');
 const assert = require('../core/assert');
+const severity = require('../core/severity');
+const create_emitter = require('../core/create_emitter');
+
+
+const events = create_emitter();
+
 
 const cache_control_types = {
   // For sensitive data
@@ -24,7 +29,9 @@ const cache_control_types = {
   public_cached: 'public, max-age=86400, s-maxage=86400',
 };
 
+
 const cached_files = new Map();
+
 
 /**
  * @type {import('./uwu').internal_handler_2}
@@ -103,7 +110,6 @@ const internal_handler_2 = async (res, handler, response, request) => {
           response.gzip_buffer_hash = cached_file.gzip_buffer_hash;
           response.timestamp = cached_file.timestamp;
         } else {
-          fs.accessSync(response.file_path);
           const file_name = path.basename(response.file_path);
           const file_content_type = mime_types.contentType(file_name) || undefined;
           const buffer = fs.readFileSync(response.file_path);
@@ -213,16 +219,16 @@ const internal_handler_2 = async (res, handler, response, request) => {
         response.ended = true;
       }
     }
-    logs.emit({
+    events.emit(severity.types.ERROR, {
       resource_id: 'uwu',
-      operation_id: 'internal_handler_2',
+      operation_id: 'internal_handler',
       data: { request, response },
-      error: logs.capture_error(e),
-      severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },
-      trace: { mts: Date.now() },
+      timestamp: Date.now(),
+      error: severity.extract_error(e),
     });
   }
 };
+
 
 /**
  * @type {import('./uwu').serve_handler}
@@ -305,13 +311,13 @@ const serve_handler = (handler) => {
           try {
             request.json = JSON.parse(buffer_string);
           } catch (e) {
-            logs.emit({
+            request.error = e;
+            events.emit(severity.types.ERROR, {
               resource_id: 'uwu',
-              operation_id: 'on_data',
-              data: { request, buffer, buffer_string },
-              error: logs.capture_error(e),
-              severity: { type: logs.severity_types.ERROR, code: logs.severity_codes.ERROR },
-              trace: { mts: Date.now() },
+              operation_id: 'internal_handler',
+              data: { request, response },
+              timestamp: Date.now(),
+              error: severity.extract_error(e),
             });
           }
         }
@@ -324,6 +330,7 @@ const serve_handler = (handler) => {
   };
   return internal_handler;
 };
+
 
 /**
  * @type {import('./uwu').serve_static}
@@ -367,6 +374,7 @@ const serve_static = (app, route_path, local_path, response_override) => {
   });
 };
 
+
 /**
  * @type {import('./uwu').serve_redirect}
  */
@@ -379,10 +387,9 @@ const serve_redirect = (app) => {
   }));
 };
 
-const port_access_types = {
-  SHARED: 0,
-  EXCLUSIVE: 1,
-};
+
+const port_access_types = { SHARED: 0, EXCLUSIVE: 1 };
+
 
 /**
  * @type {import('./uwu').serve_http}
@@ -401,6 +408,7 @@ const serve_http = (app, port_access_type, port) => new Promise((resolve, reject
   });
 });
 
+
 /**
  * @type {import('./uwu').serve_https}
  */
@@ -418,7 +426,9 @@ const serve_https = (app, port_access_type, port) => new Promise((resolve, rejec
   });
 });
 
+
 const uwu = {
+  events,
   cache_control_types,
   serve_handler,
   serve_static,
@@ -428,5 +438,6 @@ const uwu = {
   serve_https,
   uws,
 };
+
 
 module.exports = uwu;
